@@ -1,0 +1,4 @@
+# dependencies for development environment
+
+# include base
+-r _base.txt
