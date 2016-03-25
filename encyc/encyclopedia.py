@@ -16,12 +16,12 @@ NON_ARTICLE_PAGES = ['about', 'categories', 'contact', 'contents', 'search',]
 TIMEOUT = float(config.MEDIAWIKI_API_TIMEOUT)
 
 
-def api_login_round1(username, password):
+def api_login_round1(lgname, lgpassword):
     url = '%s?action=login&format=xml' % (config.MEDIAWIKI_API)
     domain = urlparse(url).netloc
     if domain.find(':') > -1:
         domain = domain.split(':')[0]
-    payload = {'lgname':username, 'lgpassword':password}
+    payload = {'lgname':lgname, 'lgpassword':lgpassword}
     r = requests.post(url, data=payload, timeout=TIMEOUT)
     if '401 Authorization Required' in r.text:
         raise Exception('401 Authorization Required')
@@ -39,12 +39,12 @@ def api_login_round1(username, password):
         }
     return result
 
-def api_login_round2(username, password, result):
+def api_login_round2(lgname, lgpassword, result):
     url = '%s?action=login&format=xml' % (config.MEDIAWIKI_API)
     domain = urlparse(url).netloc
     if domain.find(':') > -1:
         domain = domain.split(':')[0]
-    payload = {'lgname':username, 'lgpassword':password, 'lgtoken':result['token'],}
+    payload = {'lgname':lgname, 'lgpassword':lgpassword, 'lgtoken':result['token'],}
     cookies = {'%s_session' % result['cookieprefix']: result['sessionid'], 'domain':domain,}
     r = requests.post(url, data=payload, cookies=cookies, timeout=TIMEOUT)
     if 'WrongPass' in r.text:
@@ -73,10 +73,10 @@ def api_login():
     HTTP requests.
     """
     cookies = []
-    username = config.MEDIAWIKI_API_USERNAME
-    password = config.MEDIAWIKI_API_PASSWORD
-    round1 = api_login_round1(username, password)
-    round2 = api_login_round2(username, password, round1)
+    lgname = config.MEDIAWIKI_API_USERNAME
+    lgpassword = config.MEDIAWIKI_API_PASSWORD
+    round1 = api_login_round1(lgname, lgpassword)
+    round2 = api_login_round2(lgname, lgpassword, round1)
     if round2.get('result',None) \
            and (round2['result'] == 'Success') \
            and round2.get('cookies',None):
