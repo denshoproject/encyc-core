@@ -7,6 +7,7 @@ USER=encyc
 INSTALL_BASE=/usr/local/src
 INSTALLDIR=$(INSTALL_BASE)/encyc-core
 DOWNLOADS_DIR=/tmp/$(APP)-install
+PIP_REQUIREMENTS_DIR=$(INSTALLDIR)/requirements
 PIP_CACHE_DIR=$(INSTALL_BASE)/pip-cache
 VIRTUALENV=$(INSTALL_BASE)/env/$(APP)
 
@@ -94,13 +95,13 @@ clean-app: clean-encyc-core
 
 get-encyc-core:
 	git pull
-	pip install --download=$(PIP_CACHE_DIR) --exists-action=i -r $(INSTALLDIR)/encyc/requirements/production.txt
+	pip install --download=$(PIP_CACHE_DIR) --exists-action=i -r $(PIP_REQUIREMENTS_DIR)/production.txt
 
 install-encyc-core: install-virtualenv
 	@echo ""
 	@echo "install encyc-core -----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U --no-index --find-links=$(PIP_CACHE_DIR) -r $(INSTALLDIR)/encyc/requirements/production.txt
+	pip install -U --no-index --find-links=$(PIP_CACHE_DIR) -r $(PIP_REQUIREMENTS_DIR)/production.txt
 # logs dir
 	-mkdir $(LOGS_BASE)
 	chown -R $(USER).root $(LOGS_BASE)
@@ -111,14 +112,14 @@ update-encyc-core:
 	@echo "update encyc-core ---------------------------------------------------------"
 	git fetch && git pull
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U --no-download --download-cache=$(PIP_CACHE_DIR) -r $(INSTALLDIR)/encyc/requirements/production.txt
+	pip install -U --no-download --download-cache=$(PIP_CACHE_DIR) -r $(PIP_REQUIREMENTS_DIR)/production.txt
 
 uninstall-encyc-core:
 	@echo ""
 	@echo "uninstall encyc-core ------------------------------------------------------"
 	cd $(INSTALLDIR)/encyc-core
 	source $(VIRTUALENV)/bin/activate; \
-	-pip uninstall -r $(INSTALLDIR)/encyc/requirements/production.txt
+	-pip uninstall -r $(PIP_REQUIREMENTS_DIR)/production.txt
 	-rm /usr/local/lib/python2.7/dist-packages/encyc-*
 	-rm -Rf /usr/local/lib/python2.7/dist-packages/encyc
 
