@@ -23,7 +23,10 @@ def api_login_round1(username, password):
         domain = domain.split(':')[0]
     payload = {'lgname':username, 'lgpassword':password}
     r = requests.post(url, data=payload, timeout=TIMEOUT)
-    soup = BeautifulSoup(r.text)
+    soup = BeautifulSoup(
+        r.text,
+        features='lxml'
+    )
     login = soup.find('login')
     result = {
         'result': login['result'],
@@ -44,7 +47,10 @@ def api_login_round2(username, password, result):
     r = requests.post(url, data=payload, cookies=cookies, timeout=TIMEOUT)
     if 'WrongPass' in r.text:
         raise Exception('Bad MediaWiki API credentials')
-    soup = BeautifulSoup(r.text)
+    soup = BeautifulSoup(
+        r.text,
+        features='lxml'
+    )
     login = soup.find('login')
     result = {
         'result': login['result'],
