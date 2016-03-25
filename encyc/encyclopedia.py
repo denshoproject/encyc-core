@@ -23,6 +23,8 @@ def api_login_round1(username, password):
         domain = domain.split(':')[0]
     payload = {'lgname':username, 'lgpassword':password}
     r = requests.post(url, data=payload, timeout=TIMEOUT)
+    if '401 Authorization Required' in r.text:
+        raise Exception('401 Authorization Required')
     soup = BeautifulSoup(
         r.text,
         features='lxml'
