@@ -1,0 +1,6 @@
+
+bpython
+Click
+elasticsearch
+elasticsearch_dsl
+requests
