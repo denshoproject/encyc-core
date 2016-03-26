@@ -263,7 +263,7 @@ class Proxy(object):
                 False)
             # rewrite media URLs on stage
             # (external URLs not visible to Chrome on Android when connecting through SonicWall)
-            if hasattr(settings, 'STAGE') and config.STAGE and request:
+            if hasattr(config, 'STAGE') and config.STAGE and request:
                 page.sources = sources.replace_source_urls(page.sources, request)
             page.is_article = encyclopedia.is_article(page.title)
             if page.is_article:
