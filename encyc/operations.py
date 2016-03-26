@@ -94,7 +94,7 @@ def authors(report=False, dryrun=False, force=False):
     for n,title in enumerate(authors_delete):
         logprint('debug', '--------------------')
         logprint('debug', '%s/%s %s' % (n, len(authors_delete), title))
-        author = Author.get(title)
+        author = Author.get(title=title)
         if not dryrun:
             author.delete()
      
