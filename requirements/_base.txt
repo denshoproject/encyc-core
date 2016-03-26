@@ -1,6 +1,7 @@
-
+beautifulsoup4
 bpython
 Click
 elasticsearch
 elasticsearch_dsl
+lxml
 requests
