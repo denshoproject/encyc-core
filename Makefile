@@ -43,7 +43,7 @@ uninstall: uninstall-app
 clean: clean-app
 
 
-install-prep: apt-upgrade install-core git-config install-misc-tools
+install-prep: apt-upgrade install-core git-config install-misc-tools install-setuptools
 
 apt-update:
 	@echo ""
@@ -68,7 +68,6 @@ install-misc-tools:
 	@echo ""
 	@echo "Installing miscellaneous tools -----------------------------------------"
 	apt-get --assume-yes install ack-grep byobu elinks htop mg multitail
-
 
 install-virtualenv:
 	apt-get --assume-yes install python-pip python-virtualenv
@@ -97,7 +96,7 @@ get-encyc-core:
 	git pull
 	pip install --download=$(PIP_CACHE_DIR) --exists-action=i -r $(PIP_REQUIREMENTS_DIR)/production.txt
 
-install-encyc-core: install-virtualenv
+install-encyc-core:
 	@echo ""
 	@echo "install encyc-core -----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
