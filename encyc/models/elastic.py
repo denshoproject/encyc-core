@@ -46,6 +46,7 @@ from encyc import ddr
 from encyc import docstore
 from encyc import http
 from encyc.models.legacy import Proxy
+from encyc import urls
 
 if not config.DEBUG:
     from bs4 import BeautifulSoup
@@ -114,7 +115,7 @@ class Author(DocType):
         return self.title
 
     def absolute_url(self):
-        return reverse('wikiprox-author', args=([self.title,]))
+        return urls.reverse('wikiprox-author', args=([self.title,]))
     
     def articles(self):
         """Returns list of published light Pages for this Author.
@@ -239,7 +240,7 @@ class Page(DocType):
         return self.url_title
     
     def absolute_url(self):
-        return reverse('wikiprox-page', args=([self.title]))
+        return urls.reverse('wikiprox-page', args=([self.title]))
 
     def authors(self):
         """Returns list of published light Author objects for this Page.
@@ -462,7 +463,7 @@ class Source(DocType):
         return self.encyclopedia_id
     
     def absolute_url(self):
-        return reverse('wikiprox-source', args=([self.encyclopedia_id]))
+        return urls.reverse('wikiprox-source', args=([self.encyclopedia_id]))
     
     def img_url(self):
         return os.path.join(config.SOURCES_MEDIA_URL, self.img_path)

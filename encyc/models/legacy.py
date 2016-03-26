@@ -13,6 +13,7 @@ from encyc import encyclopedia
 from encyc import http
 from encyc import mediawiki
 from encyc import sources
+from encyc import urls
 
 
 def _columnizer(things, cols):
@@ -43,7 +44,7 @@ class Author(object):
         return self.title
 
     def absolute_url(self):
-        return reverse('wikiprox-author', args=([self.title]))
+        return urls.reverse('wikiprox-author', args=([self.title]))
 
 
 class Page(object):
@@ -77,7 +78,7 @@ class Page(object):
         return self.url_title
     
     def absolute_url(self):
-        return reverse('wikiprox-page', args=([self.title]))
+        return urls.reverse('wikiprox-page', args=([self.title]))
     
     def topics(self):
         terms = Elasticsearch().topics_by_url().get(self.absolute_url(), [])
@@ -124,7 +125,7 @@ class Source(object):
         return self.encyclopedia_id
     
     def absolute_url(self):
-        return reverse('wikiprox-source', args=([self.encyclopedia_id]))
+        return urls.reverse('wikiprox-source', args=([self.encyclopedia_id]))
 
 
 class Citation(object):
@@ -230,7 +231,7 @@ class Proxy(object):
         url_title = url_title.encode('utf_8', errors='xmlcharrefreplace')
         page = Page()
         page.url_title = url_title
-        page.uri = reverse('wikiprox-page', args=[url_title])
+        page.uri = urls.reverse('wikiprox-page', args=[url_title])
         page.url = mediawiki.page_data_url(config.MEDIAWIKI_API, page.url_title)
         logger.debug(page.url)
         r = http.get(page.url)
@@ -288,7 +289,7 @@ class Proxy(object):
     def source(self, encyclopedia_id):
         source = Source()
         source.encyclopedia_id = encyclopedia_id
-        source.uri = reverse('wikiprox-source', args=[encyclopedia_id])
+        source.uri = urls.reverse('wikiprox-source', args=[encyclopedia_id])
         source.title = encyclopedia_id
         data = sources.source(encyclopedia_id)
         for key,val in data.iteritems():
