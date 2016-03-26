@@ -126,7 +126,13 @@ uninstall-encyc-core:
 	-rm -Rf /usr/local/lib/python2.7/dist-packages/encyc
 
 clean-encyc-core:
-	-rm -Rf $(INSTALLDIR)/encyc/src
+	-rm     $(INSTALLDIR)/encyc/*.pyc
+	-rm -Rf $(INSTALLDIR)/encyc_core.egg-info/
+	-rm -Rf $(INSTALLDIR)/build/
+	-rm -Rf $(INSTALLDIR)/dist/
+	-rm -Rf $(VIRTUALENV)/lib/python2.7/site-packages/encyc*
+	-rm     $(VIRTUALENV)/bin/encyc
+	-rm -Rf /usr/local/lib/python2.7/dist-packages/encyc*
 
 clean-pip:
 	-rm -Rf $(PIP_CACHE_DIR)/*
