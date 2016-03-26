@@ -39,12 +39,12 @@ from elasticsearch_dsl import Index
 from elasticsearch_dsl import DocType, String, Date, Nested, Boolean
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.connections import connections
-import requests
 
 from encyc import citations
 from encyc import config
 from encyc import ddr
 from encyc import docstore
+from encyc import http
 from encyc.models.legacy import Proxy
 
 if not config.DEBUG:
@@ -733,7 +733,7 @@ class Elasticsearch(object):
         @param url: URL of topics.json
         """
         if url and not json_text:
-            r = requests.get(url)
+            r = http.get(url)
             if r.status_code == 200:
                 json_text = r.text
         docstore.post(

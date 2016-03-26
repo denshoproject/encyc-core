@@ -6,9 +6,9 @@ from operator import itemgetter
 from urlparse import urlparse
 
 from bs4 import BeautifulSoup
-import requests
 
 from encyc import config
+from encyc import http
 from encyc import mediawiki
 
 
@@ -22,7 +22,7 @@ def api_login_round1(lgname, lgpassword):
     if domain.find(':') > -1:
         domain = domain.split(':')[0]
     payload = {'lgname':lgname, 'lgpassword':lgpassword}
-    r = requests.post(url, data=payload, timeout=TIMEOUT)
+    r = http.post(url, data=payload, timeout=TIMEOUT)
     if '401 Authorization Required' in r.text:
         raise Exception('401 Authorization Required')
     soup = BeautifulSoup(
@@ -46,7 +46,7 @@ def api_login_round2(lgname, lgpassword, result):
         domain = domain.split(':')[0]
     payload = {'lgname':lgname, 'lgpassword':lgpassword, 'lgtoken':result['token'],}
     cookies = {'%s_session' % result['cookieprefix']: result['sessionid'], 'domain':domain,}
-    r = requests.post(url, data=payload, cookies=cookies, timeout=TIMEOUT)
+    r = http.post(url, data=payload, cookies=cookies, timeout=TIMEOUT)
     if 'WrongPass' in r.text:
         raise Exception('Bad MediaWiki API credentials')
     soup = BeautifulSoup(
@@ -86,7 +86,7 @@ def api_login():
 def api_logout():
     url = '%s?action=logout' % (config.MEDIAWIKI_API)
     headers = {'content-type': 'application/json'}
-    r = requests.post(url, headers=headers, timeout=TIMEOUT)
+    r = http.post(url, headers=headers, timeout=TIMEOUT)
 
 def _all_pages(r_text):
     pages = []
@@ -107,7 +107,7 @@ def all_pages():
     # all articles
     LIMIT=5000
     url = '%s?action=query&generator=allpages&prop=revisions&rvprop=timestamp&gaplimit=5000&format=json' % (config.MEDIAWIKI_API)
-    r = requests.get(url, headers={'content-type':'application/json'}, cookies=cookies, timeout=TIMEOUT)
+    r = http.get(url, headers={'content-type':'application/json'}, cookies=cookies, timeout=TIMEOUT)
     if r.status_code == 200:
         pages = _all_pages(r.text)
     api_logout()
@@ -207,7 +207,7 @@ def category_members(category_name, namespace_id=None):
     url = '%s?format=json&action=query&list=categorymembers&cmsort=sortkey&cmprop=ids|sortkeyprefix|title&cmtitle=Category:%s&cmlimit=5000' % (config.MEDIAWIKI_API, category_name)
     if namespace_id != None:
         url = '%s&gcmnamespace=%s' % (url, namespace_id)
-    r = requests.get(url, headers={'content-type':'application/json'}, cookies=cookies, timeout=TIMEOUT)
+    r = http.get(url, headers={'content-type':'application/json'}, cookies=cookies, timeout=TIMEOUT)
     if r.status_code == 200:
         pages = _category_members(r.text)
     api_logout()
@@ -256,7 +256,7 @@ def namespaces():
     """Returns dict of namespaces and their codes.
     """
     url = '%s?action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json' % (config.MEDIAWIKI_API)
-    r = requests.get(url, headers={'content-type':'application/json'}, timeout=TIMEOUT)
+    r = http.get(url, headers={'content-type':'application/json'}, timeout=TIMEOUT)
     if r.status_code == 200:
         namespaces = _namespaces(r.text)
     return namespaces
@@ -288,7 +288,7 @@ def page_categories(title, whitelist=[]):
     """Returns list of article subcategories the page belongs to.
     """
     url = '%s?format=json&action=query&prop=categories&titles=%s' % (config.MEDIAWIKI_API, title)
-    r = requests.get(url, headers={'content-type':'application/json'}, timeout=TIMEOUT)
+    r = http.get(url, headers={'content-type':'application/json'}, timeout=TIMEOUT)
     if r.status_code == 200:
         if not whitelist:
             whitelist = category_article_types()
@@ -356,7 +356,7 @@ def what_links_here(title):
     """Returns titles of published pages that link to this one.
     """
     url = '%s?format=json&action=query&list=backlinks&bltitle=%s&bllimit=5000' % (config.MEDIAWIKI_API, title)
-    r = requests.get(url, headers={'content-type':'application/json'}, timeout=TIMEOUT)
+    r = http.get(url, headers={'content-type':'application/json'}, timeout=TIMEOUT)
     if r.status_code == 200:
         titles = _whatlinkshere(published_pages(), r.text)
     return titles

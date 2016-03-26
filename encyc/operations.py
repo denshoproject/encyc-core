@@ -31,6 +31,8 @@ def print_configs():
     print('MEDIAWIKI_API:          %s' % config.MEDIAWIKI_API)
     print('MEDIAWIKI_API_USERNAME: %s' % config.MEDIAWIKI_API_USERNAME)
     print('MEDIAWIKI_API_PASSWORD: %s' % config.MEDIAWIKI_API_PASSWORD)
+    print('MEDIAWIKI_API_HTUSER:   %s' % config.MEDIAWIKI_API_HTUSER)
+    print('MEDIAWIKI_API_HTPASS:   %s' % config.MEDIAWIKI_API_HTPASS)
     print('MEDIAWIKI_API_TIMEOUT:  %s' % config.MEDIAWIKI_API_TIMEOUT)
     print('')
 

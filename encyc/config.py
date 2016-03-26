@@ -41,6 +41,14 @@ MEDIAWIKI_HTML = config.get('mediawiki', 'url')
 MEDIAWIKI_API = config.get('mediawiki', 'api_url')
 MEDIAWIKI_API_USERNAME = config.get('mediawiki', 'api_username')
 MEDIAWIKI_API_PASSWORD = config.get('mediawiki', 'api_password')
+try:
+    MEDIAWIKI_API_HTUSER = config.get('mediawiki', 'api_htuser')
+except:
+    MEDIAWIKI_API_HTUSER = None
+try:
+    MEDIAWIKI_API_HTPASS = config.get('mediawiki', 'api_htpass')
+except:
+    MEDIAWIKI_API_HTPASS = None
 MEDIAWIKI_API_TIMEOUT = config.get('mediawiki', 'api_timeout')
 MEDIAWIKI_HIDDEN_CATEGORIES = config.get('mediawiki', 'hidden_categories').split(',')
 MEDIAWIKI_DEFAULT_PAGE = config.get('mediawiki', 'default_page')

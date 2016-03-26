@@ -2,9 +2,9 @@ from datetime import datetime
 import json
 
 from bs4 import BeautifulSoup
-import requests
 
 from encyc import config
+from encyc import http
 
 TS_FORMAT = '%Y-%m-%d %H:%M:%S'
 
@@ -12,7 +12,7 @@ TS_FORMAT = '%Y-%m-%d %H:%M:%S'
 def source(encyclopedia_id):
     source = None
     url = '%s/primarysource/?encyclopedia_id=%s' % (config.SOURCES_API, encyclopedia_id)
-    r = requests.get(url, headers={'content-type':'application/json'})
+    r = http.get(url, headers={'content-type':'application/json'})
     if r.status_code == 200:
         response = json.loads(r.text)
         if response and (response['meta']['total_count'] == 1):
@@ -24,7 +24,7 @@ def published_sources():
     """
     sources = []
     url = '%s/primarysource/sitemap/' % config.SOURCES_API
-    r = requests.get(url, headers={'content-type':'application/json'})
+    r = http.get(url, headers={'content-type':'application/json'})
     if r.status_code == 200:
         response = json.loads(r.text)
         sources = [source for source in response['objects']]

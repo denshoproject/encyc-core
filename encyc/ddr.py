@@ -3,9 +3,8 @@
 import json
 import os
 
-import requests
-
 from encyc import config
+from encyc import http
 
 
 def _term_documents(term_id, size):
@@ -18,7 +17,7 @@ def _term_documents(term_id, size):
     url = '%s/facet/topics/%s/objects/?limit=%s&%s=1' % (
         config.DDR_API, term_id, size, config.DDR_MEDIA_URL_LOCAL_MARKER
     )
-    r = requests.get(
+    r = http.get(
         url,
         headers={'content-type':'application/json'},
         timeout=3)

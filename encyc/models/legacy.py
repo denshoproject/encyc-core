@@ -4,13 +4,13 @@ import logging
 logger = logging.getLogger(__name__)
 
 from elasticsearch_dsl import Search
-import requests
 
 from encyc import citations
 from encyc import config
 from encyc import ddr
 from encyc import docstore
 from encyc import encyclopedia
+from encyc import http
 from encyc import mediawiki
 from encyc import sources
 
@@ -217,7 +217,7 @@ class Proxy(object):
         page_url = mediawiki.page_data_url(config.MEDIAWIKI_API, url_title)
         logger.debug(page_url)
         auth = (config.DANGO_HTPASSWD_USER, config.DANGO_HTPASSWD_PWD)
-        r = requests.get(page_url, auth=auth)
+        r = http.get(page_url, auth=auth)
         logger.debug(r.status_code)
         pagedata = json.loads(r.text.encode('utf_8', errors='xmlcharrefreplace'))
         return pagedata
@@ -233,8 +233,7 @@ class Proxy(object):
         page.uri = reverse('wikiprox-page', args=[url_title])
         page.url = mediawiki.page_data_url(config.MEDIAWIKI_API, page.url_title)
         logger.debug(page.url)
-        auth = (config.DANGO_HTPASSWD_USER, config.DANGO_HTPASSWD_PWD)
-        r = requests.get(page.url, auth=auth)
+        r = http.get(page.url)
         page.status_code = r.status_code
         logger.debug(page.status_code)
         pagedata = json.loads(r.text.encode('utf_8', errors='xmlcharrefreplace'))
@@ -587,7 +586,7 @@ class Elasticsearch(object):
         @param url: URL of topics.json
         """
         if url and not json_text:
-            r = requests.get(url)
+            r = http.get(url)
             if r.status_code == 200:
                 json_text = r.text
         docstore.post(

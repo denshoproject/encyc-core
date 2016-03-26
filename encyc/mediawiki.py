@@ -6,9 +6,9 @@ import os
 import re
 
 from bs4 import BeautifulSoup, SoupStrainer, Comment
-import requests
 
 from encyc import config
+from encyc import http
 
 TS_FORMAT = '%Y-%m-%dT%H:%M:%S'
 TS_FORMAT_ZONED = '%Y-%m-%dT%H:%M:%SZ'
@@ -57,7 +57,7 @@ def page_lastmod(api_url, page_title):
     lastmod = None
     url = lastmod_data_url(api_url, page_title)
     logging.debug(url)
-    r = requests.get(url, timeout=TIMEOUT)
+    r = http.get(url, timeout=TIMEOUT)
     if r.status_code == 200:
         pagedata = json.loads(r.text)
         ts = pagedata['query']['pages'].values()[0]['revisions'][0]['timestamp']
@@ -268,7 +268,7 @@ def find_primary_sources(api_url, images):
     if eids:
         eid_args = ['encyclopedia_id__in=%s' % eid for eid in eids]
         url = '%s/primarysource/?%s' % (api_url, '&'.join(eid_args))
-        r = requests.get(url, headers={'content-type':'application/json'}, timeout=TIMEOUT)
+        r = http.get(url, headers={'content-type':'application/json'}, timeout=TIMEOUT)
         if r.status_code == 200:
             response = json.loads(r.text)
             response_objects = response['objects']
