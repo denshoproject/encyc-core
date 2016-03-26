@@ -101,6 +101,9 @@ install-encyc-core:
 	@echo "install encyc-core -----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
 	pip install -U --no-index --find-links=$(PIP_CACHE_DIR) -r $(PIP_REQUIREMENTS_DIR)/production.txt
+	cd $(INSTALLDIR)
+	source $(VIRTUALENV)/bin/activate; \
+	python setup.py install
 # logs dir
 	-mkdir $(LOGS_BASE)
 	chown -R $(USER).root $(LOGS_BASE)
