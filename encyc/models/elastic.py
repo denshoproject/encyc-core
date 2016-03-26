@@ -76,10 +76,11 @@ def hitvalue(hit, field):
     For some reason, Search hit objects wrap values in lists.
     returns the value inside the list.
     """
-    if hit.get(field) and isinstance(hit[field], list):
-        value = hit[field][0]
+    v = getattr(hit,field)
+    if v and isinstance(v, list):
+        value = v[0]
     else:
-        value = hit[field]
+        value = v
     return value
 
 def none_strip(text):
