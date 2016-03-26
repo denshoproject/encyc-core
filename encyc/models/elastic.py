@@ -134,7 +134,7 @@ class Author(DocType):
         
         @returns: list
         """
-        s = Search(doc_type='authors')[0:MAX_SIZE]
+        s = Author.search()[0:MAX_SIZE]
         s = s.sort('title_sort')
         s = s.fields([
             'url_title',
@@ -265,7 +265,7 @@ class Page(DocType):
         
         @returns: list
         """
-        s = Search(doc_type='articles')[0:MAX_SIZE]
+        s = Page.search()[0:MAX_SIZE]
         s = s.sort('title_sort')
         s = s.fields([
             'url_title',
@@ -519,7 +519,7 @@ class Source(DocType):
         
         @returns: list
         """
-        s = Search(doc_type='sources')[0:MAX_SIZE]
+        s = Source.search()[0:MAX_SIZE]
         s = s.sort('encyclopedia_id')
         s = s.fields([
             'encyclopedia_id',
