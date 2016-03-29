@@ -284,7 +284,7 @@ class Page(DocType):
                 title_sort = hitvalue(hit, 'title_sort'),
                 published  = hitvalue(hit, 'published'),
                 modified   = hitvalue(hit, 'modified'),
-                categories = hit.get('categories',[]),
+                categories = hitvalue(hit, 'categories'),
                )
             for hit in response
             if hitvalue(hit, 'published')
