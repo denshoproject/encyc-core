@@ -22,6 +22,15 @@ def config():
 
 
 @encyc.command()
+def status():
+    """Print status info.
+    
+    More detail since you asked.
+    """
+    operations.status()
+
+
+@encyc.command()
 def create():
     """Create new index.
     """

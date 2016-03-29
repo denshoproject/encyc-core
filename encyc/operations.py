@@ -1,11 +1,14 @@
 from datetime import datetime
+import json
 import logging
 logger = logging.getLogger(__name__)
 import sys
 
-from elasticsearch_dsl import Index, DocType, String
-from elasticsearch_dsl.connections import connections
+from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
+from elasticsearch_dsl import Index, DocType, String
+from elasticsearch_dsl import Search
+from elasticsearch_dsl.connections import connections
 
 #from DDR import docstore
 #from wikiprox import encyclopedia
@@ -21,6 +24,25 @@ def logprint(level, msg):
     if   level == 'debug': logging.debug(msg)
     elif level == 'info': logging.info(msg)
     elif level == 'error': logging.error(msg)
+
+def format_json(data):
+    """Write JSON using consistent formatting and sorting.
+    
+    For versioning and history to be useful we need data fields to be written
+    in a format that is easy to edit by hand and in which values can be compared
+    from one commit to the next.  This function prints JSON with nice spacing
+    and indentation and with sorted keys, so fields will be in the same relative
+    position across commits.
+    
+    >>> data = {'a':1, 'b':2}
+    >>> path = '/tmp/ddrlocal.models.write_json.json'
+    >>> write_json(data, path)
+    >>> with open(path, 'r') as f:
+    ...     print(f.readlines())
+    ...
+    ['{\n', '    "a": 1,\n', '    "b": 2\n', '}']
+    """
+    return json.dumps(data, indent=4, separators=(',', ': '), sort_keys=True)
 
 def print_configs():
     print('manage.py encyc commands will use the following settings:')
@@ -42,7 +64,73 @@ def set_hosts_index():
     logprint('debug', 'index: %s' % config.DOCSTORE_INDEX)
     index = Index(config.DOCSTORE_INDEX)
     return index
-    
+
+def status():
+    """
+"indices": {
+    "encyc-production": {
+        "index": {
+            "primary_size_in_bytes": ​1746448,
+            "size_in_bytes": ​1746448
+        },
+        "docs": {
+            "num_docs": ​247,
+            "max_doc": ​247,
+            "deleted_docs": ​0
+        },
+
+from elasticsearch import Elasticsearch
+client = Elasticsearch()
+client.info()
+s = client.indices.stats()
+
+format_json(client.indices.stats('encyc-production'))
+
+
+    """
+    logprint('debug', '------------------------------------------------------------------------')
+    logprint('debug', 'MediaWiki')
+    logprint('debug', 'MEDIAWIKI_HTML: %s' % config.MEDIAWIKI_HTML)
+    logprint('debug', ' MEDIAWIKI_API: %s' % config.MEDIAWIKI_API)
+    mw_author_titles = Proxy().authors(cached_ok=False)
+    mw_articles = Proxy().articles_lastmod()
+    num_mw_authors = len(mw_author_titles)
+    num_mw_articles = len(mw_articles)
+    logprint('debug', '       authors: %s' % num_mw_authors)
+    logprint('debug', '      articles: %s' % num_mw_articles)
+    logprint('debug', '------------------------------------------------------------------------')
+    logprint('debug', 'Elasticsearch')
+    logprint('debug', 'DOCSTORE_HOSTS: %s' % config.DOCSTORE_HOSTS)
+    logprint('debug', 'DOCSTORE_INDEX: %s' % config.DOCSTORE_INDEX)
+    from elasticsearch import Elasticsearch
+    client = Elasticsearch()
+    if not client.ping():
+        logprint('error', "Can't ping the cluster!")
+        return
+    index_names = client.indices.stats()['indices'].keys()
+    if not (config.DOCSTORE_INDEX in index_names):
+        logprint('error', "Index '%s' doesn't exist!" % config.DOCSTORE_INDEX)
+        return
+    #info = client.info()
+    #logprint('debug', 'Info: %s' % format_json(info))
+    #logprint('debug', 'Indices: %s' % format_json(index_names))
+    #stats = client.indices.stats()['indices'][config.DOCSTORE_INDEX]
+    #logprint('debug', format_json(s))
+    #print('index %s' % s['index'])
+    #print('docs %s' % s['docs'])
+    #print(format_json(client.indices.stats('encyc-production')))
+    num_es_authors = len(Author.authors())
+    num_es_articles = len(Page.pages())
+    pc_authors = float(num_es_authors) / num_mw_authors
+    pc_articles = float(num_es_articles) / num_mw_articles
+    logprint('debug', '       authors: {}/{} {:.2%}'.format(
+        num_es_authors, num_mw_authors, pc_authors,
+    ))
+    logprint('debug', '      articles: {}/{} {:.2%}'.format(
+        num_es_articles, num_mw_articles, pc_articles,
+    ))
+    logprint('debug', '       sources: %s' % len(Source.sources()))
+
 def delete_index():
     index = set_hosts_index()
     logprint('debug', 'deleting old index')
