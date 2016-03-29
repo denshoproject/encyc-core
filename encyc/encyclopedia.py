@@ -8,6 +8,7 @@ from urlparse import urlparse
 from bs4 import BeautifulSoup
 
 from encyc import config
+from encyc.config import cache
 from encyc import http
 from encyc import mediawiki
 
@@ -98,7 +99,8 @@ def _all_pages(r_text):
             page.pop('revisions')
             pages.append(page)
     return pages
-    
+
+@cache.cache()
 def all_pages():
     """Returns a list of all pages, with timestamp of latest revision.
     """
@@ -124,6 +126,7 @@ def _articles_a_z(published_pages, author_pages, nonarticle_titles):
             pages.append(page)
     return pages
     
+@cache.cache()
 def articles_a_z():
     """Returns a list of published article titles arranged A-Z.
     """
@@ -134,6 +137,7 @@ def articles_a_z():
     )
     return titles
 
+@cache.cache()
 def articles_by_category():
     """Returns list of published articles grouped by category.
     """
@@ -194,6 +198,7 @@ def _category_members(r_text):
         pages = sorted(pages, key=itemgetter('sortkey'))
     return pages
 
+@cache.cache()
 def category_members(category_name, namespace_id=None):
     """Returns titles of pages with specified Category: tag.
     
@@ -252,6 +257,7 @@ def _namespaces(r_text):
             namespaces[nsid] = nsname
     return namespaces
 
+@cache.cache()
 def namespaces():
     """Returns dict of namespaces and their codes.
     """
@@ -284,6 +290,7 @@ def _page_categories(whitelist, r_text):
                 categories.append(category.replace('Category:', ''))
     return categories
     
+@cache.cache()
 def page_categories(title, whitelist=[]):
     """Returns list of article subcategories the page belongs to.
     """
@@ -308,6 +315,7 @@ def _published_pages(allpages, all_published_pages):
             pages.append(page)
     return pages
     
+@cache.cache()
 def published_pages(cached_ok=True):
     """Returns a list of *published* articles (pages), with timestamp of latest revision.
     @param cached_ok: boolean Whether cached results are OK.
@@ -330,6 +338,7 @@ def _published_authors(publishedpages, categoryauthors):
     ]
     return authors
 
+@cache.cache()
 def published_authors(cached_ok=True):
     """Returns a list of *published* authors (pages), with timestamp of latest revision.
     @param cached_ok: boolean Whether cached results are OK.
@@ -352,6 +361,7 @@ def _whatlinkshere(publishedpages, r_text):
         ]
     return titles
     
+@cache.cache()
 def what_links_here(title):
     """Returns titles of published pages that link to this one.
     """

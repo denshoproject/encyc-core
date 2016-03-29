@@ -1,7 +1,10 @@
+# apt-get install redis-server
+
 beautifulsoup4
 bpython
 Click
 elasticsearch
 elasticsearch_dsl
 lxml
+rc
 requests
