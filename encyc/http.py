@@ -1,3 +1,5 @@
+import logging
+logger = logging.getLogger(__name__)
 import requests
 
 from encyc import config
@@ -10,7 +12,7 @@ def get(url, timeout=TIMEOUT, headers={}, data={}, cookies={}):
     
     HTTP Basic auth required when accessing editors' wiki from outside the LAN.
     """
-    print('GET %s' % url)
+    logger.debug('GET %s' % url)
     if config.MEDIAWIKI_API_HTUSER and config.MEDIAWIKI_API_HTPASS:
         return requests.get(
             url,
@@ -25,7 +27,7 @@ def get(url, timeout=TIMEOUT, headers={}, data={}, cookies={}):
 def post(url, timeout=TIMEOUT, headers={}, data={}, cookies={}):
     """Thin wrapper around requests.post that adds HTTP Basic auth.
     """
-    print('POST %s' % url)
+    logger.debug('POST %s' % url)
     if config.MEDIAWIKI_API_HTUSER and config.MEDIAWIKI_API_HTPASS:
         return requests.post(
             url,
