@@ -175,17 +175,17 @@ def authors(report=False, dryrun=False, force=False):
             mw_author_titles, mw_articles, es_authors)
     logprint('debug', 'mediawiki authors: %s' % len(mw_author_titles))
     logprint('debug', 'authors to add: %s' % len(authors_new))
-    logprint('debug', 'authors to delete: %s' % len(authors_delete))
+    #logprint('debug', 'authors to delete: %s' % len(authors_delete))
     if report:
         return
     
-    logprint('debug', 'deleting...')
-    for n,title in enumerate(authors_delete):
-        logprint('debug', '--------------------')
-        logprint('debug', '%s/%s %s' % (n, len(authors_delete), title))
-        author = Author.get(title=title)
-        if not dryrun:
-            author.delete()
+    #logprint('debug', 'deleting...')
+    #for n,title in enumerate(authors_delete):
+    #    logprint('debug', '--------------------')
+    #    logprint('debug', '%s/%s %s' % (n, len(authors_delete), title))
+    #    author = Author.get(title=title)
+    #    if not dryrun:
+    #        author.delete()
      
     logprint('debug', 'adding...')
     for n,title in enumerate(authors_new):
@@ -231,7 +231,7 @@ def articles(report=False, dryrun=False, force=False):
     logprint('debug', 'mediawiki articles: %s' % len(mw_articles))
     logprint('debug', 'elasticsearch articles: %s' % len(es_articles))
     logprint('debug', 'articles to update: %s' % len(articles_update))
-    logprint('debug', 'articles to delete: %s' % len(articles_delete))
+    #logprint('debug', 'articles to delete: %s' % len(articles_delete))
     if report:
         return
     
