@@ -58,12 +58,11 @@ def print_configs():
     print('MEDIAWIKI_API_TIMEOUT:  %s' % config.MEDIAWIKI_API_TIMEOUT)
     print('')
 
-def set_hosts_index():
+def set_hosts_index(index=config.DOCSTORE_INDEX):
     logprint('debug', 'hosts: %s' % config.DOCSTORE_HOSTS)
     connections.create_connection(hosts=config.DOCSTORE_HOSTS)
-    logprint('debug', 'index: %s' % config.DOCSTORE_INDEX)
-    index = Index(config.DOCSTORE_INDEX)
-    return index
+    logprint('debug', 'index: %s' % index)
+    return Index(index)
 
 def status():
     """
@@ -131,8 +130,8 @@ format_json(client.indices.stats('encyc-production'))
     ))
     logprint('debug', '       sources: %s' % len(Source.sources()))
 
-def delete_index():
-    index = set_hosts_index()
+def delete_index(index):
+    index = set_hosts_index(index)
     logprint('debug', 'deleting old index')
     try:
         index.delete()
@@ -140,8 +139,8 @@ def delete_index():
         logprint('error', 'ERROR: Index does not exist!')
     logprint('debug', 'DONE')
     
-def create_index():
-    index = set_hosts_index()
+def create_index(index):
+    index = set_hosts_index(index)
     logprint('debug', 'creating new index')
     index = Index(config.DOCSTORE_INDEX)
     index.create()

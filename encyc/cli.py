@@ -1,5 +1,6 @@
 import click
 
+from encyc import config as settings
 from encyc import operations
 
 
@@ -31,33 +32,39 @@ def status():
 
 
 @encyc.command()
-def create():
+@click.option('--index', default=settings.DOCSTORE_INDEX,
+              help='Elasticsearch index to create.')
+def create(index):
     """Create new index.
     """
-    operations.create_index()
+    operations.create_index(index)
 
 
 @encyc.command()
+@click.option('--index', default=settings.DOCSTORE_INDEX,
+              help='Elasticsearch index to delete.')
 @click.option('--confirm', is_flag=True,
               help='Yes I really want to delete this index.')
-def delete(confirm):
+def delete(index, confirm):
     """Delete index (requires --confirm).
     """
     if confirm:
-        operations.delete_index()
+        operations.delete_index(index)
     else:
         click.echo("Add '--confirm' if you're sure you want to do this.")
 
 
 @encyc.command()
+@click.option('--index', default=settings.DOCSTORE_INDEX,
+              help='Elasticsearch index to reset.')
 @click.option('--confirm', is_flag=True,
               help='Yes I really want to delete this index.')
-def reset(confirm):
+def reset(index, confirm):
     """Delete existing index and create new one (requires --confirm).
     """
     if confirm:
-        operations.delete_index()
-        operations.create_index()
+        operations.delete_index(index)
+        operations.create_index(index)
     else:
         click.echo("Add '--confirm' if you're sure you want to do this.")
 
