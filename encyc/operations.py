@@ -46,6 +46,7 @@ def format_json(data):
 
 def print_configs():
     print('manage.py encyc commands will use the following settings:')
+    print('CONFIG_FILES:           %s' % config.CONFIG_FILES)
     print('')
     print('DOCSTORE_HOSTS:         %s' % config.DOCSTORE_HOSTS)
     print('DOCSTORE_INDEX:         %s' % config.DOCSTORE_INDEX)
@@ -56,6 +57,7 @@ def print_configs():
     print('MEDIAWIKI_API_HTUSER:   %s' % config.MEDIAWIKI_API_HTUSER)
     print('MEDIAWIKI_API_HTPASS:   %s' % config.MEDIAWIKI_API_HTPASS)
     print('MEDIAWIKI_API_TIMEOUT:  %s' % config.MEDIAWIKI_API_TIMEOUT)
+    print('SOURCES_API:            %s' % config.SOURCES_API)
     print('')
 
 def set_hosts_index(index=config.DOCSTORE_INDEX):
