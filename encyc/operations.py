@@ -5,7 +5,7 @@ logger = logging.getLogger(__name__)
 import sys
 
 from elasticsearch import Elasticsearch
-from elasticsearch.exceptions import NotFoundError
+from elasticsearch.exceptions import NotFoundError, SerializationError
 from elasticsearch_dsl import Index, DocType, String
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.connections import connections
@@ -259,7 +259,10 @@ def articles(report=False, dryrun=False, force=False):
             page = Page.from_mw(mwpage, page=existing_page)
             if not dryrun:
                 logprint('debug', 'saving')
-                page.save()
+                try:
+                    page.save()
+                except SerializationError:
+                    logprint('error', 'ERROR: Could not serialize to Elasticsearch!')
                 try:
                     p = Page.get(title)
                 except NotFoundError:
