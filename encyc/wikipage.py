@@ -23,7 +23,7 @@ def page_data_url(api_url, page_title):
     url = '%s?action=parse&format=json&page=%s'
     return url % (api_url, page_title)
 
-def lastmod_data_url(api_url, page_title):
+def _lastmod_data_url(api_url, page_title):
     """URL of MediaWiki API call to get page revision lastmod.
     
     @parap api_url: str Base URL for MediaWiki API.
@@ -53,7 +53,7 @@ def page_lastmod(api_url, page_title):
     @returns: datetime or None
     """
     lastmod = None
-    url = lastmod_data_url(api_url, page_title)
+    url = _lastmod_data_url(api_url, page_title)
     logging.debug(url)
     r = http.get(url, timeout=TIMEOUT)
     if r.status_code == 200:
@@ -75,22 +75,22 @@ def parse_mediawiki_text(text, primary_sources, public=False, printed=False):
         text.replace('<p><br />\n</p>',''),
         features='lxml'
     )
-    soup = remove_staticpage_titles(soup)
-    soup = remove_comments(soup)
-    soup = remove_edit_links(soup)
-    #soup = wrap_sections(soup)
-    soup = rewrite_newpage_links(soup)
-    soup = rewrite_prevnext_links(soup)
+    soup = _remove_staticpage_titles(soup)
+    soup = _remove_comments(soup)
+    soup = _remove_edit_links(soup)
+    #soup = _wrap_sections(soup)
+    soup = _rewrite_newpage_links(soup)
+    soup = _rewrite_prevnext_links(soup)
     soup = remove_status_markers(soup)
     if not printed:
-        soup = add_top_links(soup)
-    soup = remove_primary_sources(soup, primary_sources)
+        soup = _add_top_links(soup)
+    soup = _remove_primary_sources(soup, primary_sources)
     html = unicode(soup)
-    html = rewrite_mediawiki_urls(html)
-    html = rm_tags(html)
+    html = _rewrite_mediawiki_urls(html)
+    html = _rm_tags(html)
     return html
 
-def remove_staticpage_titles(soup):
+def _remove_staticpage_titles(soup):
     """strip extra <h1> on "static" pages
     
     Called by parse_mediawiki_text.
@@ -107,7 +107,7 @@ def remove_staticpage_titles(soup):
             h1.decompose()
     return soup
 
-def remove_comments(soup):
+def _remove_comments(soup):
     """TODO Removes MediaWiki comments from page text
     
     Called by parse_mediawiki_text.
@@ -121,7 +121,7 @@ def remove_comments(soup):
 	#[comment.extract() for comment in comments]
     return soup
 
-def remove_edit_links(soup):
+def _remove_edit_links(soup):
     """Removes [edit] spans (ex: <span class="editsection">)
     
     Called by parse_mediawiki_text.
@@ -135,7 +135,7 @@ def remove_edit_links(soup):
         e.decompose()
     return soup
 
-def wrap_sections(soup):
+def _wrap_sections(soup):
     """Wraps each <h2> and cluster of <p>s in a <section> tag.
     
     Called by parse_mediawiki_text.
@@ -180,7 +180,7 @@ def remove_status_markers(soup):
             d.decompose()
     return soup
 
-def rewrite_mediawiki_urls(html):
+def _rewrite_mediawiki_urls(html):
     """Removes /mediawiki/index.php stub from URLs
     
     Called by parse_mediawiki_text.
@@ -196,7 +196,7 @@ def rewrite_mediawiki_urls(html):
         html = re.sub(pattern, '', html)
     return html
 
-def rewrite_newpage_links(soup):
+def _rewrite_newpage_links(soup):
     """Rewrites new-page links
     
     Called by parse_mediawiki_text.
@@ -211,7 +211,7 @@ def rewrite_newpage_links(soup):
         a['href'] = a['href'].replace('&redlink=1', '')
     return soup
 
-def rewrite_prevnext_links(soup):
+def _rewrite_prevnext_links(soup):
     """Rewrites previous/next links
     
     Called by parse_mediawiki_text.
@@ -228,7 +228,7 @@ def rewrite_prevnext_links(soup):
         a['href'] = a['href'].replace('&pageuntil=', '?pageuntil=')
     return soup
 
-def extract_encyclopedia_id(uri):
+def _extract_encyclopedia_id(uri):
     """Attempts to extract a valid Densho encyclopedia ID from the URI
     
     TODO Check if valid encyclopedia ID
@@ -259,7 +259,7 @@ def find_primary_sources(api_url, images):
     eids = []
     # anything that might be an encyclopedia_id
     for img in images:
-        encyclopedia_id = extract_encyclopedia_id(img)
+        encyclopedia_id = _extract_encyclopedia_id(img)
         if encyclopedia_id:
             eids.append(encyclopedia_id)
     # get sources via sources API
@@ -277,7 +277,7 @@ def find_primary_sources(api_url, images):
     logging.debug('retrieved %s' % len(sources))
     return sources
 
-def remove_primary_sources(soup, sources):
+def _remove_primary_sources(soup, sources):
     """Remove primary sources from the MediaWiki page entirely.
     
     Called by parse_mediawiki_text.
@@ -292,7 +292,7 @@ def remove_primary_sources(soup, sources):
     contexts = []
     sources_keys = [s['encyclopedia_id'] for s in sources]
     for a in soup.find_all('a', attrs={'class':'image'}):
-        encyclopedia_id = extract_encyclopedia_id(a.img['src'])
+        encyclopedia_id = _extract_encyclopedia_id(a.img['src'])
         href = None
         if encyclopedia_id and (encyclopedia_id in sources_keys):
             a.decompose()
@@ -332,7 +332,7 @@ def find_databoxcamps_coordinates(text):
             coordinates = (lng,lat)
     return coordinates
     
-def add_top_links(soup):
+def _add_top_links(soup):
     """Adds ^top links at the end of page sections.
     
     Called by parse_mediawiki_text.
@@ -415,7 +415,7 @@ def find_author_info(text):
                 authors['parsed'].append(name)
     return authors
 
-def rm_tags(html, tags=['html', 'body']):
+def _rm_tags(html, tags=['html', 'body']):
     """Remove simple tags (e.g. no attributes)from HTML.
     """
     for tag in tags:
