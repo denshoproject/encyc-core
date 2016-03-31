@@ -23,16 +23,6 @@ def page_data_url(api_url, page_title):
     url = '%s?action=parse&format=json&page=%s'
     return url % (api_url, page_title)
 
-def _lastmod_data_url(api_url, page_title):
-    """URL of MediaWiki API call to get page revision lastmod.
-    
-    @parap api_url: str Base URL for MediaWiki API.
-    @param page_title: Page title from MediaWiki URL.
-    @returns: url
-    """
-    url = '%s?action=query&format=json&prop=revisions&rvprop=ids|timestamp&titles=%s'
-    return url % (api_url, page_title)
-
 def page_is_published(pagedata):
     """Indicates whether page contains Category:Published template.
     
@@ -44,6 +34,16 @@ def page_is_published(pagedata):
         if category['*'] == 'Published':
             published = True
     return published
+
+def _lastmod_data_url(api_url, page_title):
+    """URL of MediaWiki API call to get page revision lastmod.
+    
+    @parap api_url: str Base URL for MediaWiki API.
+    @param page_title: Page title from MediaWiki URL.
+    @returns: url
+    """
+    url = '%s?action=query&format=json&prop=revisions&rvprop=ids|timestamp&titles=%s'
+    return url % (api_url, page_title)
 
 def page_lastmod(api_url, page_title):
     """Retrieves timestamp of last modification.
@@ -61,6 +61,9 @@ def page_lastmod(api_url, page_title):
         ts = pagedata['query']['pages'].values()[0]['revisions'][0]['timestamp']
         lastmod = datetime.strptime(ts, config.MEDIAWIKI_DATETIME_FORMAT_TZ)
     return lastmod
+
+
+# parse mediawiki text -------------------------------------------------
 
 def parse_mediawiki_text(text, primary_sources, public=False, printed=False):
     """Parses the body of a MediaWiki page.
@@ -167,35 +170,6 @@ def _wrap_sections(soup):
         h.append(div2)
     return soup
 
-def remove_status_markers(soup):
-    """Remove the "Published", "Needs Primary Sources" tables.
-    
-    Called by parse_mediawiki_text.
-    
-    @param soup: BeautifulSoup object
-    @returns: soup
-    """
-    for d in soup.find_all('div', attrs={'class':'alert'}):
-        if 'published' in d['class']:
-            d.decompose()
-    return soup
-
-def _rewrite_mediawiki_urls(html):
-    """Removes /mediawiki/index.php stub from URLs
-    
-    Called by parse_mediawiki_text.
-    
-    @param html: str
-    @returns: html
-    """
-    PATTERNS = [
-        '/mediawiki/index.php',
-        '/mediawiki',
-    ]
-    for pattern in PATTERNS:
-        html = re.sub(pattern, '', html)
-    return html
-
 def _rewrite_newpage_links(soup):
     """Rewrites new-page links
     
@@ -227,6 +201,89 @@ def _rewrite_prevnext_links(soup):
         a['href'] = a['href'].replace('?title=', '/')
         a['href'] = a['href'].replace('&pageuntil=', '?pageuntil=')
     return soup
+
+def remove_status_markers(soup):
+    """Remove the "Published", "Needs Primary Sources" tables.
+    
+    Called by parse_mediawiki_text.
+    
+    @param soup: BeautifulSoup object
+    @returns: soup
+    """
+    for d in soup.find_all('div', attrs={'class':'alert'}):
+        if 'published' in d['class']:
+            d.decompose()
+    return soup
+    
+def _add_top_links(soup):
+    """Adds ^top links at the end of page sections.
+    
+    Called by parse_mediawiki_text.
+    
+    @param soup: BeautifulSoup object
+    @returns: soup
+    """
+    import copy
+    TOPLINK_TEMPLATE = '<div class="toplink"><a href="#top"><i class="icon-chevron-up"></i> Top</a></div>'
+    toplink = BeautifulSoup(
+        TOPLINK_TEMPLATE,
+        parse_only=SoupStrainer('div', attrs={'class':'toplink'}),
+        features='lxml'
+    )
+    n = 0
+    for h in soup.find_all('h2'):
+        if n > 1:
+            h.insert_before(copy.copy(toplink))
+        n = n + 1
+    soup.append(copy.copy(toplink))
+    return soup
+
+def _remove_primary_sources(soup, sources):
+    """Remove primary sources from the MediaWiki page entirely.
+    
+    Called by parse_mediawiki_text.
+    see http://192.168.0.13/redmine/attachments/4/Encyclopedia-PrimarySourceDraftFlow.pdf
+    ...and really look at it.  Primary sources are all displayed in sidebar_right.
+    
+    @param soup: BeautifulSoup object
+    @param sources: list
+    @returns: soup
+    """
+    # all the <a><img>s
+    contexts = []
+    sources_keys = [s['encyclopedia_id'] for s in sources]
+    for a in soup.find_all('a', attrs={'class':'image'}):
+        encyclopedia_id = _extract_encyclopedia_id(a.img['src'])
+        href = None
+        if encyclopedia_id and (encyclopedia_id in sources_keys):
+            a.decompose()
+    return soup
+
+def _rewrite_mediawiki_urls(html):
+    """Removes /mediawiki/index.php stub from URLs
+    
+    Called by parse_mediawiki_text.
+    
+    @param html: str
+    @returns: html
+    """
+    PATTERNS = [
+        '/mediawiki/index.php',
+        '/mediawiki',
+    ]
+    for pattern in PATTERNS:
+        html = re.sub(pattern, '', html)
+    return html
+
+def _rm_tags(html, tags=['html', 'body']):
+    """Remove simple tags (e.g. no attributes)from HTML.
+    """
+    for tag in tags:
+        html = html.replace('<%s>' % tag, '').replace('</%s>' % tag, '')
+    return html
+
+# END parse mediawiki text ---------------------------------------------
+
 
 def _extract_encyclopedia_id(uri):
     """Attempts to extract a valid Densho encyclopedia ID from the URI
@@ -276,27 +333,6 @@ def find_primary_sources(api_url, images):
                         sources.append(s)
     logging.debug('retrieved %s' % len(sources))
     return sources
-
-def _remove_primary_sources(soup, sources):
-    """Remove primary sources from the MediaWiki page entirely.
-    
-    Called by parse_mediawiki_text.
-    see http://192.168.0.13/redmine/attachments/4/Encyclopedia-PrimarySourceDraftFlow.pdf
-    ...and really look at it.  Primary sources are all displayed in sidebar_right.
-    
-    @param soup: BeautifulSoup object
-    @param sources: list
-    @returns: soup
-    """
-    # all the <a><img>s
-    contexts = []
-    sources_keys = [s['encyclopedia_id'] for s in sources]
-    for a in soup.find_all('a', attrs={'class':'image'}):
-        encyclopedia_id = _extract_encyclopedia_id(a.img['src'])
-        href = None
-        if encyclopedia_id and (encyclopedia_id in sources_keys):
-            a.decompose()
-    return soup
     
 def find_databoxcamps_coordinates(text):
     """Given the raw wikitext, search for coordinates with Databox-Camps.
@@ -331,29 +367,6 @@ def find_databoxcamps_coordinates(text):
         if lng and lat:
             coordinates = (lng,lat)
     return coordinates
-    
-def _add_top_links(soup):
-    """Adds ^top links at the end of page sections.
-    
-    Called by parse_mediawiki_text.
-    
-    @param soup: BeautifulSoup object
-    @returns: soup
-    """
-    import copy
-    TOPLINK_TEMPLATE = '<div class="toplink"><a href="#top"><i class="icon-chevron-up"></i> Top</a></div>'
-    toplink = BeautifulSoup(
-        TOPLINK_TEMPLATE,
-        parse_only=SoupStrainer('div', attrs={'class':'toplink'}),
-        features='lxml'
-    )
-    n = 0
-    for h in soup.find_all('h2'):
-        if n > 1:
-            h.insert_before(copy.copy(toplink))
-        n = n + 1
-    soup.append(copy.copy(toplink))
-    return soup
 
 def find_author_info(text):
     """Given raw HTML, extract author display and citation formats.
@@ -414,10 +427,3 @@ def find_author_info(text):
                     logging.error('ValueError: too many values to unpack')
                 authors['parsed'].append(name)
     return authors
-
-def _rm_tags(html, tags=['html', 'body']):
-    """Remove simple tags (e.g. no attributes)from HTML.
-    """
-    for tag in tags:
-        html = html.replace('<%s>' % tag, '').replace('</%s>' % tag, '')
-    return html
