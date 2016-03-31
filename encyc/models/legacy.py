@@ -9,11 +9,11 @@ from encyc import citations
 from encyc import config
 from encyc import ddr
 from encyc import docstore
-from encyc import encyclopedia
 from encyc import http
 from encyc import mediawiki
 from encyc import sources
 from encyc import urls
+from encyc import wiki
 
 
 def _columnizer(things, cols):
@@ -181,7 +181,7 @@ class Proxy(object):
     
     def articles_by_category(self):
         articles_by_category = []
-        categories,titles_by_category = encyclopedia.articles_by_category()
+        categories,titles_by_category = wiki.articles_by_category()
         for category in categories:
             titles = [page['title'] for page in titles_by_category[category]]
             articles_by_category.append( (category,titles) )
@@ -190,12 +190,12 @@ class Proxy(object):
     def articles(self):
         articles = [
             {'first_letter':page['sortkey'][0].upper(), 'title':page['title']}
-            for page in encyclopedia.articles_a_z()
+            for page in wiki.articles_a_z()
         ]
         return articles
 
     def authors(self, cached_ok=True, columnize=False):
-        authors = [page['title'] for page in encyclopedia.published_authors(cached_ok=cached_ok)]
+        authors = [page['title'] for page in wiki.published_authors(cached_ok=cached_ok)]
         if columnize:
             return _columnizer(authors, 4)
         return authors
@@ -208,7 +208,7 @@ class Proxy(object):
                 'title': p['title'],
                 'lastmod': datetime.strptime(p['timestamp'], config.MEDIAWIKI_DATETIME_FORMAT_TZ)
             }
-            for p in encyclopedia.published_pages(cached_ok=False)
+            for p in wiki.published_pages(cached_ok=False)
         ]
         return pages
 
@@ -265,25 +265,25 @@ class Proxy(object):
             # (external URLs not visible to Chrome on Android when connecting through SonicWall)
             if hasattr(config, 'STAGE') and config.STAGE and request:
                 page.sources = sources.replace_source_urls(page.sources, request)
-            page.is_article = encyclopedia.is_article(page.title)
+            page.is_article = wiki.is_article(page.title)
             if page.is_article:
                 # only include categories from Category:Articles
                 categories_whitelist = [
                     category['title'].split(':')[1]
-                    for category in encyclopedia.category_article_types()
+                    for category in wiki.category_article_types()
                 ]
                 page.categories = [
                     c['*']
                     for c in pagedata['parse']['categories']
                     if c['*'] in categories_whitelist
                 ]
-                page.prev_page = encyclopedia.article_prev(page.title)
-                page.next_page = encyclopedia.article_next(page.title)
+                page.prev_page = wiki.article_prev(page.title)
+                page.next_page = wiki.article_next(page.title)
                 page.coordinates = mediawiki.find_databoxcamps_coordinates(pagedata['parse']['text']['*'])
                 page.authors = mediawiki.find_author_info(pagedata['parse']['text']['*'])
-            page.is_author = encyclopedia.is_author(page.title)
+            page.is_author = wiki.is_author(page.title)
             if page.is_author:
-                page.author_articles = encyclopedia.author_articles(page.title)
+                page.author_articles = wiki.author_articles(page.title)
         return page
 
     def source(self, encyclopedia_id):

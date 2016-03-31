@@ -11,7 +11,6 @@ from elasticsearch_dsl import Search
 from elasticsearch_dsl.connections import connections
 
 #from DDR import docstore
-#from wikiprox import encyclopedia
 from encyc import config
 from encyc import docstore
 from encyc.models.legacy import Proxy
