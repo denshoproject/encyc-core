@@ -282,3 +282,34 @@ def topics(report=False, dryrun=False, force=False):
     logprint('debug', 'indexing topics...')
     Elasticsearch.index_topics()
     logprint('debug', 'DONE')
+
+
+DOC_TYPES = {
+    'articles': Page,
+    'authors': Author,
+    'sources': Source,
+}
+
+def listdocs(index, doctype):
+    index = set_hosts_index(index)
+    if doctype not in DOC_TYPES.keys():
+        logprint('error', '"%s" is not a recognized doc_type!' % doctype)
+        return
+    Doctype = DOC_TYPES[doctype]
+    s = Doctype.search()
+    results = s.execute()
+    total = len(results)
+    for n,r in enumerate(results):
+        print('%s/%s| %s' % (n, total, r.meta.id))
+
+def get(index, doctype, object_id):
+    index = set_hosts_index(index)
+    if doctype not in DOC_TYPES.keys():
+        logprint('error', '"%s" is not a recognized doc_type!' % doctype)
+        return
+    print('doctype %s' % doctype)
+    print('object_id %s' % object_id)
+    o = DOC_TYPES[doctype](meta={'id': object_id})
+    print(o.body)
+    print(o.__dict__)
+    print(o.meta.__dict__)

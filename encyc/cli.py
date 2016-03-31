@@ -106,3 +106,20 @@ def articles(report, dryrun, force):
     """Index articles.
     """
     operations.articles(report=report, dryrun=dryrun, force=force)
+
+
+@encyc.command()
+@click.argument('doctype')
+def list(doctype):
+    """List titles for all instances of specified doctype.
+    """
+    operations.listdocs(settings.DOCSTORE_INDEX, doctype)
+
+
+@encyc.command()
+@click.argument('doctype')
+@click.argument('object_id')
+def get(doctype, object_id):
+    """Pretty-print a single record
+    """
+    operations.get(settings.DOCSTORE_INDEX, doctype, object_id)
