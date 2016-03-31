@@ -10,7 +10,6 @@ from bs4 import BeautifulSoup
 from encyc import config
 from encyc.config import cache
 from encyc import http
-from encyc import mediawiki
 
 
 NON_ARTICLE_PAGES = ['about', 'categories', 'contact', 'contents', 'search',]

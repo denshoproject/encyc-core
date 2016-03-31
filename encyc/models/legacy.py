@@ -10,10 +10,10 @@ from encyc import config
 from encyc import ddr
 from encyc import docstore
 from encyc import http
-from encyc import mediawiki
 from encyc import sources
 from encyc import urls
 from encyc import wiki
+from encyc import wikipage
 
 
 def _columnizer(things, cols):
@@ -215,7 +215,7 @@ class Proxy(object):
     def pagedata(self, url_title, request=None):
         logger.debug(url_title)
         url_title = url_title.encode('utf_8', errors='xmlcharrefreplace')
-        page_url = mediawiki.page_data_url(config.MEDIAWIKI_API, url_title)
+        page_url = wikipage.page_data_url(config.MEDIAWIKI_API, url_title)
         logger.debug(page_url)
         auth = (config.DANGO_HTPASSWD_USER, config.DANGO_HTPASSWD_PWD)
         r = http.get(page_url, auth=auth)
@@ -232,7 +232,7 @@ class Proxy(object):
         page = Page()
         page.url_title = url_title
         page.uri = urls.reverse('wikiprox-page', args=[url_title])
-        page.url = mediawiki.page_data_url(config.MEDIAWIKI_API, page.url_title)
+        page.url = wikipage.page_data_url(config.MEDIAWIKI_API, page.url_title)
         logger.debug(page.url)
         r = http.get(page.url)
         page.status_code = r.status_code
@@ -245,18 +245,18 @@ class Proxy(object):
             #page.public = request.META.get('HTTP_X_FORWARDED_FOR',False)
             # note: header is added by Nginx, should not appear when connected directly
             # to the app server.
-            page.published = mediawiki.page_is_published(pagedata)
-            page.lastmod = mediawiki.page_lastmod(config.MEDIAWIKI_API, page.url_title)
+            page.published = wikipage.page_is_published(pagedata)
+            page.lastmod = wikipage.page_lastmod(config.MEDIAWIKI_API, page.url_title)
             # basic page context
             page.title = pagedata['parse']['displaytitle']
             page.title_sort = page.title
             for prop in pagedata['parse']['properties']:
                 if prop.get('name',None) and prop['name'] and (prop['name'] == 'defaultsort'):
                     page.title_sort = prop['*']
-            page.sources = mediawiki.find_primary_sources(
+            page.sources = wikipage.find_primary_sources(
                 config.SOURCES_API,
                 pagedata['parse']['images'])
-            page.body = mediawiki.parse_mediawiki_text(
+            page.body = wikipage.parse_mediawiki_text(
                 pagedata['parse']['text']['*'],
                 page.sources,
                 page.public,
@@ -279,8 +279,8 @@ class Proxy(object):
                 ]
                 page.prev_page = wiki.article_prev(page.title)
                 page.next_page = wiki.article_next(page.title)
-                page.coordinates = mediawiki.find_databoxcamps_coordinates(pagedata['parse']['text']['*'])
-                page.authors = mediawiki.find_author_info(pagedata['parse']['text']['*'])
+                page.coordinates = wikipage.find_databoxcamps_coordinates(pagedata['parse']['text']['*'])
+                page.authors = wikipage.find_author_info(pagedata['parse']['text']['*'])
             page.is_author = wiki.is_author(page.title)
             if page.is_author:
                 page.author_articles = wiki.author_articles(page.title)
