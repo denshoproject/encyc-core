@@ -6,8 +6,6 @@ from bs4 import BeautifulSoup
 from encyc import config
 from encyc import http
 
-TS_FORMAT = '%Y-%m-%d %H:%M:%S'
-
 
 def source(encyclopedia_id):
     source = None

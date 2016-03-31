@@ -1,4 +1,4 @@
-DEFAULT = 'Densho Encyclopedia contributors.'
+from encyc import config
 
 
 def surname_givenname(parsed):
@@ -79,7 +79,7 @@ def format_authors_apa(authors):
     
     source: http://www.umuc.edu/library/libhow/mla_examples.cfm
     """
-    cite = DEFAULT
+    cite = config.AUTHORS_DEFAULT
     if authors:
         if len(authors) == 1:
             cite = surname_givenname(authors[0])
@@ -112,7 +112,7 @@ def format_authors_bibtex(authors):
     
     source: http://en.wikibooks.org/wiki/LaTeX/Bibliography_Management
     """
-    cite = DEFAULT
+    cite = config.AUTHORS_DEFAULT
     if authors:
         if len(authors):
             names = [surname_initials(n) for n in authors]
@@ -139,7 +139,7 @@ def format_authors_chicago(authors):
     
     source: http://ilrb.cf.ac.uk/citingreferences/mhra/page13.html
     """
-    cite = DEFAULT
+    cite = config.AUTHORS_DEFAULT
     if authors:
         if len(authors) == 1:
             cite = givenname_surname(authors[0])
@@ -176,7 +176,7 @@ def format_authors_cse(authors):
     
     source: http://ilrb.cf.ac.uk/citingreferences/mhra/page13.html
     """
-    cite = DEFAULT
+    cite = config.AUTHORS_DEFAULT
     if authors:
         if len(authors):
             names = [surname_initials_cse(n) for n in authors]
@@ -203,7 +203,7 @@ def format_authors_mhra(authors):
     
     source: http://ilrb.cf.ac.uk/citingreferences/mhra/page13.html
     """
-    cite = DEFAULT
+    cite = config.AUTHORS_DEFAULT
     if authors:
         if len(authors) == 1:
             cite = givenname_surname(authors[0])
@@ -237,7 +237,7 @@ def format_authors_mla(authors):
     
     source: http://www.umuc.edu/library/libhow/mla_examples.cfm
     """
-    cite = DEFAULT
+    cite = config.AUTHORS_DEFAULT
     if authors:
         if len(authors) == 1:
             cite = surname_givenname(authors[0])

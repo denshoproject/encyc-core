@@ -29,9 +29,7 @@ import os
 
 from elasticsearch import Elasticsearch
 
-
 MAX_SIZE = 1000000
-DEFAULT_PAGE_SIZE = 20
 
 
 def _get_connection(hosts):

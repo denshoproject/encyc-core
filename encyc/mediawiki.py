@@ -10,8 +10,6 @@ from bs4 import BeautifulSoup, SoupStrainer, Comment
 from encyc import config
 from encyc import http
 
-TS_FORMAT = '%Y-%m-%dT%H:%M:%S'
-TS_FORMAT_ZONED = '%Y-%m-%dT%H:%M:%SZ'
 TIMEOUT = float(config.MEDIAWIKI_API_TIMEOUT)
 
 
@@ -61,7 +59,7 @@ def page_lastmod(api_url, page_title):
     if r.status_code == 200:
         pagedata = json.loads(r.text)
         ts = pagedata['query']['pages'].values()[0]['revisions'][0]['timestamp']
-        lastmod = datetime.strptime(ts, TS_FORMAT_ZONED)
+        lastmod = datetime.strptime(ts, config.MEDIAWIKI_DATETIME_FORMAT_TZ)
     return lastmod
 
 def parse_mediawiki_text(text, primary_sources, public=False, printed=False):

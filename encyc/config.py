@@ -54,6 +54,12 @@ MEDIAWIKI_HIDDEN_CATEGORIES = config.get('mediawiki', 'hidden_categories').split
 MEDIAWIKI_DEFAULT_PAGE = config.get('mediawiki', 'default_page')
 MEDIAWIKI_SHOW_UNPUBLISHED = config.get('mediawiki', 'show_unpublished')
 MEDIAWIKI_TITLE = ' - Densho Encyclopedia'
+MEDIAWIKI_DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+MEDIAWIKI_DATETIME_FORMAT_TZ = '%Y-%m-%dT%H:%M:%SZ'
+
+
+# citations
+AUTHORS_DEFAULT = 'Densho Encyclopedia contributors.'
 
 # primary sources / psms
 SOURCES_API = config.get('sources', 'api_url')

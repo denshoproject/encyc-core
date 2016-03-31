@@ -206,7 +206,7 @@ class Proxy(object):
         pages = [
             {
                 'title': p['title'],
-                'lastmod': datetime.strptime(p['timestamp'], mediawiki.TS_FORMAT_ZONED)
+                'lastmod': datetime.strptime(p['timestamp'], config.MEDIAWIKI_DATETIME_FORMAT_TZ)
             }
             for p in encyclopedia.published_pages(cached_ok=False)
         ]
@@ -296,8 +296,8 @@ class Proxy(object):
             setattr(source, key, val)
         source.psms_id = int(data['id'])
         source.original_size = int(data['original_size'])
-        source.created = datetime.strptime(data['created'], mediawiki.TS_FORMAT)
-        source.modified = datetime.strptime(data['modified'], mediawiki.TS_FORMAT)
+        source.created = datetime.strptime(data['created'], config.MEDIAWIKI_DATETIME_FORMAT)
+        source.modified = datetime.strptime(data['modified'], config.MEDIAWIKI_DATETIME_FORMAT)
         if getattr(source, 'streaming_url', None):
             source.streaming_url = source.streaming_url.replace(config.RTMP_STREAMER,'')
             source.rtmp_streamer = config.RTMP_STREAMER
@@ -386,7 +386,7 @@ class Elasticsearch(object):
             page.title = hit.title[0]
             page.title_sort = hit.title_sort[0]
             page.first_letter = page.title_sort[0]
-            page.lastmod = datetime.strptime(hit.lastmod[0], mediawiki.TS_FORMAT)
+            page.lastmod = datetime.strptime(hit.lastmod[0], config.MEDIAWIKI_DATETIME_FORMAT)
             pages.append(page)
         return sorted(pages, key=lambda page: page.title_sort)
 
@@ -413,7 +413,7 @@ class Elasticsearch(object):
                 author.url_title = url_title
                 author.title = title
                 author.title_sort = title_sort
-                author.lastmod = datetime.strptime(lastmod, mediawiki.TS_FORMAT)
+                author.lastmod = datetime.strptime(lastmod, config.MEDIAWIKI_DATETIME_FORMAT)
                 authors.append(author)
         authors = sorted(authors, key=lambda a: a.title_sort)
         if num_columns:
