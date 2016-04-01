@@ -284,32 +284,60 @@ def topics(report=False, dryrun=False, force=False):
     logprint('debug', 'DONE')
 
 
-DOC_TYPES = {
-    'articles': Page,
-    'authors': Author,
-    'sources': Source,
-}
+DOC_TYPES = [
+    'articles',
+    'authors',
+    'sources',
+]
 
 def listdocs(index, doctype):
     index = set_hosts_index(index)
-    if doctype not in DOC_TYPES.keys():
+    if doctype not in DOC_TYPES:
         logprint('error', '"%s" is not a recognized doc_type!' % doctype)
         return
-    Doctype = DOC_TYPES[doctype]
-    s = Doctype.search()
+    if   doctype == 'articles': s = Page.search()
+    elif doctype == 'authors': s = Author.search()
+    elif doctype == 'sources': s = Source.search()
     results = s.execute()
     total = len(results)
     for n,r in enumerate(results):
-        print('%s/%s| %s' % (n, total, r.meta.id))
+        print('%s/%s| %s' % (n, total, r.__repr__()))
 
-def get(index, doctype, object_id):
+def get(index, doctype, identifier):
     index = set_hosts_index(index)
-    if doctype not in DOC_TYPES.keys():
+    if doctype not in DOC_TYPES:
         logprint('error', '"%s" is not a recognized doc_type!' % doctype)
         return
-    print('doctype %s' % doctype)
-    print('object_id %s' % object_id)
-    o = DOC_TYPES[doctype](meta={'id': object_id})
-    print(o.body)
-    print(o.__dict__)
-    print(o.meta.__dict__)
+    print('doctype "%s"' % doctype)
+    print('identifier "%s"' % identifier)
+    
+    if   doctype == 'articles':
+        o = Page.get(identifier)
+        print(o.__repr__())
+        print('TITLE: "%s"' % o.title)
+        print('--------------------')
+        print(o.body)
+        print('--------------------')
+    
+    elif doctype == 'authors':
+        o = Author.get(identifier)
+        print(o.__repr__())
+        _print_dict(o.to_dict())
+    
+    elif doctype == 'sources':
+        o = Source.get(identifier)
+        print(o.__repr__())
+        _print_dict(o.to_dict())
+
+def _print_dict(d):
+    keys = d.keys()
+    keys.sort()
+    width = 0
+    for key in keys:
+        if len(key) > width:
+            width = len(key)
+    for key in keys:
+        print('%s: "%s"' % (
+            key.ljust(width,' '),
+            d[key]
+        ))
