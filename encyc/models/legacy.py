@@ -216,6 +216,15 @@ class Proxy(object):
         """
         @param page: Page title from URL.
         """
+        url = wikipage.page_data_url(config.MEDIAWIKI_API, url_title)
+        logger.debug(url)
+        status_code,text = Proxy()._mw_page_text(url)
+        return Proxy()._mkpage(url_title, status_code, text, request)
+    
+    def _mw_page_text(self, url_title):
+        """
+        @param page: Page title from URL.
+        """
         logger.debug(url_title)
         url_title = url_title.encode('utf_8', errors='xmlcharrefreplace')
         page = Page()
@@ -226,7 +235,22 @@ class Proxy(object):
         r = http.get(page.url)
         page.status_code = r.status_code
         logger.debug(page.status_code)
-        pagedata = json.loads(r.text.encode('utf_8', errors='xmlcharrefreplace'))
+        return r.text
+    
+    def _mkpage(self, url_title, http_status, rawtext, request=None):
+        """
+        TODO rename me
+        """
+        logger.debug(url_title)
+        url_title = url_title.encode('utf_8', errors='xmlcharrefreplace')
+        page = Page()
+        page.url_title = url_title
+        page.uri = urls.reverse('wikiprox-page', args=[url_title])
+        page.url = wikipage.page_data_url(config.MEDIAWIKI_API, page.url_title)
+        page.status_code = http_status
+        pagedata = json.loads(
+            rawtext.encode('utf_8', errors='xmlcharrefreplace')
+        )
         page.error = pagedata.get('error', None)
         if (page.status_code == 200) and not page.error:
             page.public = False
@@ -274,7 +298,7 @@ class Proxy(object):
             if page.is_author:
                 page.author_articles = wiki.author_articles(page.title)
         return page
-
+    
     def source(self, encyclopedia_id):
         source = Source()
         source.encyclopedia_id = encyclopedia_id
