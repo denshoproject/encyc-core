@@ -123,3 +123,20 @@ def get(doctype, object_id):
     """Pretty-print a single record
     """
     operations.get(settings.DOCSTORE_INDEX, doctype, object_id)
+
+
+@encyc.command()
+@click.argument('title')
+@click.argument('path')
+def _json(title, path):
+    """Get page text from MediaWiki, dump to file.
+    """
+    operations._dumpjson(title, path)
+
+@encyc.command()
+@click.argument('title')
+@click.argument('path')
+def _parse(title, path):
+    """Load page json from file, generate Page, save HTML to file.
+    """
+    operations._parse(title, path)

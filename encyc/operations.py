@@ -1,7 +1,9 @@
+import codecs
 from datetime import datetime
 import json
 import logging
 logger = logging.getLogger(__name__)
+import os
 import sys
 
 from elasticsearch import Elasticsearch
@@ -17,6 +19,24 @@ from encyc.models.legacy import Proxy
 from encyc.models import Elasticsearch
 from encyc.models import Author, Page, Source
 
+def read_text(path):
+    """Read text file; make sure text is in UTF-8.
+    
+    @param path: str Absolute path to file.
+    @returns: unicode
+    """
+    with codecs.open(path, 'rU', 'utf-8') as f:  # the 'U' is for universal-newline mode
+        text = f.read()
+    return text
+
+def write_text(text, path):
+    """Write text to UTF-8 file.
+    
+    @param text: unicode
+    @param path: str Absolute path to file.
+    """
+    with codecs.open(path, 'wb', 'utf-8') as f:
+        f.write(text)
 
 def logprint(level, msg):
     print('%s %s' % (datetime.now(), msg))
@@ -341,3 +361,30 @@ def _print_dict(d):
             key.ljust(width,' '),
             d[key]
         ))
+
+
+def _dumpjson(title, path):
+    """Gets page text from MediaWiki and dumps to file.
+    
+    @param title: str
+    @param path: str
+    """
+    text = Proxy()._mw_page_text(title)
+    data = json.loads(text)
+    pretty = format_json(data)
+    write_text(pretty, path)
+
+def _parse(title, path):
+    """Loads page json from file, generates Page, saves HTML to file.
+    
+    The idea here is to parse text from a local file,
+    not hit Mediawiki each time
+    also, to manipulate the text without changing original data in mediawiki
+    
+    @param title: str
+    @param path: str
+    """
+    path_html = os.path.splitext(path)[0] + '.html'
+    text = read_text(path)
+    mwpage = Proxy()._mkpage(title, 200, text)
+    write_text(mwpage.body, path_html)
