@@ -212,17 +212,6 @@ class Proxy(object):
         ]
         return pages
 
-    def pagedata(self, url_title, request=None):
-        logger.debug(url_title)
-        url_title = url_title.encode('utf_8', errors='xmlcharrefreplace')
-        page_url = wikipage.page_data_url(config.MEDIAWIKI_API, url_title)
-        logger.debug(page_url)
-        auth = (config.DANGO_HTPASSWD_USER, config.DANGO_HTPASSWD_PWD)
-        r = http.get(page_url, auth=auth)
-        logger.debug(r.status_code)
-        pagedata = json.loads(r.text.encode('utf_8', errors='xmlcharrefreplace'))
-        return pagedata
-        
     def page(self, url_title, request=None):
         """
         @param page: Page title from URL.
