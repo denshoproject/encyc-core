@@ -87,6 +87,11 @@ def parse_mediawiki_text(text, primary_sources, public=False, printed=False):
     soup = remove_status_markers(soup)
     if not printed:
         soup = _add_top_links(soup)
+    soup = _remove_divs(
+        soup,
+        selectors=config.HIDDEN_TAGS[config.DOCSTORE_INDEX],
+        comments=config.HIDDEN_TAG_COMMENTS
+    )
     soup = _remove_primary_sources(soup, primary_sources)
     html = unicode(soup)
     html = _rewrite_mediawiki_urls(html)
@@ -257,6 +262,29 @@ def _remove_primary_sources(soup, sources):
         href = None
         if encyclopedia_id and (encyclopedia_id in sources_keys):
             a.decompose()
+    return soup
+
+def _remove_divs(soup, selectors=[], comments=True, separator="="):
+    """strip specified divs from soup
+    
+    Designed to remove "rgdatabox-CoreDisplay" databox from the main public encyclopedia.
+    
+    @param soup: BeautifulSoup object
+    @param selectors: list of "attrib=selector" strings
+    @param comments: boolean
+    @param selector: str
+    @returns: soup
+    """
+    for selector in selectors:
+        attr,val = selector.split(separator)
+        tags = soup.find_all(attrs={attr:val})
+        for tag in tags:
+            if comments:
+                tag.replace_with(
+                    Comment('"%s" removed' % (val))
+                )
+            else:
+                tag.decompose()
     return soup
 
 def _rewrite_mediawiki_urls(html):

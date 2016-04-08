@@ -80,3 +80,16 @@ DDR_TOPICS_BASE = config.get('ddr', 'topics_base')
 
 from rc import Cache
 cache = Cache()
+
+
+# hide tags with the given attrib=selector
+HIDDEN_TAGS = {
+    # docstore-index
+    'encyc-production': [
+        # "attrib=selector"
+        'id=rgdatabox-CoreDisplay',
+    ],
+    'encycrg-production': [],
+}
+# display comment for each hidden tag
+HIDDEN_TAG_COMMENTS = True
