@@ -6,14 +6,14 @@ import os
 
 from elasticsearch_dsl import Search
 
-from encyc import citations
 from encyc import config
 from encyc import ddr
 from encyc import docstore
 from encyc import http
-from encyc import sources
 from encyc import urls
 from encyc import wiki
+from encyc.models import citations
+from encyc.models import sources
 from encyc.models import helpers
 from encyc.models import wikipage
     

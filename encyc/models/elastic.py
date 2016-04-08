@@ -40,11 +40,11 @@ from elasticsearch_dsl import DocType, String, Date, Nested, Boolean
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.connections import connections
 
-from encyc import citations
 from encyc import config
 from encyc import ddr
 from encyc import docstore
 from encyc import http
+from encyc.models import citations
 from encyc.models.legacy import Proxy
 from encyc import urls
 
