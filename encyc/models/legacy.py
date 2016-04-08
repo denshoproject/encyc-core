@@ -225,9 +225,8 @@ class Proxy(object):
         page.url = helpers.page_data_url(config.MEDIAWIKI_API, page.url_title)
         logger.debug(page.url)
         r = http.get(page.url)
-        page.status_code = r.status_code
-        logger.debug(page.status_code)
-        return r.text
+        logger.debug(r.status_code)
+        return r.status_code,r.text
     
     def _mkpage(self, url_title, http_status, rawtext, request=None):
         """
