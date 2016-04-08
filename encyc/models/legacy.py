@@ -14,8 +14,8 @@ from encyc import http
 from encyc import sources
 from encyc import urls
 from encyc import wiki
-from encyc import wikipage
 from encyc.models import helpers
+from encyc.models import wikipage
     
 
 # ----------------------------------------------------------------------
