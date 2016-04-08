@@ -2,8 +2,8 @@ import ConfigParser
 import sys
 
 CONFIG_FILES = [
-    '/etc/encyc/front.cfg',
-    '/etc/encyc/front-local.cfg'
+    '/etc/encyc/core.cfg',
+    '/etc/encyc/core-local.cfg'
 ]
 
 class NoConfigError(Exception):
@@ -33,11 +33,7 @@ for node in config.get('elasticsearch', 'hosts').strip().split(','):
     )
 DOCSTORE_INDEX = config.get('elasticsearch', 'index')
 
-DANGO_HTPASSWD_USER = 'TODO'
-DANGO_HTPASSWD_PWD  = 'TODO'
-
 # mediawiki
-MEDIAWIKI_HTML = config.get('mediawiki', 'url')
 MEDIAWIKI_API = config.get('mediawiki', 'api_url')
 MEDIAWIKI_API_USERNAME = config.get('mediawiki', 'api_username')
 MEDIAWIKI_API_PASSWORD = config.get('mediawiki', 'api_password')
@@ -51,9 +47,7 @@ except:
     MEDIAWIKI_API_HTPASS = None
 MEDIAWIKI_API_TIMEOUT = config.get('mediawiki', 'api_timeout')
 MEDIAWIKI_HIDDEN_CATEGORIES = config.get('mediawiki', 'hidden_categories').split(',')
-MEDIAWIKI_DEFAULT_PAGE = config.get('mediawiki', 'default_page')
 MEDIAWIKI_SHOW_UNPUBLISHED = config.get('mediawiki', 'show_unpublished')
-MEDIAWIKI_TITLE = ' - Densho Encyclopedia'
 MEDIAWIKI_DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 MEDIAWIKI_DATETIME_FORMAT_TZ = '%Y-%m-%dT%H:%M:%SZ'
 
@@ -65,7 +59,6 @@ AUTHORS_DEFAULT = 'Densho Encyclopedia contributors.'
 SOURCES_API = config.get('sources', 'api_url')
 SOURCES_MEDIA_URL = config.get('sources', 'media_url')
 SOURCES_MEDIA_URL_LOCAL = config.get('sources', 'media_url_local')
-SOURCES_MEDIA_URL_LOCAL_MARKER = config.get('sources', 'media_url_local_marker')
 SOURCES_MEDIA_BUCKET = config.get('sources', 'media_bucket')
 RTMP_STREAMER = config.get('sources', 'rtmp_streamer')
 
