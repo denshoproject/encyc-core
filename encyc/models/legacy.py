@@ -2,6 +2,7 @@ from datetime import datetime
 import json
 import logging
 logger = logging.getLogger(__name__)
+import os
 
 from elasticsearch_dsl import Search
 
@@ -14,19 +15,10 @@ from encyc import sources
 from encyc import urls
 from encyc import wiki
 from encyc import wikipage
+from encyc.models import helpers
+    
 
-
-def _columnizer(things, cols):
-    columns = []
-    collen = round(len(things) / float(cols))
-    col = []
-    for t in things:
-        col.append(t)
-        if len(col) > collen:
-           columns.append(col)
-           col = []
-    columns.append(col)
-    return columns
+# ----------------------------------------------------------------------
 
 class Author(object):
     url_title = None
@@ -197,7 +189,7 @@ class Proxy(object):
     def authors(self, cached_ok=True, columnize=False):
         authors = [page['title'] for page in wiki.published_authors(cached_ok=cached_ok)]
         if columnize:
-            return _columnizer(authors, 4)
+            return helpers.columnizer(authors, 4)
         return authors
 
     def articles_lastmod(self):
@@ -216,7 +208,7 @@ class Proxy(object):
         """
         @param page: Page title from URL.
         """
-        url = wikipage.page_data_url(config.MEDIAWIKI_API, url_title)
+        url = helpers.page_data_url(config.MEDIAWIKI_API, url_title)
         logger.debug(url)
         status_code,text = Proxy()._mw_page_text(url)
         return Proxy()._mkpage(url_title, status_code, text, request)
@@ -230,7 +222,7 @@ class Proxy(object):
         page = Page()
         page.url_title = url_title
         page.uri = urls.reverse('wikiprox-page', args=[url_title])
-        page.url = wikipage.page_data_url(config.MEDIAWIKI_API, page.url_title)
+        page.url = helpers.page_data_url(config.MEDIAWIKI_API, page.url_title)
         logger.debug(page.url)
         r = http.get(page.url)
         page.status_code = r.status_code
@@ -246,7 +238,7 @@ class Proxy(object):
         page = Page()
         page.url_title = url_title
         page.uri = urls.reverse('wikiprox-page', args=[url_title])
-        page.url = wikipage.page_data_url(config.MEDIAWIKI_API, page.url_title)
+        page.url = helpers.page_data_url(config.MEDIAWIKI_API, page.url_title)
         page.status_code = http_status
         pagedata = json.loads(
             rawtext.encode('utf_8', errors='xmlcharrefreplace')
@@ -258,15 +250,15 @@ class Proxy(object):
             #page.public = request.META.get('HTTP_X_FORWARDED_FOR',False)
             # note: header is added by Nginx, should not appear when connected directly
             # to the app server.
-            page.published = wikipage.page_is_published(pagedata)
-            page.lastmod = wikipage.page_lastmod(config.MEDIAWIKI_API, page.url_title)
+            page.published = helpers.page_is_published(pagedata)
+            page.lastmod = helpers.page_lastmod(config.MEDIAWIKI_API, page.url_title)
             # basic page context
             page.title = pagedata['parse']['displaytitle']
             page.title_sort = page.title
             for prop in pagedata['parse']['properties']:
                 if prop.get('name',None) and prop['name'] and (prop['name'] == 'defaultsort'):
                     page.title_sort = prop['*']
-            page.sources = wikipage.find_primary_sources(
+            page.sources = helpers.find_primary_sources(
                 config.SOURCES_API,
                 pagedata['parse']['images'])
             page.body = wikipage.parse_mediawiki_text(
@@ -292,8 +284,8 @@ class Proxy(object):
                 ]
                 page.prev_page = wiki.article_prev(page.title)
                 page.next_page = wiki.article_next(page.title)
-                page.coordinates = wikipage.find_databoxcamps_coordinates(pagedata['parse']['text']['*'])
-                page.authors = wikipage.find_author_info(pagedata['parse']['text']['*'])
+                page.coordinates = helpers.find_databoxcamps_coordinates(pagedata['parse']['text']['*'])
+                page.authors = helpers.find_author_info(pagedata['parse']['text']['*'])
             page.is_author = wiki.is_author(page.title)
             if page.is_author:
                 page.author_articles = wiki.author_articles(page.title)
@@ -430,7 +422,7 @@ class Elasticsearch(object):
                 authors.append(author)
         authors = sorted(authors, key=lambda a: a.title_sort)
         if num_columns:
-            return _columnizer(authors, num_columns)
+            return helpers.columnizer(authors, num_columns)
         return authors
 
     def author(self, url_title):
