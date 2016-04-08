@@ -696,7 +696,7 @@ class Elasticsearch(object):
         for n,title in enumerate(titles):
             if (posted < num) and (n > start):
                 logging.debug('%s/%s %s' % (n, len(titles), title))
-                mwpage = Proxy().page(title)
+                mwpage = Proxy.page(title)
                 if (mwpage.published or config.MEDIAWIKI_SHOW_UNPUBLISHED):
                     page_sources = [source['encyclopedia_id'] for source in mwpage.sources]
                     for mwsource in mwpage.sources:
@@ -720,7 +720,7 @@ class Elasticsearch(object):
         """
         for n,title in enumerate(titles):
             logging.debug('%s/%s %s' % (n, len(titles), title))
-            mwauthor = Proxy().page(title)
+            mwauthor = Proxy.page(title)
             author = Author.from_mw(mwauthor)
             author.save()
 
@@ -762,8 +762,8 @@ class Elasticsearch(object):
     def articles_to_update(mw_author_titles, mw_articles, es_articles):
         """Returns titles of articles to update and delete
         
-        >>> mw_author_titles = Proxy().authors(cached_ok=False)
-        >>> mw_articles = Proxy().articles_lastmod()
+        >>> mw_author_titles = Proxy.authors(cached_ok=False)
+        >>> mw_articles = Proxy.articles_lastmod()
         >>> es_articles = Page.pages()
         >>> update,delete = Elasticsearch.articles_to_update(mw_author_titles, mw_articles, es_articles)
         
@@ -783,8 +783,8 @@ class Elasticsearch(object):
         
         Does not track updates because it's easy just to update them all.
         
-        >>> mw_author_titles = Proxy().authors(cached_ok=False)
-        >>> mw_articles = Proxy().articles_lastmod()
+        >>> mw_author_titles = Proxy.authors(cached_ok=False)
+        >>> mw_articles = Proxy.articles_lastmod()
         >>> es_authors = Author.authors()
         >>> update,delete = Elasticsearch.authors_to_update(mw_author_titles, mw_articles, es_authors)
         
@@ -807,7 +807,7 @@ class Elasticsearch(object):
         # authors
         connections.create_connection(hosts=config.DOCSTORE_HOSTS)
         index = Index(config.DOCSTORE_INDEX)
-        mw_authors = Proxy().authors(cached_ok=False)
+        mw_authors = Proxy.authors(cached_ok=False)
         es_authors = self.authors()
         authors_new,authors_delete = self.authors_to_update(mw_authors, es_authors)
         
@@ -818,7 +818,7 @@ class Elasticsearch(object):
             
         for n,title in enumerate(authors_new):
             logging.debug('%s/%s %s' % (n, len(authors_new), title))
-            mwauthor = Proxy().page(title)
+            mwauthor = Proxy.page(title)
             author = Author.from_mw(mwauthor)
             author.save()
         
@@ -826,8 +826,8 @@ class Elasticsearch(object):
         connections.create_connection(hosts=config.DOCSTORE_HOSTS)
         index = Index(config.DOCSTORE_INDEX)
         # authors need to be refreshed
-        mw_authors = Proxy().authors(cached_ok=False)
-        mw_articles = Proxy().articles_lastmod()
+        mw_authors = Proxy.authors(cached_ok=False)
+        mw_articles = Proxy.articles_lastmod()
         es_authors = self.authors()
         es_articles = self.articles()
         articles_update,articles_delete = self.articles_to_update(

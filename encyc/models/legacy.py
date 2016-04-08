@@ -170,29 +170,33 @@ class Proxy(object):
     
     NOTE: not a Django model object!
     """
-    
-    def articles_by_category(self):
+
+    @staticmethod
+    def articles_by_category():
         articles_by_category = []
         categories,titles_by_category = wiki.articles_by_category()
         for category in categories:
             titles = [page['title'] for page in titles_by_category[category]]
             articles_by_category.append( (category,titles) )
         return articles_by_category
-    
-    def articles(self):
+
+    @staticmethod
+    def articles():
         articles = [
             {'first_letter':page['sortkey'][0].upper(), 'title':page['title']}
             for page in wiki.articles_a_z()
         ]
         return articles
 
-    def authors(self, cached_ok=True, columnize=False):
+    @staticmethod
+    def authors(cached_ok=True, columnize=False):
         authors = [page['title'] for page in wiki.published_authors(cached_ok=cached_ok)]
         if columnize:
             return helpers.columnizer(authors, 4)
         return authors
 
-    def articles_lastmod(self):
+    @staticmethod
+    def articles_lastmod():
         """List of titles and timestamps for all published pages.
         """
         pages = [
@@ -204,16 +208,18 @@ class Proxy(object):
         ]
         return pages
 
-    def page(self, url_title, request=None):
+    @staticmethod
+    def page(url_title, request=None):
         """
         @param page: Page title from URL.
         """
         url = helpers.page_data_url(config.MEDIAWIKI_API, url_title)
         logger.debug(url)
-        status_code,text = Proxy()._mw_page_text(url)
-        return Proxy()._mkpage(url_title, status_code, text, request)
+        status_code,text = Proxy._mw_page_text(url)
+        return Proxy._mkpage(url_title, status_code, text, request)
     
-    def _mw_page_text(self, url_title):
+    @staticmethod
+    def _mw_page_text(url_title):
         """
         @param page: Page title from URL.
         """
@@ -228,7 +234,8 @@ class Proxy(object):
         logger.debug(r.status_code)
         return r.status_code,r.text
     
-    def _mkpage(self, url_title, http_status, rawtext, request=None):
+    @staticmethod
+    def _mkpage(url_title, http_status, rawtext, request=None):
         """
         TODO rename me
         """
@@ -290,7 +297,8 @@ class Proxy(object):
                 page.author_articles = wiki.author_articles(page.title)
         return page
     
-    def source(self, encyclopedia_id):
+    @staticmethod
+    def source(encyclopedia_id):
         source = Source()
         source.encyclopedia_id = encyclopedia_id
         source.uri = urls.reverse('wikiprox-source', args=[encyclopedia_id])
@@ -307,7 +315,8 @@ class Proxy(object):
             source.rtmp_streamer = config.RTMP_STREAMER
         return source
 
-    def citation(self, page):
+    @staticmethod
+    def citation(page):
         return Citation(page)
 
 
@@ -527,7 +536,7 @@ class Elasticsearch(object):
         for n,title in enumerate(titles):
             if (posted < num) and (n > start):
                 logging.debug('%s/%s %s' % (n, len(titles), title))
-                page = Proxy().page(title)
+                page = Proxy.page(title)
                 if (page.published or config.MEDIAWIKI_SHOW_UNPUBLISHED):
                     page_sources = [source['encyclopedia_id'] for source in page.sources]
                     for source in page.sources:
@@ -555,7 +564,7 @@ class Elasticsearch(object):
         """
         for n,title in enumerate(titles):
             logging.debug('%s/%s %s' % (n, len(titles), title))
-            page = Proxy().page(title)
+            page = Proxy.page(title)
             docstore.post(
                 config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, 'authors',
                 title, page.__dict__
@@ -602,8 +611,8 @@ class Elasticsearch(object):
     def articles_to_update(self, mw_authors, mw_articles, es_authors, es_articles):
         """Returns titles of articles to update and delete
         
-        >>> mw_authors = Proxy().authors(cached_ok=False)
-        >>> mw_articles = Proxy().articles_lastmod()
+        >>> mw_authors = Proxy.authors(cached_ok=False)
+        >>> mw_articles = Proxy.articles_lastmod()
         >>> es_authors = Elasticsearch().authors()
         >>> es_articles = Elasticsearch().articles()
         >>> results = Elasticsearch().articles_to_update(mw_authors, mw_articles, es_authors, es_articles)
@@ -646,7 +655,7 @@ class Elasticsearch(object):
         
         Does not track updates because it's easy just to update them all.
         
-        >>> mw_authors = Proxy().authors(cached_ok=False)
+        >>> mw_authors = Proxy.authors(cached_ok=False)
         >>> es_authors = Elasticsearch().authors()
         >>> results = Elasticsearch().articles_to_update(mw_authors, es_authors)
         >>> Elasticsearch().index_authors(titles=results['update'])
@@ -670,15 +679,15 @@ class Elasticsearch(object):
         IMPORTANT: Will lock if unable to connect to MediaWiki server!
         """
         # authors
-        mw_authors = Proxy().authors(cached_ok=False)
+        mw_authors = Proxy.authors(cached_ok=False)
         es_authors = self.authors()
         results = self.authors_to_update(mw_authors, es_authors)
         self.index_authors(titles=results['new'])
         self.delete_authors(titles=results['delete'])
         # articles
         # authors need to be refreshed
-        mw_authors = Proxy().authors(cached_ok=False)
-        mw_articles = Proxy().articles_lastmod()
+        mw_authors = Proxy.authors(cached_ok=False)
+        mw_articles = Proxy.articles_lastmod()
         es_authors = self.authors()
         es_articles = self.articles()
         results = self.articles_to_update(mw_authors, mw_articles, es_authors, es_articles)

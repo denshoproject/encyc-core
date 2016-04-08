@@ -112,8 +112,8 @@ format_json(client.indices.stats('encyc-production'))
     logprint('debug', 'MediaWiki')
     logprint('debug', 'MEDIAWIKI_HTML: %s' % config.MEDIAWIKI_HTML)
     logprint('debug', ' MEDIAWIKI_API: %s' % config.MEDIAWIKI_API)
-    mw_author_titles = Proxy().authors(cached_ok=False)
-    mw_articles = Proxy().articles_lastmod()
+    mw_author_titles = Proxy.authors(cached_ok=False)
+    mw_articles = Proxy.articles_lastmod()
     num_mw_authors = len(mw_author_titles)
     num_mw_articles = len(mw_articles)
     logprint('debug', '       authors: %s' % num_mw_authors)
@@ -180,8 +180,8 @@ def authors(report=False, dryrun=False, force=False):
 
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'getting mw_authors...')
-    mw_author_titles = Proxy().authors(cached_ok=False)
-    mw_articles = Proxy().articles_lastmod()
+    mw_author_titles = Proxy.authors(cached_ok=False)
+    mw_articles = Proxy.articles_lastmod()
     logprint('debug', 'getting es_authors...')
     es_authors = Author.authors()
     if force:
@@ -211,7 +211,7 @@ def authors(report=False, dryrun=False, force=False):
         logprint('debug', '--------------------')
         logprint('debug', '%s/%s %s' % (n, len(authors_new), title))
         logprint('debug', 'getting from mediawiki')
-        mwauthor = Proxy().page(title)
+        mwauthor = Proxy.page(title)
         try:
             existing_author = Author.get(title)
             logprint('debug', 'exists in elasticsearch')
@@ -235,8 +235,8 @@ def articles(report=False, dryrun=False, force=False):
     logprint('debug', '------------------------------------------------------------------------')
     # authors need to be refreshed
     logprint('debug', 'getting mw_authors,articles...')
-    mw_author_titles = Proxy().authors(cached_ok=False)
-    mw_articles = Proxy().articles_lastmod()
+    mw_author_titles = Proxy.authors(cached_ok=False)
+    mw_articles = Proxy.articles_lastmod()
     logprint('debug', 'getting es_articles...')
     es_articles = Page.pages()
     if force:
@@ -261,7 +261,7 @@ def articles(report=False, dryrun=False, force=False):
         logprint('debug', '--------------------')
         logprint('debug', '%s/%s %s' % (n+1, len(articles_update), title))
         logprint('debug', 'getting from mediawiki')
-        mwpage = Proxy().page(title)
+        mwpage = Proxy.page(title)
         try:
             existing_page = Page.get(title)
             logprint('debug', 'exists in elasticsearch')
@@ -369,7 +369,7 @@ def _dumpjson(title, path):
     @param title: str
     @param path: str
     """
-    text = Proxy()._mw_page_text(title)
+    text = Proxy._mw_page_text(title)
     data = json.loads(text)
     pretty = format_json(data)
     write_text(pretty, path)
@@ -386,5 +386,5 @@ def _parse(title, path):
     """
     path_html = os.path.splitext(path)[0] + '.html'
     text = read_text(path)
-    mwpage = Proxy()._mkpage(title, 200, text)
+    mwpage = Proxy._mkpage(title, 200, text)
     write_text(mwpage.body, path_html)
