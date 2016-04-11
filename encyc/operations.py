@@ -78,13 +78,13 @@ def print_configs():
     print('SOURCES_API:            %s' % config.SOURCES_API)
     print('')
 
-def set_hosts_index(index=config.DOCSTORE_INDEX):
-    logprint('debug', 'hosts: %s' % config.DOCSTORE_HOSTS)
-    connections.create_connection(hosts=config.DOCSTORE_HOSTS)
+def set_hosts_index(hosts=config.DOCSTORE_HOSTS, index=config.DOCSTORE_INDEX):
+    logprint('debug', 'hosts: %s' % hosts)
+    connections.create_connection(hosts=hosts)
     logprint('debug', 'index: %s' % index)
     return Index(index)
 
-def status():
+def status(hosts, index):
     """
 "indices": {
     "encyc-production": {
@@ -107,6 +107,7 @@ format_json(client.indices.stats('encyc-production'))
 
 
     """
+    i = set_hosts_index(hosts=hosts, index=index)
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'MediaWiki')
     logprint('debug', ' MEDIAWIKI_API: %s' % config.MEDIAWIKI_API)
@@ -118,16 +119,16 @@ format_json(client.indices.stats('encyc-production'))
     logprint('debug', '      articles: %s' % num_mw_articles)
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'Elasticsearch')
-    logprint('debug', 'DOCSTORE_HOSTS: %s' % config.DOCSTORE_HOSTS)
-    logprint('debug', 'DOCSTORE_INDEX: %s' % config.DOCSTORE_INDEX)
+    logprint('debug', 'DOCSTORE_HOSTS: %s' % hosts)
+    logprint('debug', 'DOCSTORE_INDEX: %s' % index)
     from elasticsearch import Elasticsearch
     client = Elasticsearch()
     if not client.ping():
         logprint('error', "Can't ping the cluster!")
         return
     index_names = client.indices.stats()['indices'].keys()
-    if not (config.DOCSTORE_INDEX in index_names):
-        logprint('error', "Index '%s' doesn't exist!" % config.DOCSTORE_INDEX)
+    if not (index in index_names):
+        logprint('error', "Index '%s' doesn't exist!" % index)
         return
     #info = client.info()
     #logprint('debug', 'Info: %s' % format_json(info))
@@ -149,32 +150,32 @@ format_json(client.indices.stats('encyc-production'))
     ))
     logprint('debug', '       sources: %s' % len(Source.sources()))
 
-def delete_index(index):
-    index = set_hosts_index(index)
+def delete_index(hosts, index):
+    i = set_hosts_index(hosts=hosts, index=index)
     logprint('debug', 'deleting old index')
     try:
-        index.delete()
+        i.delete()
     except NotFoundError:
         logprint('error', 'ERROR: Index does not exist!')
     logprint('debug', 'DONE')
     
-def create_index(index):
-    index = set_hosts_index(index)
+def create_index(hosts, index):
+    i = set_hosts_index(hosts=hosts, index=index)
     logprint('debug', 'creating new index')
-    index = Index(config.DOCSTORE_INDEX)
-    index.create()
+    i = Index(index)
+    i.create()
     logprint('debug', 'creating mappings')
     Author.init()
     Page.init()
     Source.init()
     logprint('debug', 'registering doc types')
-    index.doc_type(Author)
-    index.doc_type(Page)
-    index.doc_type(Source)
+    i.doc_type(Author)
+    i.doc_type(Page)
+    i.doc_type(Source)
     logprint('debug', 'DONE')
 
-def authors(report=False, dryrun=False, force=False):
-    index = set_hosts_index()
+def authors(hosts, index, report=False, dryrun=False, force=False):
+    i = set_hosts_index(hosts=hosts, index=index)
 
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'getting mw_authors...')
@@ -227,8 +228,8 @@ def authors(report=False, dryrun=False, force=False):
     
     logprint('debug', 'DONE')
 
-def articles(report=False, dryrun=False, force=False):
-    index = set_hosts_index()
+def articles(hosts, index, report=False, dryrun=False, force=False):
+    i = set_hosts_index(hosts=hosts, index=index)
     
     logprint('debug', '------------------------------------------------------------------------')
     # authors need to be refreshed
@@ -293,8 +294,8 @@ def articles(report=False, dryrun=False, force=False):
         logprint('debug', 'Could not post these: %s' % could_not_post)
     logprint('debug', 'DONE')
 
-def topics(report=False, dryrun=False, force=False):
-    index = set_hosts_index()
+def topics(hosts, index, report=False, dryrun=False, force=False):
+    i = set_hosts_index(hosts=hosts, index=index)
 
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'indexing topics...')
@@ -308,8 +309,8 @@ DOC_TYPES = [
     'sources',
 ]
 
-def listdocs(index, doctype):
-    index = set_hosts_index(index)
+def listdocs(hosts, index, doctype):
+    i = set_hosts_index(hosts=hosts, index=index)
     if doctype not in DOC_TYPES:
         logprint('error', '"%s" is not a recognized doc_type!' % doctype)
         return
@@ -321,8 +322,8 @@ def listdocs(index, doctype):
     for n,r in enumerate(results):
         print('%s/%s| %s' % (n, total, r.__repr__()))
 
-def get(index, doctype, identifier):
-    index = set_hosts_index(index)
+def get(hosts, index, doctype, identifier):
+    i = set_hosts_index(hosts=hosts, index=index)
     if doctype not in DOC_TYPES:
         logprint('error', '"%s" is not a recognized doc_type!' % doctype)
         return
