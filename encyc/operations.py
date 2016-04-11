@@ -6,7 +6,6 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 import sys
-import time
 
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError, SerializationError
@@ -27,9 +26,9 @@ def stopwatch(fn):
     """
     @wraps(fn)
     def with_profiling(*args, **kwargs):
-        start_time = time.time()
+        start = datetime.now()
         result = fn(*args, **kwargs)
-        elapsed = time.time() - start_time
+        elapsed = datetime.now() - start
         logprint('debug', 'TIME: %s' % elapsed)
         return result
     return with_profiling
