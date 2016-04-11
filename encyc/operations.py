@@ -1,10 +1,12 @@
 import codecs
 from datetime import datetime
+from functools import wraps
 import json
 import logging
 logger = logging.getLogger(__name__)
 import os
 import sys
+import time
 
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError, SerializationError
@@ -18,6 +20,19 @@ from encyc import docstore
 from encyc.models.legacy import Proxy
 from encyc.models import Elasticsearch
 from encyc.models import Author, Page, Source
+
+
+def stopwatch(fn):
+    """Decorator for print elapsed time of operations.
+    """
+    @wraps(fn)
+    def with_profiling(*args, **kwargs):
+        start_time = time.time()
+        result = fn(*args, **kwargs)
+        elapsed = time.time() - start_time
+        logprint('debug', 'TIME: %s' % elapsed)
+        return result
+    return with_profiling
 
 def read_text(path):
     """Read text file; make sure text is in UTF-8.
@@ -85,6 +100,7 @@ def set_hosts_index(hosts=config.DOCSTORE_HOSTS, index=config.DOCSTORE_INDEX):
     logprint('debug', 'index: %s' % index)
     return Index(index)
 
+@stopwatch
 def status(hosts, index):
     """
 "indices": {
@@ -151,6 +167,7 @@ format_json(client.indices.stats('encyc-production'))
     ))
     logprint('debug', '       sources: %s' % len(Source.sources()))
 
+@stopwatch
 def delete_index(hosts, index):
     i = set_hosts_index(hosts=hosts, index=index)
     logprint('debug', 'deleting old index')
@@ -160,6 +177,7 @@ def delete_index(hosts, index):
         logprint('error', 'ERROR: Index does not exist!')
     logprint('debug', 'DONE')
     
+@stopwatch
 def create_index(hosts, index):
     i = set_hosts_index(hosts=hosts, index=index)
     logprint('debug', 'creating new index')
@@ -175,6 +193,7 @@ def create_index(hosts, index):
     i.doc_type(Source)
     logprint('debug', 'DONE')
 
+@stopwatch
 def authors(hosts, index, report=False, dryrun=False, force=False):
     i = set_hosts_index(hosts=hosts, index=index)
 
@@ -229,6 +248,7 @@ def authors(hosts, index, report=False, dryrun=False, force=False):
     
     logprint('debug', 'DONE')
 
+@stopwatch
 def articles(hosts, index, report=False, dryrun=False, force=False):
     i = set_hosts_index(hosts=hosts, index=index)
     
@@ -295,6 +315,7 @@ def articles(hosts, index, report=False, dryrun=False, force=False):
         logprint('debug', 'Could not post these: %s' % could_not_post)
     logprint('debug', 'DONE')
 
+@stopwatch
 def topics(hosts, index, report=False, dryrun=False, force=False):
     i = set_hosts_index(hosts=hosts, index=index)
 
