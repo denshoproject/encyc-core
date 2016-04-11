@@ -76,6 +76,7 @@ def print_configs():
     print('MEDIAWIKI_API_HTPASS:   %s' % config.MEDIAWIKI_API_HTPASS)
     print('MEDIAWIKI_API_TIMEOUT:  %s' % config.MEDIAWIKI_API_TIMEOUT)
     print('SOURCES_API:            %s' % config.SOURCES_API)
+    print('HIDDEN_TAGS:            %s' % config.HIDDEN_TAGS)
     print('')
 
 def set_hosts_index(hosts=config.DOCSTORE_HOSTS, index=config.DOCSTORE_INDEX):

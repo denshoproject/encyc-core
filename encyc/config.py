@@ -75,25 +75,27 @@ from rc import Cache
 cache = Cache()
 
 
+# Sample core.cfg:
+#
+#   [hidden:encyc-stage]
+#   id=somethingelse
+#   [hidden:encyc-production]
+#   id=rgdatabox-CoreDisplay;somethingelse
+#
+def read_hidden_tags(config):
+    hidden = {}
+    for section in config.sections():
+        if 'hidden:' in section:
+            index = section.split(':')[1]
+            hidden[index] = []
+            for attrib,selector in config.items(section):
+                for selector in selector.split(';'):
+                    combo = '%s=%s' % (attrib, selector)
+                    if combo not in hidden[index]:
+                        hidden[index].append(combo)
+    return hidden
+
 # hide tags with the given attrib=selector
-# {
-#     'docstore-index': [
-#         "attrib=selector",
-#     ]
-# }
-HIDDEN_TAGS = {
-    'encyc-dev': [
-        'id=rgdatabox-CoreDisplay',
-    ],
-    'encyc-stage': [
-        'id=rgdatabox-CoreDisplay',
-    ],
-    'encyc-production': [
-        'id=rgdatabox-CoreDisplay',
-    ],
-    'encycrg-dev': [],
-    'encycrg-stage': [],
-    'encycrg-production': [],
-}
+HIDDEN_TAGS = read_hidden_tags(config)
 # display comment for each hidden tag
 HIDDEN_TAG_COMMENTS = True
