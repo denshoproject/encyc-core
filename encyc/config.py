@@ -76,12 +76,23 @@ cache = Cache()
 
 
 # hide tags with the given attrib=selector
+# {
+#     'docstore-index': [
+#         "attrib=selector",
+#     ]
+# }
 HIDDEN_TAGS = {
-    # docstore-index
-    'encyc-production': [
-        # "attrib=selector"
+    'encyc-dev': [
         'id=rgdatabox-CoreDisplay',
     ],
+    'encyc-stage': [
+        'id=rgdatabox-CoreDisplay',
+    ],
+    'encyc-production': [
+        'id=rgdatabox-CoreDisplay',
+    ],
+    'encycrg-dev': [],
+    'encycrg-stage': [],
     'encycrg-production': [],
 }
 # display comment for each hidden tag
