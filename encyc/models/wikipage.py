@@ -38,7 +38,7 @@ def parse_mediawiki_text(text, primary_sources, public=False, printed=False, ind
         soup = _add_top_links(soup)
     soup = _remove_divs(
         soup,
-        selectors=config.HIDDEN_TAGS[index],
+        selectors=config.HIDDEN_TAGS.get(index, []),
         comments=config.HIDDEN_TAG_COMMENTS
     )
     soup = _remove_primary_sources(soup, primary_sources)
