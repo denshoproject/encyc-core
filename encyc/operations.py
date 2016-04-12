@@ -229,7 +229,7 @@ def authors(hosts, index, report=False, dryrun=False, force=False):
         logprint('debug', '--------------------')
         logprint('debug', '%s/%s %s' % (n, len(authors_new), title))
         logprint('debug', 'getting from mediawiki')
-        mwauthor = Proxy.page(title)
+        mwauthor = Proxy.page(title, index=index)
         try:
             existing_author = Author.get(title)
             logprint('debug', 'exists in elasticsearch')

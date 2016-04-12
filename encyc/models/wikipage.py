@@ -14,7 +14,7 @@ from encyc.models import helpers
 TIMEOUT = float(config.MEDIAWIKI_API_TIMEOUT)
 
 
-def parse_mediawiki_text(text, primary_sources, public=False, printed=False):
+def parse_mediawiki_text(text, primary_sources, public=False, printed=False, index=config.DOCSTORE_INDEX):
     """Parses the body of a MediaWiki page.
     
     @param text: str HTML contents of page body.
@@ -38,7 +38,7 @@ def parse_mediawiki_text(text, primary_sources, public=False, printed=False):
         soup = _add_top_links(soup)
     soup = _remove_divs(
         soup,
-        selectors=config.HIDDEN_TAGS[config.DOCSTORE_INDEX],
+        selectors=config.HIDDEN_TAGS[index],
         comments=config.HIDDEN_TAG_COMMENTS
     )
     soup = _remove_primary_sources(soup, primary_sources)

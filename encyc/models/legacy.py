@@ -209,14 +209,14 @@ class Proxy(object):
         return pages
 
     @staticmethod
-    def page(url_title, request=None):
+    def page(url_title, request=None, index=None):
         """
         @param page: Page title from URL.
         """
         url = helpers.page_data_url(config.MEDIAWIKI_API, url_title)
         logger.debug(url)
         status_code,text = Proxy._mw_page_text(url)
-        return Proxy._mkpage(url_title, status_code, text, request)
+        return Proxy._mkpage(url_title, status_code, text, request, index)
     
     @staticmethod
     def _mw_page_text(url_title):
@@ -235,7 +235,7 @@ class Proxy(object):
         return r.status_code,r.text
     
     @staticmethod
-    def _mkpage(url_title, http_status, rawtext, request=None):
+    def _mkpage(url_title, http_status, rawtext, request=None, index=None):
         """
         TODO rename me
         """
@@ -271,7 +271,9 @@ class Proxy(object):
                 pagedata['parse']['text']['*'],
                 page.sources,
                 page.public,
-                False)
+                printed=False,
+                index=index
+            )
             # rewrite media URLs on stage
             # (external URLs not visible to Chrome on Android when connecting through SonicWall)
             if hasattr(config, 'STAGE') and config.STAGE and request:
