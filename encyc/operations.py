@@ -225,6 +225,7 @@ def authors(hosts, index, report=False, dryrun=False, force=False):
     #        author.delete()
      
     logprint('debug', 'adding...')
+    errors = []
     for n,title in enumerate(authors_new):
         logprint('debug', '--------------------')
         logprint('debug', '%s/%s %s' % (n, len(authors_new), title))
@@ -244,7 +245,11 @@ def authors(hosts, index, report=False, dryrun=False, force=False):
                 a = Author.get(title)
             except NotFoundError:
                 logprint('error', 'ERROR: Author(%s) NOT SAVED!' % title)
-    
+                errors.append(title)
+    if errors:
+        logprint('error', 'ERROR: Could not write these titles')
+        for title in errors:
+            logprint('error', '- %s' % title)
     logprint('debug', 'DONE')
 
 @stopwatch
@@ -276,6 +281,7 @@ def articles(hosts, index, report=False, dryrun=False, force=False):
     logprint('debug', 'adding articles...')
     posted = 0
     could_not_post = []
+    errors = []
     for n,title in enumerate(articles_update):
         logprint('debug', '--------------------')
         logprint('debug', '%s/%s %s' % (n+1, len(articles_update), title))
@@ -305,6 +311,7 @@ def articles(hosts, index, report=False, dryrun=False, force=False):
                     p = Page.get(title)
                 except NotFoundError:
                     logprint('error', 'ERROR: Page(%s) NOT SAVED!' % title)
+                    errors.append(title)
         else:
             logprint('debug', 'not publishable: %s' % mwpage)
             could_not_post.append(mwpage)
@@ -312,6 +319,10 @@ def articles(hosts, index, report=False, dryrun=False, force=False):
     if could_not_post:
         logprint('debug', '========================================================================')
         logprint('debug', 'Could not post these: %s' % could_not_post)
+    if errors:
+        logprint('error', 'ERROR: Could not write these titles')
+        for title in errors:
+            logprint('error', '- %s' % title)
     logprint('debug', 'DONE')
 
 @stopwatch
