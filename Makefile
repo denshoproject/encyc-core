@@ -103,6 +103,7 @@ install-dev:
 
 get-encyc-core:
 	git pull
+	source $(VIRTUALENV)/bin/activate; \
 	pip install --download=$(PIP_CACHE_DIR) --exists-action=i -r $(PIP_REQUIREMENTS_DIR)/production.txt
 
 install-encyc-core:
