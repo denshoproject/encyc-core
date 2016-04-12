@@ -1,7 +1,7 @@
 import click
 
 from encyc import config as settings
-from encyc import operations
+from encyc import publish
 
 
 @click.group()
@@ -19,7 +19,7 @@ def config():
     
     More detail since you asked.
     """
-    operations.print_configs()
+    publish.print_configs()
 
 
 @encyc.command()
@@ -31,7 +31,7 @@ def status(hosts, index):
     
     More detail since you asked.
     """
-    operations.status(hosts, index)
+    publish.status(hosts, index)
 
 
 @encyc.command()
@@ -41,7 +41,7 @@ def status(hosts, index):
 def create(hosts, index):
     """Create new index.
     """
-    operations.create_index(hosts, index)
+    publish.create_index(hosts, index)
 
 
 @encyc.command()
@@ -54,7 +54,7 @@ def delete(hosts, index, confirm):
     """Delete index (requires --confirm).
     """
     if confirm:
-        operations.delete_index(hosts, index)
+        publish.delete_index(hosts, index)
     else:
         click.echo("Add '--confirm' if you're sure you want to do this.")
 
@@ -69,8 +69,8 @@ def reset(hosts, index, confirm):
     """Delete existing index and create new one (requires --confirm).
     """
     if confirm:
-        operations.delete_index(hosts, index)
-        operations.create_index(hosts, index)
+        publish.delete_index(hosts, index)
+        publish.create_index(hosts, index)
     else:
         click.echo("Add '--confirm' if you're sure you want to do this.")
 
@@ -88,7 +88,7 @@ def reset(hosts, index, confirm):
 def topics(hosts, index, report, dryrun, force):
     """Index DDR topics.
     """
-    operations.topics(hosts=hosts, index=index, report=report, dryrun=dryrun, force=force)
+    publish.topics(hosts=hosts, index=index, report=report, dryrun=dryrun, force=force)
 
 
 @encyc.command()
@@ -104,7 +104,7 @@ def topics(hosts, index, report, dryrun, force):
 def authors(hosts, index, report, dryrun, force):
     """Index authors.
     """
-    operations.authors(hosts=hosts, index=index, report=report, dryrun=dryrun, force=force)
+    publish.authors(hosts=hosts, index=index, report=report, dryrun=dryrun, force=force)
 
 
 @encyc.command()
@@ -120,7 +120,7 @@ def authors(hosts, index, report, dryrun, force):
 def articles(hosts, index, report, dryrun, force):
     """Index articles.
     """
-    operations.articles(hosts=hosts, index=index, report=report, dryrun=dryrun, force=force)
+    publish.articles(hosts=hosts, index=index, report=report, dryrun=dryrun, force=force)
 
 
 @encyc.command()
@@ -131,7 +131,7 @@ def articles(hosts, index, report, dryrun, force):
 def list(hosts, index, doctype):
     """List titles for all instances of specified doctype.
     """
-    operations.listdocs(hosts, index, doctype)
+    publish.listdocs(hosts, index, doctype)
 
 
 @encyc.command()
@@ -143,7 +143,7 @@ def list(hosts, index, doctype):
 def get(hosts, index, doctype, object_id):
     """Pretty-print a single record
     """
-    operations.get(hosts, index, doctype, object_id)
+    publish.get(hosts, index, doctype, object_id)
 
 
 @encyc.command()
@@ -152,7 +152,7 @@ def get(hosts, index, doctype, object_id):
 def _json(title, path):
     """Get page text from MediaWiki, dump to file.
     """
-    operations._dumpjson(title, path)
+    publish._dumpjson(title, path)
 
 @encyc.command()
 @click.argument('title')
@@ -160,4 +160,4 @@ def _json(title, path):
 def _parse(title, path):
     """Load page json from file, generate Page, save HTML to file.
     """
-    operations._parse(title, path)
+    publish._parse(title, path)
