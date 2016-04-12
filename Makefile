@@ -92,6 +92,15 @@ uninstall-app: uninstall-encyc-core
 clean-app: clean-encyc-core
 
 
+get-dev:
+	source $(VIRTUALENV)/bin/activate; \
+	pip install --download=$(PIP_CACHE_DIR) --exists-action=i -r $(PIP_REQUIREMENTS_DIR)/dev.txt
+
+install-dev:
+	source $(VIRTUALENV)/bin/activate; \
+	pip install -U --find-links=$(PIP_CACHE_DIR) -r $(PIP_REQUIREMENTS_DIR)/dev.txt
+
+
 get-encyc-core:
 	git pull
 	pip install --download=$(PIP_CACHE_DIR) --exists-action=i -r $(PIP_REQUIREMENTS_DIR)/production.txt
