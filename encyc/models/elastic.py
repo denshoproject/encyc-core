@@ -50,7 +50,7 @@ from encyc import urls
 
 if not config.DEBUG:
     from bs4 import BeautifulSoup
-    from wikiprox.mediawiki import remove_status_markers
+    from encyc.models.wikipage import remove_status_markers
 
 MAX_SIZE = 10000
 
