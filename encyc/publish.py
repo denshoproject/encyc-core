@@ -250,7 +250,7 @@ def authors(hosts, index, report=False, dryrun=False, force=False):
                 logprint('error', 'ERROR: Author(%s) NOT SAVED!' % title)
                 errors.append(title)
     if errors:
-        logprint('info', 'ERROR: Could not write these titles')
+        logprint('info', 'ERROR: %s titles were unpublishable:' % len(errors))
         for title in errors:
             logprint('info', 'ERROR: %s' % title)
     logprint('debug', 'DONE')
@@ -323,7 +323,7 @@ def articles(hosts, index, report=False, dryrun=False, force=False):
         logprint('debug', '========================================================================')
         logprint('debug', 'Could not post these: %s' % could_not_post)
     if errors:
-        logprint('info', 'ERROR: Could not write these titles')
+        logprint('info', 'ERROR: %s titles were unpublishable:' % len(errors))
         for title in errors:
             logprint('info', 'ERROR: %s' % title)
     logprint('debug', 'DONE')
