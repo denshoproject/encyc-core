@@ -146,8 +146,13 @@ format_json(client.indices.stats('encyc-production'))
         logprint('debug', 'docstore_index: %s' % index)
     from elasticsearch import Elasticsearch
     client = Elasticsearch()
-    if not client.ping():
-        logprint('error', "Can't ping the cluster!")
+    try:
+        pingable = client.ping()
+        if not pingable:
+            logprint('error', "Can't ping the cluster!")
+            return
+    except elasticsearch.exceptions.ConnectionError:
+        logprint('error', "Connection error when trying to ping the cluster!")
         return
     index_names = client.indices.stats()['indices'].keys()
     if not (index in index_names):
