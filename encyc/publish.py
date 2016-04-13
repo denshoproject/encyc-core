@@ -138,8 +138,12 @@ format_json(client.indices.stats('encyc-production'))
     logprint('debug', '      articles: %s' % num_mw_articles)
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'Elasticsearch')
-    logprint('debug', 'DOCSTORE_HOSTS: %s' % hosts)
-    logprint('debug', 'DOCSTORE_INDEX: %s' % index)
+    logprint('debug', 'DOCSTORE_HOSTS (default): %s' % config.DOCSTORE_HOSTS)
+    logprint('debug', 'DOCSTORE_INDEX (default): %s' % config.DOCSTORE_INDEX)
+    if hosts != config.DOCSTORE_HOSTS:
+        logprint('debug', 'docstore_hosts: %s' % hosts)
+    if index != config.DOCSTORE_INDEX:
+        logprint('debug', 'docstore_index: %s' % index)
     from elasticsearch import Elasticsearch
     client = Elasticsearch()
     if not client.ping():
