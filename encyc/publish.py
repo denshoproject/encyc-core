@@ -53,7 +53,10 @@ def write_text(text, path):
         f.write(text)
 
 def logprint(level, msg):
-    print('%s %s' % (datetime.now(), msg))
+    try:
+        print('%s %s' % (datetime.now(), msg))
+    except UnicodeEncodeError:
+        print('ERROR: UnicodeEncodeError')
     if   level == 'debug': logging.debug(msg)
     elif level == 'info': logging.info(msg)
     elif level == 'error': logging.error(msg)
