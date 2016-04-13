@@ -7,8 +7,20 @@ from encyc import publish
 @click.group()
 @click.option('--debug', is_flag=True)
 def encyc(debug):
-    """
-    Lots of documentation goes here.
+    """encyc - publish MediaWiki content to Elasticsearch; debug Elasticsearch
+    
+    \b
+    Index Management: create, delete, reset
+    Publishing:       topics, authors, articles
+    Debugging:        config, status, list, get
+    
+    By default the command uses DOCSTORE_HOSTS and DOCSTORE_INDEX from the config file.  The tool will publish to at least two separate sites (Encyclopedia, Resource Guide), you can use the --hosts and --index options to override these values.
+    
+    \b
+    SAMPLE CRON TASKS
+      0,30 * * * * /usr/local/src/env/encyc/bin/encyc topics >> /var/log/encyc/core-syncwiki.log 2>&1
+      1,31 * * * * /usr/local/src/env/encyc/bin/encyc authors >> /var/log/encyc/core-syncwiki.log 2>&1
+      2,32 * * * * /usr/local/src/env/encyc/bin/encyc articles >> /var/log/encyc/core-syncwiki.log 2>&1
     """
     click.echo('Debug mode is %s' % ('on' if debug else 'off'))
 
