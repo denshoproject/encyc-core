@@ -113,10 +113,13 @@ def topics(hosts, index, report, dryrun, force):
               help='perform a trial run with no changes made')
 @click.option('--force', is_flag=True,
               help='Forcibly update records whether they need it or not.')
-def authors(hosts, index, report, dryrun, force):
+@click.option('--title', help='Single author to publish.')
+def authors(hosts, index, report, dryrun, force, title):
     """Index authors.
     """
-    publish.authors(hosts=hosts, index=index, report=report, dryrun=dryrun, force=force)
+    publish.authors(
+        hosts=hosts, index=index, report=report, dryrun=dryrun, force=force, title=title
+    )
 
 
 @encyc.command()
@@ -129,10 +132,13 @@ def authors(hosts, index, report, dryrun, force):
               help='perform a trial run with no changes made')
 @click.option('--force', is_flag=True,
               help='Forcibly update records whether they need it or not.')
-def articles(hosts, index, report, dryrun, force):
+@click.option('--title', help='Single article to publish.')
+def articles(hosts, index, report, dryrun, force, title):
     """Index articles.
     """
-    publish.articles(hosts=hosts, index=index, report=report, dryrun=dryrun, force=force)
+    publish.articles(
+        hosts=hosts, index=index, report=report, dryrun=dryrun, force=force, title=title
+    )
 
 
 @encyc.command()

@@ -205,7 +205,7 @@ def create_index(hosts, index):
     logprint('debug', 'DONE')
 
 @stopwatch
-def authors(hosts, index, report=False, dryrun=False, force=False):
+def authors(hosts, index, report=False, dryrun=False, force=False, title=None):
     i = set_hosts_index(hosts=hosts, index=index)
 
     logprint('debug', '------------------------------------------------------------------------')
@@ -214,19 +214,23 @@ def authors(hosts, index, report=False, dryrun=False, force=False):
     mw_articles = Proxy.articles_lastmod()
     logprint('debug', 'getting es_authors...')
     es_authors = Author.authors()
-    if force:
-        logprint('debug', 'forcibly update all authors')
-        authors_new = [page['title'] for page in es_authors]
-        authors_delete = []
-    else:
-        logprint('debug', 'determining new,delete...')
-        authors_new,authors_delete = Elasticsearch.authors_to_update(
-            mw_author_titles, mw_articles, es_authors)
     logprint('debug', 'mediawiki authors: %s' % len(mw_author_titles))
-    logprint('debug', 'authors to add: %s' % len(authors_new))
-    #logprint('debug', 'authors to delete: %s' % len(authors_delete))
-    if report:
-        return
+    
+    if title:
+        authors_new = [title]
+    else:
+        if force:
+            logprint('debug', 'forcibly update all authors')
+            authors_new = [page['title'] for page in es_authors]
+            authors_delete = []
+        else:
+            logprint('debug', 'determining new,delete...')
+            authors_new,authors_delete = Elasticsearch.authors_to_update(
+                mw_author_titles, mw_articles, es_authors)
+        logprint('debug', 'authors to add: %s' % len(authors_new))
+        #logprint('debug', 'authors to delete: %s' % len(authors_delete))
+        if report:
+            return
     
     #logprint('debug', 'deleting...')
     #for n,title in enumerate(authors_delete):
@@ -265,7 +269,7 @@ def authors(hosts, index, report=False, dryrun=False, force=False):
     logprint('debug', 'DONE')
 
 @stopwatch
-def articles(hosts, index, report=False, dryrun=False, force=False):
+def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
     i = set_hosts_index(hosts=hosts, index=index)
     
     logprint('debug', '------------------------------------------------------------------------')
@@ -275,20 +279,24 @@ def articles(hosts, index, report=False, dryrun=False, force=False):
     mw_articles = Proxy.articles_lastmod()
     logprint('debug', 'getting es_articles...')
     es_articles = Page.pages()
-    if force:
-        logprint('debug', 'forcibly update all articles')
-        articles_update = [page['title'] for page in es_articles]
-        articles_delete = []
-    else:
-        logprint('debug', 'determining new,delete...')
-        articles_update,articles_delete = Elasticsearch.articles_to_update(
-            mw_author_titles, mw_articles, es_articles)
     logprint('debug', 'mediawiki articles: %s' % len(mw_articles))
     logprint('debug', 'elasticsearch articles: %s' % len(es_articles))
-    logprint('debug', 'articles to update: %s' % len(articles_update))
-    #logprint('debug', 'articles to delete: %s' % len(articles_delete))
-    if report:
-        return
+    
+    if title:
+        articles_update = [title]
+    else:
+        if force:
+            logprint('debug', 'forcibly update all articles')
+            articles_update = [page['title'] for page in es_articles]
+            articles_delete = []
+        else:
+            logprint('debug', 'determining new,delete...')
+            articles_update,articles_delete = Elasticsearch.articles_to_update(
+                mw_author_titles, mw_articles, es_articles)
+        logprint('debug', 'articles to update: %s' % len(articles_update))
+        #logprint('debug', 'articles to delete: %s' % len(articles_delete))
+        if report:
+            return
     
     logprint('debug', 'adding articles...')
     posted = 0
