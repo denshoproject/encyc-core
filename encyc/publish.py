@@ -8,7 +8,7 @@ import os
 import sys
 
 from elasticsearch import Elasticsearch
-from elasticsearch.exceptions import NotFoundError, SerializationError
+from elasticsearch.exceptions import TransportError, NotFoundError, SerializationError
 from elasticsearch_dsl import Index, DocType, String
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.connections import connections
@@ -301,6 +301,7 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
     logprint('debug', 'adding articles...')
     posted = 0
     could_not_post = []
+    unpublished = []
     errors = []
     for n,title in enumerate(articles_update):
         logprint('debug', '--------------------')
@@ -312,7 +313,9 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
             logprint('debug', 'exists in elasticsearch')
         except:
             existing_page = None
+
         if (mwpage.published or config.MEDIAWIKI_SHOW_UNPUBLISHED):
+            # publish
             page_sources = [source['encyclopedia_id'] for source in mwpage.sources]
             for mwsource in mwpage.sources:
                 logprint('debug', '- source %s' % mwsource['encyclopedia_id'])
@@ -332,13 +335,21 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
                 except NotFoundError:
                     logprint('error', 'ERROR: Page(%s) NOT SAVED!' % title)
                     errors.append(title)
+        
         else:
+            # delete from ES if present
             logprint('debug', 'not publishable: %s' % mwpage)
-            could_not_post.append(mwpage)
+            if existing_page:
+                logprint('debug', 'deleting...')
+                existing_page.delete()
+                unpublished.append(mwpage)
     
     if could_not_post:
         logprint('debug', '========================================================================')
         logprint('debug', 'Could not post these: %s' % could_not_post)
+    if unpublished:
+        logprint('debug', '========================================================================')
+        logprint('debug', 'Unpublished these: %s' % unpublished)
     if errors:
         logprint('info', 'ERROR: %s titles were unpublishable:' % len(errors))
         for title in errors:
