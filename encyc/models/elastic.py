@@ -379,6 +379,10 @@ class Page(DocType):
     def from_mw(mwpage, page=None):
         """Creates an Page object from a models.legacy.Page object.
         """
+        try:
+            authors = mwpage.authors
+        except AttributeError:
+            authors = []
         if page:
             page.public = mwpage.public
             page.published = mwpage.published
@@ -392,7 +396,7 @@ class Page(DocType):
             page.categories = [category for category in mwpage.categories]
             page.coordinates = [coord for coord in mwpage.coordinates]
             page.source_ids = [source['encyclopedia_id'] for source in mwpage.sources]
-            page.authors_data = mwpage.authors
+            page.authors_data = authors
         else:
             page = Page(
                 meta = {'id': mwpage.url_title},
@@ -414,7 +418,7 @@ class Page(DocType):
                 categories = [category for category in mwpage.categories],
                 coordinates = [coord for coord in mwpage.coordinates],
                 source_ids = [source['encyclopedia_id'] for source in mwpage.sources],
-                authors_data = mwpage.authors,
+                authors_data = authors,
             )
         return page
 
