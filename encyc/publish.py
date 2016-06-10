@@ -383,22 +383,37 @@ def get(hosts, index, doctype, identifier):
     print('identifier "%s"' % identifier)
     
     if   doctype == 'articles':
-        o = Page.get(identifier)
-        print(o.__repr__())
-        print('TITLE: "%s"' % o.title)
-        print('--------------------')
-        print(o.body)
-        print('--------------------')
+        o = None
+        try:
+            o = Page.get(identifier)
+        except TransportError as e:
+            print(e)
+        if o:
+            print(o.__repr__())
+            print('TITLE: "%s"' % o.title)
+            print('--------------------')
+            print(o.body)
+            print('--------------------')
     
     elif doctype == 'authors':
-        o = Author.get(identifier)
-        print(o.__repr__())
-        _print_dict(o.to_dict())
+        o = None
+        try:
+            o = Author.get(identifier)
+        except TransportError as e:
+            print(e)
+        if o:
+            print(o.__repr__())
+            _print_dict(o.to_dict())
     
     elif doctype == 'sources':
-        o = Source.get(identifier)
-        print(o.__repr__())
-        _print_dict(o.to_dict())
+        o = None
+        try:
+            o = Source.get(identifier)
+        except TransportError as e:
+            print(e)
+        if o:
+            print(o.__repr__())
+            _print_dict(o.to_dict())
 
 def _print_dict(d):
     keys = d.keys()
