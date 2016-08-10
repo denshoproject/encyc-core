@@ -209,7 +209,7 @@ class Proxy(object):
         return pages
 
     @staticmethod
-    def page(url_title, request=None, index=None):
+    def page(url_title, request=None, index=config.DOCSTORE_INDEX):
         """
         @param page: Page title from URL.
         """
@@ -235,7 +235,7 @@ class Proxy(object):
         return r.status_code,r.text
     
     @staticmethod
-    def _mkpage(url_title, http_status, rawtext, request=None, index=None):
+    def _mkpage(url_title, http_status, rawtext, request=None, index=config.DOCSTORE_INDEX):
         """
         TODO rename me
         """
