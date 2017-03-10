@@ -83,7 +83,7 @@ install-setuptools: install-virtualenv
 
 get-app: get-encyc-core
 
-install-app: install-encyc-core
+install-app: install-setuptools install-encyc-core
 
 update-app: update-encyc-core install-configs
 
