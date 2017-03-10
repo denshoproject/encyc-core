@@ -126,7 +126,6 @@ format_json(client.indices.stats('encyc-production'))
 
 
     """
-    i = set_hosts_index(hosts=hosts, index=index)
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'MediaWiki')
     logprint('debug', ' MEDIAWIKI_API: %s' % config.MEDIAWIKI_API)
@@ -136,6 +135,7 @@ format_json(client.indices.stats('encyc-production'))
     num_mw_articles = len(mw_articles)
     logprint('debug', '       authors: %s' % num_mw_authors)
     logprint('debug', '      articles: %s' % num_mw_articles)
+    
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'Elasticsearch')
     logprint('debug', 'DOCSTORE_HOSTS (default): %s' % config.DOCSTORE_HOSTS)
@@ -144,28 +144,26 @@ format_json(client.indices.stats('encyc-production'))
         logprint('debug', 'docstore_hosts: %s' % hosts)
     if index != config.DOCSTORE_INDEX:
         logprint('debug', 'docstore_index: %s' % index)
-    from elasticsearch import Elasticsearch
-    client = Elasticsearch()
+    
+    i = set_hosts_index(hosts=hosts, index=index)
+    es = i.connection
+    
     try:
-        pingable = client.ping()
+        pingable = es.ping()
         if not pingable:
             logprint('error', "Can't ping the cluster!")
             return
     except elasticsearch.exceptions.ConnectionError:
         logprint('error', "Connection error when trying to ping the cluster!")
         return
-    index_names = client.indices.stats()['indices'].keys()
-    if not (index in index_names):
+    logprint('debug', 'ping ok')
+    
+    if es.indices.exists(index=index):
+        logprint('debug', '%s present' % index)
+    else:
         logprint('error', "Index '%s' doesn't exist!" % index)
         return
-    #info = client.info()
-    #logprint('debug', 'Info: %s' % format_json(info))
-    #logprint('debug', 'Indices: %s' % format_json(index_names))
-    #stats = client.indices.stats()['indices'][config.DOCSTORE_INDEX]
-    #logprint('debug', format_json(s))
-    #print('index %s' % s['index'])
-    #print('docs %s' % s['docs'])
-    #print(format_json(client.indices.stats('encyc-production')))
+    
     num_es_authors = len(Author.authors())
     num_es_articles = len(Page.pages())
     pc_authors = float(num_es_authors) / num_mw_authors
