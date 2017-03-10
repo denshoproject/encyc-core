@@ -137,13 +137,13 @@ class Author(DocType):
         """
         s = Author.search()[0:MAX_SIZE]
         s = s.sort('title_sort')
-        s = s.fields([
-            'url_title',
-            'title',
-            'title_sort',
-            'published',
-            'modified',
-        ])
+        #s = s.fields([
+        #    'url_title',
+        #    'title',
+        #    'title_sort',
+        #    'published',
+        #    'modified',
+        #])
         response = s.execute()
         data = [
             Author(
@@ -268,14 +268,14 @@ class Page(DocType):
         """
         s = Page.search()[0:MAX_SIZE]
         s = s.sort('title_sort')
-        s = s.fields([
-            'url_title',
-            'title',
-            'title_sort',
-            'published',
-            'modified',
-            'categories',
-        ])
+        #s = s.fields([
+        #    'url_title',
+        #    'title',
+        #    'title_sort',
+        #    'published',
+        #    'modified',
+        #    'categories',
+        #])
         response = s.execute()
         data = [
             Page(
