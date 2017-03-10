@@ -91,6 +91,17 @@ def reset(hosts, index, confirm):
 @click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
 @click.option('--index', default=settings.DOCSTORE_INDEX,
               help='Elasticsearch index to create.')
+@click.argument('path')
+def mappings(hosts, index, path):
+    """Push mappings to the specified index.
+    """
+    publish.push_mappings(hosts, index, path)
+
+
+@encyc.command()
+@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--index', default=settings.DOCSTORE_INDEX,
+              help='Elasticsearch index to create.')
 @click.option('--report', is_flag=True,
               help='Report number of records existing, to be indexed/updated.')
 @click.option('--dryrun', is_flag=True,

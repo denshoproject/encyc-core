@@ -194,15 +194,37 @@ def create_index(hosts, index):
     logprint('debug', 'creating new index')
     i = Index(index)
     i.create()
-    logprint('debug', 'creating mappings')
-    Author.init()
-    Page.init()
-    Source.init()
     logprint('debug', 'registering doc types')
     i.doc_type(Author)
     i.doc_type(Page)
     i.doc_type(Source)
     logprint('debug', 'DONE')
+
+def push_mappings(hosts, index, mappings_path):
+    """Pushes mappings from file into ES.
+    
+    @param path: Absolute path to dir containing facet files.
+    @param mappings_path: Absolute path to mappings JSON.
+    @returns: JSON dict with status code and response
+    """
+    logprint('debug', 'mappings')
+    i = set_hosts_index(hosts=hosts, index=index)
+    es = i.connection
+    print i
+    print es
+    with open(mappings_path, 'r') as f:
+        mappings = json.loads(f.read())
+    statuses = []
+    for mapping in mappings:
+        model = mapping.keys()[0]
+        status = es.indices.put_mapping(
+            index=index,
+            doc_type=model,
+            body=mapping[model],
+        )
+        statuses.append( {'model':model, 'status':status} )
+    #self.mappings = mappings_list
+    return statuses
 
 @stopwatch
 def authors(hosts, index, report=False, dryrun=False, force=False, title=None):
