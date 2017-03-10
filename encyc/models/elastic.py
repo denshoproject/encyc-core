@@ -526,14 +526,14 @@ class Source(DocType):
         """
         s = Source.search()[0:MAX_SIZE]
         s = s.sort('encyclopedia_id')
-        s = s.fields([
-            'encyclopedia_id',
-            'published',
-            'modified',
-            'headword',
-            'media_format',
-            'img_path',
-        ])
+        #s = s.fields([
+        #    'encyclopedia_id',
+        #    'published',
+        #    'modified',
+        #    'headword',
+        #    'media_format',
+        #    'img_path',
+        #])
         response = s.execute()
         data = [
             Source(
