@@ -198,6 +198,21 @@ def create_index(hosts, index):
     i.doc_type(Source)
     logprint('debug', 'DONE')
 
+@stopwatch
+def delete_alias(hosts, index, alias):
+    i = set_hosts_index(hosts=hosts, index=index)
+    result = i.connection.indices.delete_alias(index=index, name=alias)
+    logprint('debug', result)
+    logprint('debug', 'DONE')
+    
+@stopwatch
+def create_alias(hosts, index, alias):
+    logprint('debug', 'creating alias "%s"' % alias)
+    i = set_hosts_index(hosts=hosts, index=index)
+    result = i.connection.indices.put_alias(index=index, name=alias)
+    logprint('debug', result)
+    logprint('debug', 'DONE')
+
 def push_mappings(hosts, index, mappings_path):
     """Pushes mappings from file into ES.
     

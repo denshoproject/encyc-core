@@ -73,6 +73,20 @@ def delete(hosts, index, confirm):
 
 @encyc.command()
 @click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--index', default=settings.DOCSTORE_INDEX, help='Elasticsearch index.')
+@click.option('--alias', default=settings.DOCSTORE_HOSTS, help='Alias to create.')
+@click.option('--delete', is_flag=True, help='Delete specified alias.')
+def alias(hosts, index, alias, delete):
+    """Manage aliases.
+    """
+    if delete:
+        publish.delete_alias(hosts, index, alias)
+    else:
+        publish.create_alias(hosts, index, alias)
+
+
+@encyc.command()
+@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
 @click.option('--index', default=settings.DOCSTORE_INDEX,
               help='Elasticsearch index to reset.')
 @click.option('--confirm', is_flag=True,
