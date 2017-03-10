@@ -1,5 +1,7 @@
 # apt-get install redis-server
 
+bpython==0.16
+
 click==6.7
 beautifulsoup4==4.5.3
 elasticsearch==5.2.0
