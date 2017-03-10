@@ -158,8 +158,18 @@ format_json(client.indices.stats('encyc-production'))
         return
     logprint('debug', 'ping ok')
     
+    logprint('debug', 'Indexes')
+    index_names = es.indices.stats()['indices'].keys()
+    for i in index_names:
+        logprint('debug', '- %s' % i)
+    
+    logprint('debug', 'Aliases')
+    aliases = es.cat.aliases()
+    for a in aliases:
+        logprint('debug', '- %s -> %s' % (a['alias'], a['index']))
+    
     if es.indices.exists(index=index):
-        logprint('debug', '%s present' % index)
+        logprint('debug', 'Index %s present' % index)
     else:
         logprint('error', "Index '%s' doesn't exist!" % index)
         return
@@ -168,13 +178,13 @@ format_json(client.indices.stats('encyc-production'))
     num_es_articles = len(Page.pages())
     pc_authors = float(num_es_authors) / num_mw_authors
     pc_articles = float(num_es_articles) / num_mw_articles
-    logprint('debug', '       authors: {}/{} {:.2%}'.format(
+    logprint('debug', ' authors: {} of {} ({:.2%})'.format(
         num_es_authors, num_mw_authors, pc_authors,
     ))
-    logprint('debug', '      articles: {}/{} {:.2%}'.format(
+    logprint('debug', 'articles: {} of {} ({:.2%})'.format(
         num_es_articles, num_mw_articles, pc_articles,
     ))
-    logprint('debug', '       sources: %s' % len(Source.sources()))
+    logprint('debug', ' sources: %s' % len(Source.sources()))
 
 @stopwatch
 def delete_index(hosts, index):
