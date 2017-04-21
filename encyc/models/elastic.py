@@ -229,6 +229,26 @@ class Page(DocType):
             'parsed': String(index='not_analyzed', multi=True),
         }
     )
+    databox_primarysecondary = String(index='not_analyzed', multi=True)
+    databox_readinglevel = String(index='not_analyzed', multi=True)
+    databox_interestlevel = String(index='not_analyzed', multi=True)
+    databox_title = String()
+    databox_pov = String(index='not_analyzed', multi=True)
+    databox_relatedevents = String(index='not_analyzed', multi=True)
+    databox_chronology = String(index='not_analyzed', multi=True)
+    databox_freewebversion = String(index='not_analyzed', multi=True)
+    databox_lexile = String(index='not_analyzed', multi=True)
+    databox_guidedreadinglevel = String(index='not_analyzed', multi=True)
+    databox_theme = String(index='not_analyzed', multi=True)
+    databox_denshotopic = String(index='not_analyzed', multi=True)
+    databox_rgmediatype = String(index='not_analyzed', multi=True)
+    databox_facility = String(index='not_analyzed', multi=True)
+    databox_genre = String(index='not_analyzed', multi=True)
+    databox_warnings = String(index='not_analyzed', multi=True)
+    databox_creators = String(index='not_analyzed', multi=True)
+    databox_geography = String(index='not_analyzed', multi=True)
+    databox_availability = String(index='not_analyzed', multi=True)
+    databox_hasteachingaids = String(index='not_analyzed', multi=True)
     
     class Meta:
         index = config.DOCSTORE_INDEX
@@ -420,6 +440,13 @@ class Page(DocType):
                 source_ids = [source['encyclopedia_id'] for source in mwpage.sources],
                 authors_data = authors,
             )
+        if mwpage.databoxes:
+            # naive implementation: just dump every databox field into Page.
+            # Field names are just "databox_" plus lowercased fieldname.
+            for key,databox in mwpage.databoxes.iteritems():
+                for fieldname,data in databox.iteritems():
+                    fieldname = 'databox_%s' % fieldname
+                    setattr(page, fieldname, data)
         return page
 
 

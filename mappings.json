@@ -45,8 +45,29 @@
         "parsed": {"type": "string", "index": "not_analyzed"}
     },
     "type": "nested"
-}
-                    
+},
+
+"databox_primarysecondary": {"type": "string", "index": "not_analyzed"},
+"databox_readinglevel":     {"type": "string", "index": "not_analyzed"},
+"databox_interestlevel":    {"type": "string", "index": "not_analyzed"},
+"databox_title":            {"type": "string"},
+"databox_pov":              {"type": "string", "index": "not_analyzed"},
+"databox_relatedevents":    {"type": "string", "index": "not_analyzed"},
+"databox_chronology":       {"type": "string", "index": "not_analyzed"},
+"databox_freewebversion":   {"type": "string", "index": "not_analyzed"},
+"databox_lexile":           {"type": "string", "index": "not_analyzed"},
+"databox_guidedreadinglevel": {"type": "string", "index": "not_analyzed"},
+"databox_theme":            {"type": "string", "index": "not_analyzed"},
+"databox_denshotopic":      {"type": "string", "index": "not_analyzed"},
+"databox_rgmediatype":      {"type": "string", "index": "not_analyzed"},
+"databox_facility":         {"type": "string", "index": "not_analyzed"},
+"databox_genre":            {"type": "string", "index": "not_analyzed"},
+"databox_warnings":         {"type": "string", "index": "not_analyzed"},
+"databox_creators":         {"type": "string", "index": "not_analyzed"},
+"databox_geography":        {"type": "string", "index": "not_analyzed"},
+"databox_availability":     {"type": "string", "index": "not_analyzed"},
+"databox_hasteachingaids":  {"type": "string", "index": "not_analyzed"},
+
             }
         }
     },
