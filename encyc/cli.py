@@ -103,13 +103,11 @@ def reset(hosts, index, confirm):
 
 @encyc.command()
 @click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
-@click.option('--index', default=settings.DOCSTORE_INDEX,
-              help='Elasticsearch index to create.')
-@click.argument('path')
-def mappings(hosts, index, path):
+@click.option('--index', default=settings.DOCSTORE_INDEX, help='Elasticsearch index to create.')
+def mappings(hosts, index):
     """Push mappings to the specified index.
     """
-    publish.push_mappings(hosts, index, path)
+    publish.push_mappings(hosts, index)
 
 
 @encyc.command()
