@@ -287,13 +287,16 @@ def extract_databoxes(body, div_ids):
     databoxes = {}
     for div_id in div_ids:
         data = {}
-        text = soup.find(id=div_id).p.contents[0]
-        for item in text.split('\n'):
-            if item.strip():
-                key,val = item.strip().split(':')
-                if ';' in val:
-                    val = [item.strip() for item in val.split(';') if item.strip()]
-                # keys are lowercased
-                data[key.lower()] = val
-        databoxes[div_id] = data
+        tag = soup.find(id=div_id)
+        if tag:
+            for item in tag.p.contents[0].split('\n'):
+                item = item.strip()
+                if item and (':' in item):
+                    # Note: many fields contain colons
+                    key,val = item.split(':', 1)
+                    if ';' in val:
+                        val = [i.strip() for i in val.split(';') if i.strip()]
+                    # keys are lowercased
+                    data[key.lower()] = val
+            databoxes[div_id] = data
     return databoxes
