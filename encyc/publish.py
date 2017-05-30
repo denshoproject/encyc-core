@@ -232,11 +232,11 @@ def push_mappings(hosts, index):
     logprint('debug', 'mappings')
     i = Index(index)
     print('Author')
-    elastic.Author.init()
+    Author.init()
     print('Source')
-    elastic.Source.init()
+    Source.init()
     print('Page')
-    elastic.Page.init()
+    Page.init()
     print 'ok'
 
 @stopwatch
