@@ -46,7 +46,10 @@ try:
 except:
     MEDIAWIKI_API_HTPASS = None
 MEDIAWIKI_API_TIMEOUT = config.get('mediawiki', 'api_timeout')
-MEDIAWIKI_DATABOXES = config.get('mediawiki', 'databoxes').split(',')
+MEDIAWIKI_DATABOXES = {
+    keyval.split(':')[0]: keyval.split(':')[1]
+    for keyval in config.get('mediawiki', 'databoxes').split(';')
+}
 MEDIAWIKI_HIDDEN_CATEGORIES = config.get('mediawiki', 'hidden_categories').split(',')
 MEDIAWIKI_SHOW_UNPUBLISHED = config.getboolean('mediawiki', 'show_unpublished')
 MEDIAWIKI_DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'

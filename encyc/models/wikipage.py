@@ -259,7 +259,7 @@ def _rm_tags(html, tags=['html', 'body']):
         html = html.replace('<%s>' % tag, '').replace('</%s>' % tag, '')
     return html
 
-def extract_databoxes(body, div_ids):
+def extract_databoxes(body, databox_divs_namespaces):
     """Find the hidden databoxes, extract data. 
     
     <div id="databox-Books" style="display:none;">
@@ -280,12 +280,12 @@ def extract_databoxes(body, div_ids):
     }
     
     @param body: str raw HTML
-    @param div_ids: list
+    @param databox_divs_namespaces: dict
     @returns: text,data
     """
     soup = BeautifulSoup(body, "lxml")
     databoxes = {}
-    for div_id in div_ids:
+    for div_id in databox_divs_namespaces.keys():
         data = {}
         tag = soup.find(id=div_id)
         if tag:

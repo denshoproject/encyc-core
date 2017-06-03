@@ -229,26 +229,27 @@ class Page(DocType):
             'parsed': String(index='not_analyzed', multi=True),
         }
     )
-    databox_primarysecondary = String(index='not_analyzed', multi=True)
-    databox_readinglevel = String(index='not_analyzed', multi=True)
-    databox_interestlevel = String(index='not_analyzed', multi=True)
-    databox_title = String()
-    databox_pov = String(index='not_analyzed', multi=True)
-    databox_relatedevents = String(index='not_analyzed', multi=True)
-    databox_chronology = String(index='not_analyzed', multi=True)
-    databox_freewebversion = String(index='not_analyzed', multi=True)
-    databox_lexile = String(index='not_analyzed', multi=True)
-    databox_guidedreadinglevel = String(index='not_analyzed', multi=True)
-    databox_theme = String(index='not_analyzed', multi=True)
-    databox_denshotopic = String(index='not_analyzed', multi=True)
-    databox_rgmediatype = String(index='not_analyzed', multi=True)
-    databox_facility = String(index='not_analyzed', multi=True)
-    databox_genre = String(index='not_analyzed', multi=True)
-    databox_warnings = String(index='not_analyzed', multi=True)
-    databox_creators = String(index='not_analyzed', multi=True)
-    databox_geography = String(index='not_analyzed', multi=True)
-    databox_availability = String(index='not_analyzed', multi=True)
-    databox_hasteachingaids = String(index='not_analyzed', multi=True)
+    
+    rg_rgmediatype = String(index='not_analyzed', multi=True)
+    rg_title = String()
+    rg_creators = String(multi=True)
+    rg_interestlevel = String(index='not_analyzed', multi=True)
+    rg_readinglevel = String(index='not_analyzed', multi=True)
+    rg_theme = String(index='not_analyzed', multi=True)
+    rg_genre = String(index='not_analyzed', multi=True)
+    rg_pov = String()
+    rg_relatedevents = String()
+    rg_availability = String(index='not_analyzed')
+    rg_freewebversion = String(index='not_analyzed')
+    rg_denshotopic = String(index='not_analyzed', multi=True)
+    rg_geography = String(index='not_analyzed', multi=True)
+    rg_facility = String(index='not_analyzed', multi=True)
+    rg_chronology = String(index='not_analyzed', multi=True)
+    rg_hasteachingaids = String(index='not_analyzed')
+    rg_warnings = String()
+    #rg_primarysecondary = String(index='not_analyzed', multi=True)
+    #rg_lexile = String(index='not_analyzed', multi=True)
+    #rg_guidedreadinglevel = String(index='not_analyzed', multi=True)
     
     class Meta:
         index = config.DOCSTORE_INDEX
@@ -442,11 +443,14 @@ class Page(DocType):
             )
         if mwpage.databoxes:
             # naive implementation: just dump every databox field into Page.
-            # Field names are just "databox_" plus lowercased fieldname.
+            # Field names are just "PREFIX_" plus lowercased fieldname.
             for key,databox in mwpage.databoxes.iteritems():
-                for fieldname,data in databox.iteritems():
-                    fieldname = 'databox_%s' % fieldname
-                    setattr(page, fieldname, data)
+                # only include databoxes in configs
+                if key in config.MEDIAWIKI_DATABOXES.keys():
+                    prefix = config.MEDIAWIKI_DATABOXES.get(key)
+                    for fieldname,data in databox.iteritems():
+                        fieldname = '%s_%s' % (prefix, fieldname)
+                        setattr(page, fieldname, data)
         return page
 
 
