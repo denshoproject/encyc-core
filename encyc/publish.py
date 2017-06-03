@@ -229,15 +229,15 @@ def push_mappings(hosts, index):
     @returns: nothing
     """
     i = set_hosts_index(hosts=hosts, index=index)
-    logprint('debug', 'mappings')
+    logprint('info', 'mappings')
     i = Index(index)
-    print('Author')
+    logprint('info', 'Author')
     Author.init()
-    print('Source')
+    logprint('info', 'Source')
     Source.init()
-    print('Page')
+    logprint('info', 'Page')
     Page.init()
-    print 'ok'
+    logprint('info', 'ok')
 
 @stopwatch
 def authors(hosts, index, report=False, dryrun=False, force=False, title=None):
