@@ -106,6 +106,17 @@ get-encyc-core:
 	source $(VIRTUALENV)/bin/activate; \
 	pip install --download=$(PIP_CACHE_DIR) --exists-action=i -r $(PIP_REQUIREMENTS_DIR)/production.txt
 
+setup-encyc-core: install-configs
+	@echo ""
+	@echo "setup encyc-core -----------------------------------------------------"
+	cd $(INSTALLDIR)
+	source $(VIRTUALENV)/bin/activate; \
+	python setup.py install
+# logs dir
+	-mkdir $(LOGS_BASE)
+	chown -R $(USER).root $(LOGS_BASE)
+	chmod -R 755 $(LOGS_BASE)
+
 install-encyc-core:
 	@echo ""
 	@echo "install encyc-core -----------------------------------------------------"
