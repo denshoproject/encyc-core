@@ -136,6 +136,22 @@ def topics(hosts, index, report, dryrun, force):
               help='perform a trial run with no changes made')
 @click.option('--force', is_flag=True,
               help='Forcibly update records whether they need it or not.')
+def vocabs(hosts, index, report, dryrun, force):
+    """Index DDR vocabulary facets and terms.
+    """
+    publish.vocabs(hosts=hosts, index=index, report=report, dryrun=dryrun, force=force)
+
+
+@encyc.command()
+@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--index', default=settings.DOCSTORE_INDEX,
+              help='Elasticsearch index to create.')
+@click.option('--report', is_flag=True,
+              help='Report number of records existing, to be indexed/updated.')
+@click.option('--dryrun', is_flag=True,
+              help='perform a trial run with no changes made')
+@click.option('--force', is_flag=True,
+              help='Forcibly update records whether they need it or not.')
 @click.option('--title', help='Single author to publish.')
 def authors(hosts, index, report, dryrun, force, title):
     """Index authors.

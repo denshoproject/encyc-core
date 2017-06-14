@@ -19,6 +19,7 @@ from encyc import docstore
 from encyc.models.legacy import Proxy
 from encyc.models import Elasticsearch
 from encyc.models import Author, Page, Source
+from encyc.models import Facet, TopicTerm, FacilityTerm
 
 
 def stopwatch(fn):
@@ -237,6 +238,12 @@ def push_mappings(hosts, index):
     Source.init()
     logprint('info', 'Page')
     Page.init()
+    logprint('info', 'TopicTerm')
+    TopicTerm.init()
+    logprint('info', 'FacilityTerm')
+    FacilityTerm.init()
+    logprint('info', 'Facet')
+    Facet.init()
     logprint('info', 'ok')
 
 @stopwatch
@@ -397,7 +404,26 @@ def topics(hosts, index, report=False, dryrun=False, force=False):
 
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'indexing topics...')
+    logprint('debug', config.DDR_TOPICS_SRC_URL)
     Elasticsearch.index_topics()
+    logprint('debug', 'DONE')
+
+@stopwatch
+def vocabs(hosts, index, report=False, dryrun=False, force=False):
+    i = set_hosts_index(hosts=hosts, index=index)
+
+    logprint('debug', '------------------------------------------------------------------------')
+    logprint('debug', 'indexing facet terms...')
+    facets = {}
+    for f in config.DDR_VOCABS:
+        logprint('debug', f)
+        facet = Facet.retrieve(f)
+        logprint('debug', facet)
+        facet.save()
+        for term in facet.terms:
+            logprint('debug', '- %s' % term)
+            term.save()
+        
     logprint('debug', 'DONE')
 
 

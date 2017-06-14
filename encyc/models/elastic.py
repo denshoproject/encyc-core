@@ -34,9 +34,12 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 
+import requests
+
 from elasticsearch.exceptions import NotFoundError
 from elasticsearch_dsl import Index
-from elasticsearch_dsl import DocType, String, Date, Nested, Boolean
+from elasticsearch_dsl import DocType, InnerObjectWrapper
+from elasticsearch_dsl import String, Date, Nested, Boolean
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.connections import connections
 
@@ -684,6 +687,165 @@ class Citation(object):
         self.retrieved = datetime.now()
 
 
+class FacetTerm(DocType):
+    id = String(index='not_analyzed')  # Elasticsearch id
+    facet_id = String(index='not_analyzed')
+    title = String()
+    
+    class Meta:
+        index = config.DOCSTORE_INDEX
+        doc_type = 'facetterms'
+    
+    def __repr__(self):
+        return "<FacetTerm '%s'>" % (self.id)
+    
+    def __str__(self):
+        return str(self.id)
+
+class TopicTerm(FacetTerm):
+    id = String(index='not_analyzed')  # Elasticsearch id
+    facet_id = String(index='not_analyzed')
+    title = String()
+    _title = String()
+    description = String()
+    path = String(index='not_analyzed')
+    parent_id = String(index='not_analyzed')
+    ancestors = String(index='not_analyzed', multi=True)
+    children = String(index='not_analyzed', multi=True)
+    siblings = String(index='not_analyzed', multi=True)
+    encyc_urls = String(index='not_analyzed', multi=True)
+    weight = String()
+    
+    class Meta:
+        index = config.DOCSTORE_INDEX
+        doc_type = 'topics'
+    
+    def __repr__(self):
+        return "<TopicTerm '%s'>" % (self.id)
+    
+    @staticmethod
+    def from_dict(facet_id, data):
+        term = TopicTerm(
+            meta = {'id': data['id']},
+            id = data['id'],
+            facet_id = facet_id,
+            _title = data['_title'],
+            title = data['title'],
+            description = data['description'],
+            path = data['path'],
+            parent_id = None,
+            ancestors = data['ancestors'],
+            children = data['children'],
+            siblings = data['siblings'],
+            encyc_urls = data['encyc_urls'],
+            weight = None,
+        )
+        term.parent_id = None
+        if data.get('parent_id'):
+            term.parent_id = int(data['parent_id'])
+        term.weight = None
+        if data.get('weight'):
+            term.weight = int(data['weight'])
+        return term
+
+class Location(InnerObjectWrapper):
+    pass
+
+class GeoPoint(InnerObjectWrapper):
+    pass
+
+class ELink(InnerObjectWrapper):
+    pass
+
+class FacilityTerm(FacetTerm):
+    id = String(index='not_analyzed')  # Elasticsearch id
+    facet_id = String(index='not_analyzed')
+    type = String(index='not_analyzed')
+    title = String()
+    locations = Nested(
+        doc_class=Location,
+        properties={
+            'label': String(),
+            'geopoint': Nested(
+                doc_class=GeoPoint,
+                properties={
+                    'lat': String(),
+                    'lng': String(),
+                }
+            )
+        }
+    )
+    elinks = Nested(
+        doc_class=ELink,
+        properties={
+            'label': String(),
+            'url': String(index='not_analyzed'),
+        }
+    )
+    
+    class Meta:
+        index = config.DOCSTORE_INDEX
+        doc_type = 'facility'
+    
+    def __repr__(self):
+        return "<FacilityTerm '%s'>" % (self.id)
+    
+    @staticmethod
+    def from_dict(facet_id, data):
+        term = FacilityTerm(
+            meta = {'id': data['id']},
+            id = data['id'],
+            facet_id = facet_id,
+            title = data['title'],
+            type = data['type'],
+            elinks = data['elinks'],
+            locations = data['location'],
+        )
+        return term
+
+FACET_TERM_TYPES = {
+    'topics': TopicTerm,
+    'facility': FacilityTerm,
+    'topicsterms': TopicTerm,
+    'facilityterms': FacilityTerm,
+}
+
+class Facet(DocType):
+    id = String(index='not_analyzed')  # Elasticsearch id
+    title = String()
+    description = String()
+    terms = []
+    
+    class Meta:
+        index = config.DOCSTORE_INDEX
+        doc_type = 'facets'
+    
+    def __repr__(self):
+        return "<Facet '%s'>" % self.id
+    
+    def __str__(self):
+        return self.id
+
+    @staticmethod
+    def retrieve(facet_id):
+        url = '%s/%s.json' % (config.DDR_VOCABS_BASE, facet_id)
+        logging.debug(url)
+        r = requests.get(url)
+        logging.debug(r.status_code)
+        data = json.loads(r.text)
+        facet = Facet(
+            meta = {'id': facet_id},
+            id=data['id'],
+            title=data['title'],
+            description=data['description'],
+        )
+        facet.terms = [
+            FACET_TERM_TYPES[facet_id].from_dict(facet_id, d)
+            for d in data['terms']
+        ]
+        return facet
+
+
 class Elasticsearch(object):
     """Interface to Elasticsearch backend
     NOTE: not a Django model object!
@@ -769,10 +931,12 @@ class Elasticsearch(object):
         @param json_text: unicode Raw topics.json file text.
         @param url: URL of topics.json
         """
+        logging.debug('getting topics: %s' % url)
         if url and not json_text:
             r = http.get(url)
             if r.status_code == 200:
                 json_text = r.text
+                logging.debug('ok')
         docstore.post(
             config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, 'vocab',
             'topics', json.loads(json_text),

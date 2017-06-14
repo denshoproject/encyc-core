@@ -74,6 +74,8 @@ DDR_API = config.get('ddr', 'api_url')
 DDR_MEDIA_URL = config.get('ddr', 'media_url')
 DDR_MEDIA_URL_LOCAL = config.get('ddr', 'media_url_local')
 DDR_MEDIA_URL_LOCAL_MARKER = config.get('ddr', 'media_url_local_marker')
+DDR_VOCABS_BASE = config.get('ddr', 'vocabs_base')
+DDR_VOCABS = config.get('ddr', 'vocabs').split(',')
 DDR_TOPICS_SRC_URL = config.get('ddr', 'topics_src_url')
 DDR_TOPICS_BASE = config.get('ddr', 'topics_base')
 
