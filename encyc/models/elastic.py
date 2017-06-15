@@ -687,67 +687,6 @@ class Citation(object):
         self.retrieved = datetime.now()
 
 
-class FacetTerm(DocType):
-    id = String(index='not_analyzed')  # Elasticsearch id
-    facet_id = String(index='not_analyzed')
-    title = String()
-    
-    class Meta:
-        index = config.DOCSTORE_INDEX
-        doc_type = 'facetterms'
-    
-    def __repr__(self):
-        return "<FacetTerm '%s'>" % (self.id)
-    
-    def __str__(self):
-        return str(self.id)
-
-class TopicTerm(FacetTerm):
-    id = String(index='not_analyzed')  # Elasticsearch id
-    facet_id = String(index='not_analyzed')
-    title = String()
-    _title = String()
-    description = String()
-    path = String(index='not_analyzed')
-    parent_id = String(index='not_analyzed')
-    ancestors = String(index='not_analyzed', multi=True)
-    children = String(index='not_analyzed', multi=True)
-    siblings = String(index='not_analyzed', multi=True)
-    encyc_urls = String(index='not_analyzed', multi=True)
-    weight = String()
-    
-    class Meta:
-        index = config.DOCSTORE_INDEX
-        doc_type = 'topics'
-    
-    def __repr__(self):
-        return "<TopicTerm '%s'>" % (self.id)
-    
-    @staticmethod
-    def from_dict(facet_id, data):
-        term = TopicTerm(
-            meta = {'id': data['id']},
-            id = data['id'],
-            facet_id = facet_id,
-            _title = data['_title'],
-            title = data['title'],
-            description = data['description'],
-            path = data['path'],
-            parent_id = None,
-            ancestors = data['ancestors'],
-            children = data['children'],
-            siblings = data['siblings'],
-            encyc_urls = data['encyc_urls'],
-            weight = None,
-        )
-        term.parent_id = None
-        if data.get('parent_id'):
-            term.parent_id = int(data['parent_id'])
-        term.weight = None
-        if data.get('weight'):
-            term.weight = int(data['weight'])
-        return term
-
 class Location(InnerObjectWrapper):
     pass
 
@@ -757,11 +696,23 @@ class GeoPoint(InnerObjectWrapper):
 class ELink(InnerObjectWrapper):
     pass
 
-class FacilityTerm(FacetTerm):
+class FacetTerm(DocType):
     id = String(index='not_analyzed')  # Elasticsearch id
     facet_id = String(index='not_analyzed')
-    type = String(index='not_analyzed')
+    term_id = String(index='not_analyzed')
     title = String()
+    # topics
+    _title = String()
+    description = String()
+    path = String(index='not_analyzed')
+    parent_id = String(index='not_analyzed')
+    ancestors = String(index='not_analyzed', multi=True)
+    children = String(index='not_analyzed', multi=True)
+    siblings = String(index='not_analyzed', multi=True)
+    encyc_urls = String(index='not_analyzed', multi=True)
+    weight = String()
+    # facility
+    type = String(index='not_analyzed')
     locations = Nested(
         doc_class=Location,
         properties={
@@ -785,30 +736,73 @@ class FacilityTerm(FacetTerm):
     
     class Meta:
         index = config.DOCSTORE_INDEX
-        doc_type = 'facility'
+        doc_type = 'facetterms'
     
     def __repr__(self):
-        return "<FacilityTerm '%s'>" % (self.id)
+        return "<FacetTerm '%s'>" % self.id
+    
+    def __str__(self):
+        return self.id
     
     @staticmethod
     def from_dict(facet_id, data):
-        term = FacilityTerm(
-            meta = {'id': data['id']},
-            id = data['id'],
+        oid = '-'.join([
+            facet_id, str(data['id'])
+        ])
+        term = FacetTerm(
+            meta = {'id': oid},
+            id = oid,
             facet_id = facet_id,
+            term_id = data['id'],
             title = data['title'],
-            type = data['type'],
-            elinks = data['elinks'],
-            locations = data['location'],
         )
+        
+        if facet_id in ['topics', 'topic']:
+            term._title = data['_title']
+            term.description = data['description']
+            term.path = data['path']
+            term.ancestors = data['ancestors']
+            term.children = data['children']
+            term.siblings = data['siblings']
+            term.encyc_urls = data['encyc_urls']
+            term.parent_id = None
+            if data.get('parent_id'):
+                term.parent_id = int(data['parent_id'])
+            term.weight = None
+            if data.get('weight'):
+                term.weight = int(data['weight'])
+        
+        elif facet_id in ['facilities', 'facility']:
+            term.type = data['type']
+            term.elinks = data['elinks']
+            term.locations = []
+            # TODO make this handle multiple locations
+            term.locations.append(
+                data['location']
+            )
         return term
 
-FACET_TERM_TYPES = {
-    'topics': TopicTerm,
-    'facility': FacilityTerm,
-    'topicsterms': TopicTerm,
-    'facilityterms': FacilityTerm,
-}
+    @staticmethod
+    def terms(facet_id=None):
+        """Returns list of Terms for facet_id.
+        
+        @returns: list
+        """
+        s = FacetTerm.search()[0:MAX_SIZE]
+        if facet_id:
+            s = s.query("match", facet_id=facet_id)
+        s = s.sort('id')
+        response = s.execute()
+        data = [
+            FacetTerm(
+                id = hitvalue(hit, 'id'),
+                facet_id = hitvalue(hit, 'facet_id'),
+                title = hitvalue(hit, 'title'),
+                type = hitvalue(hit, 'type'),
+            )
+            for hit in response
+        ]
+        return data
 
 class Facet(DocType):
     id = String(index='not_analyzed')  # Elasticsearch id
@@ -827,6 +821,25 @@ class Facet(DocType):
         return self.id
 
     @staticmethod
+    def facets():
+        """Returns list of Facets.
+        
+        @returns: list
+        """
+        s = Facet.search()[0:MAX_SIZE]
+        s = s.sort('id')
+        response = s.execute()
+        data = [
+            FacetTerm(
+                id = hitvalue(hit, 'id'),
+                title = hitvalue(hit, 'title'),
+                description = hitvalue(hit, 'description'),
+            )
+            for hit in response
+        ]
+        return data
+    
+    @staticmethod
     def retrieve(facet_id):
         url = '%s/%s.json' % (config.DDR_VOCABS_BASE, facet_id)
         logging.debug(url)
@@ -840,7 +853,7 @@ class Facet(DocType):
             description=data['description'],
         )
         facet.terms = [
-            FACET_TERM_TYPES[facet_id].from_dict(facet_id, d)
+            FacetTerm.from_dict(facet_id, d)
             for d in data['terms']
         ]
         return facet

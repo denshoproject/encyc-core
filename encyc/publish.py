@@ -19,7 +19,7 @@ from encyc import docstore
 from encyc.models.legacy import Proxy
 from encyc.models import Elasticsearch
 from encyc.models import Author, Page, Source
-from encyc.models import Facet, TopicTerm, FacilityTerm
+from encyc.models import Facet, FacetTerm
 
 
 def stopwatch(fn):
@@ -238,10 +238,8 @@ def push_mappings(hosts, index):
     Source.init()
     logprint('info', 'Page')
     Page.init()
-    logprint('info', 'TopicTerm')
-    TopicTerm.init()
-    logprint('info', 'FacilityTerm')
-    FacilityTerm.init()
+    logprint('info', 'FacetTerm')
+    FacetTerm.init()
     logprint('info', 'Facet')
     Facet.init()
     logprint('info', 'ok')
