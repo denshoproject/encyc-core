@@ -33,6 +33,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
+import urlparse
 
 import requests
 
@@ -709,7 +710,6 @@ class FacetTerm(DocType):
     ancestors = String(index='not_analyzed', multi=True)
     children = String(index='not_analyzed', multi=True)
     siblings = String(index='not_analyzed', multi=True)
-    encyc_urls = String(index='not_analyzed', multi=True)
     weight = String()
     # facility
     type = String(index='not_analyzed')
@@ -726,7 +726,8 @@ class FacetTerm(DocType):
             )
         }
     )
-    elinks = Nested(
+    # both
+    encyc_urls = Nested(
         doc_class=ELink,
         properties={
             'label': String(),
@@ -756,7 +757,7 @@ class FacetTerm(DocType):
             term_id = data['id'],
             title = data['title'],
         )
-        
+
         if facet_id in ['topics', 'topic']:
             term._title = data['_title']
             term.description = data['description']
@@ -764,7 +765,16 @@ class FacetTerm(DocType):
             term.ancestors = data['ancestors']
             term.children = data['children']
             term.siblings = data['siblings']
-            term.encyc_urls = data['encyc_urls']
+            term.encyc_urls = []
+            if data.get('encyc_urls'):
+                for item in data['encyc_urls']:
+                    # just the title part of the URL
+                    url = urlparse.urlparse(item).path.replace('/','')
+                    encyc_url = {
+                        'url_title': url,
+                        'title': urlparse.unquote(url),
+                    }
+                    term.encyc_urls.append(encyc_url)
             term.parent_id = None
             if data.get('parent_id'):
                 term.parent_id = int(data['parent_id'])
@@ -774,7 +784,15 @@ class FacetTerm(DocType):
         
         elif facet_id in ['facilities', 'facility']:
             term.type = data['type']
-            term.elinks = data['elinks']
+            term.encyc_urls = []
+            if data.get('elinks'):
+                for item in data['elinks']:
+                    # just the title part of the URL, leave the domain etc
+                    encyc_url = {
+                        'url_title': urlparse.urlparse(item['url']).path.replace('/',''),
+                        'title': item['label'],
+                    }
+                    term.encyc_urls.append(encyc_url)
             term.locations = []
             # TODO make this handle multiple locations
             term.locations.append(
