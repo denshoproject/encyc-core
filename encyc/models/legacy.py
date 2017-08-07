@@ -62,6 +62,7 @@ class Page(object):
     coordinates = ()
     prev_page = None
     next_page = None
+    databoxes = {}
     
     def __repr__(self):
         return "<Page '%s'>" % self.url_title
@@ -267,6 +268,10 @@ class Proxy(object):
             page.sources = helpers.find_primary_sources(
                 config.SOURCES_API,
                 pagedata['parse']['images'])
+            page.databoxes = wikipage.extract_databoxes(
+                pagedata['parse']['text']['*'],
+                config.MEDIAWIKI_DATABOXES
+            )
             page.body = wikipage.parse_mediawiki_text(
                 pagedata['parse']['text']['*'],
                 page.sources,

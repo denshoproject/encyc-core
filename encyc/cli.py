@@ -103,13 +103,11 @@ def reset(hosts, index, confirm):
 
 @encyc.command()
 @click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
-@click.option('--index', default=settings.DOCSTORE_INDEX,
-              help='Elasticsearch index to create.')
-@click.argument('path')
-def mappings(hosts, index, path):
+@click.option('--index', default=settings.DOCSTORE_INDEX, help='Elasticsearch index to create.')
+def mappings(hosts, index):
     """Push mappings to the specified index.
     """
-    publish.push_mappings(hosts, index, path)
+    publish.push_mappings(hosts, index)
 
 
 @encyc.command()
@@ -126,6 +124,22 @@ def topics(hosts, index, report, dryrun, force):
     """Index DDR topics.
     """
     publish.topics(hosts=hosts, index=index, report=report, dryrun=dryrun, force=force)
+
+
+@encyc.command()
+@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--index', default=settings.DOCSTORE_INDEX,
+              help='Elasticsearch index to create.')
+@click.option('--report', is_flag=True,
+              help='Report number of records existing, to be indexed/updated.')
+@click.option('--dryrun', is_flag=True,
+              help='perform a trial run with no changes made')
+@click.option('--force', is_flag=True,
+              help='Forcibly update records whether they need it or not.')
+def vocabs(hosts, index, report, dryrun, force):
+    """Index DDR vocabulary facets and terms.
+    """
+    publish.vocabs(hosts=hosts, index=index, report=report, dryrun=dryrun, force=force)
 
 
 @encyc.command()

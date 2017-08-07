@@ -19,6 +19,7 @@ from encyc import docstore
 from encyc.models.legacy import Proxy
 from encyc.models import Elasticsearch
 from encyc.models import Author, Page, Source
+from encyc.models import Facet, FacetTerm
 
 
 def stopwatch(fn):
@@ -223,31 +224,25 @@ def create_alias(hosts, index, alias):
     logprint('debug', result)
     logprint('debug', 'DONE')
 
-def push_mappings(hosts, index, mappings_path):
-    """Pushes mappings from file into ES.
+def push_mappings(hosts, index):
+    """Pushes mappings from class definitions to ES.
     
-    @param path: Absolute path to dir containing facet files.
-    @param mappings_path: Absolute path to mappings JSON.
-    @returns: JSON dict with status code and response
+    @returns: nothing
     """
-    logprint('debug', 'mappings')
     i = set_hosts_index(hosts=hosts, index=index)
-    es = i.connection
-    print i
-    print es
-    with open(mappings_path, 'r') as f:
-        mappings = json.loads(f.read())
-    statuses = []
-    for mapping in mappings:
-        model = mapping.keys()[0]
-        status = es.indices.put_mapping(
-            index=index,
-            doc_type=model,
-            body=mapping[model],
-        )
-        statuses.append( {'model':model, 'status':status} )
-    #self.mappings = mappings_list
-    return statuses
+    logprint('info', 'mappings')
+    i = Index(index)
+    logprint('info', 'Author')
+    Author.init()
+    logprint('info', 'Source')
+    Source.init()
+    logprint('info', 'Page')
+    Page.init()
+    logprint('info', 'FacetTerm')
+    FacetTerm.init()
+    logprint('info', 'Facet')
+    Facet.init()
+    logprint('info', 'ok')
 
 @stopwatch
 def authors(hosts, index, report=False, dryrun=False, force=False, title=None):
@@ -407,7 +402,26 @@ def topics(hosts, index, report=False, dryrun=False, force=False):
 
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'indexing topics...')
+    logprint('debug', config.DDR_TOPICS_SRC_URL)
     Elasticsearch.index_topics()
+    logprint('debug', 'DONE')
+
+@stopwatch
+def vocabs(hosts, index, report=False, dryrun=False, force=False):
+    i = set_hosts_index(hosts=hosts, index=index)
+
+    logprint('debug', '------------------------------------------------------------------------')
+    logprint('debug', 'indexing facet terms...')
+    facets = {}
+    for f in config.DDR_VOCABS:
+        logprint('debug', f)
+        facet = Facet.retrieve(f)
+        logprint('debug', facet)
+        facet.save()
+        for term in facet.terms:
+            logprint('debug', '- %s' % term)
+            term.save()
+        
     logprint('debug', 'DONE')
 
 

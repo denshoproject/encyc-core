@@ -33,10 +33,14 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
+import urlparse
+
+import requests
 
 from elasticsearch.exceptions import NotFoundError
 from elasticsearch_dsl import Index
-from elasticsearch_dsl import DocType, String, Date, Nested, Boolean
+from elasticsearch_dsl import DocType, InnerObjectWrapper
+from elasticsearch_dsl import String, Date, Nested, Boolean
 from elasticsearch_dsl import Search
 from elasticsearch_dsl.connections import connections
 
@@ -230,6 +234,27 @@ class Page(DocType):
         }
     )
     
+    rg_rgmediatype = String(index='not_analyzed', multi=True)
+    rg_title = String()
+    rg_creators = String(multi=True)
+    rg_interestlevel = String(index='not_analyzed', multi=True)
+    rg_readinglevel = String(index='not_analyzed', multi=True)
+    rg_theme = String(index='not_analyzed', multi=True)
+    rg_genre = String(index='not_analyzed', multi=True)
+    rg_pov = String()
+    rg_relatedevents = String()
+    rg_availability = String(index='not_analyzed')
+    rg_freewebversion = String(index='not_analyzed')
+    rg_denshotopic = String(index='not_analyzed', multi=True)
+    rg_geography = String(index='not_analyzed', multi=True)
+    rg_facility = String(index='not_analyzed', multi=True)
+    rg_chronology = String(index='not_analyzed', multi=True)
+    rg_hasteachingaids = String(index='not_analyzed')
+    rg_warnings = String()
+    #rg_primarysecondary = String(index='not_analyzed', multi=True)
+    #rg_lexile = String(index='not_analyzed', multi=True)
+    #rg_guidedreadinglevel = String(index='not_analyzed', multi=True)
+    
     class Meta:
         index = config.DOCSTORE_INDEX
         doc_type = 'articles'
@@ -420,6 +445,16 @@ class Page(DocType):
                 source_ids = [source['encyclopedia_id'] for source in mwpage.sources],
                 authors_data = authors,
             )
+        if mwpage.databoxes:
+            # naive implementation: just dump every databox field into Page.
+            # Field names are just "PREFIX_" plus lowercased fieldname.
+            for key,databox in mwpage.databoxes.iteritems():
+                # only include databoxes in configs
+                if key in config.MEDIAWIKI_DATABOXES.keys():
+                    prefix = config.MEDIAWIKI_DATABOXES.get(key)
+                    for fieldname,data in databox.iteritems():
+                        fieldname = '%s_%s' % (prefix, fieldname)
+                        setattr(page, fieldname, data)
         return page
 
 
@@ -653,6 +688,195 @@ class Citation(object):
         self.retrieved = datetime.now()
 
 
+class Location(InnerObjectWrapper):
+    pass
+
+class GeoPoint(InnerObjectWrapper):
+    pass
+
+class ELink(InnerObjectWrapper):
+    pass
+
+class FacetTerm(DocType):
+    id = String(index='not_analyzed')  # Elasticsearch id
+    facet_id = String(index='not_analyzed')
+    term_id = String(index='not_analyzed')
+    title = String()
+    # topics
+    _title = String()
+    description = String()
+    path = String(index='not_analyzed')
+    parent_id = String(index='not_analyzed')
+    ancestors = String(index='not_analyzed', multi=True)
+    children = String(index='not_analyzed', multi=True)
+    siblings = String(index='not_analyzed', multi=True)
+    weight = String()
+    # facility
+    type = String(index='not_analyzed')
+    locations = Nested(
+        doc_class=Location,
+        properties={
+            'label': String(),
+            'geopoint': Nested(
+                doc_class=GeoPoint,
+                properties={
+                    'lat': String(),
+                    'lng': String(),
+                }
+            )
+        }
+    )
+    # both
+    encyc_urls = Nested(
+        doc_class=ELink,
+        properties={
+            'label': String(),
+            'url': String(index='not_analyzed'),
+        }
+    )
+    
+    class Meta:
+        index = config.DOCSTORE_INDEX
+        doc_type = 'facetterms'
+    
+    def __repr__(self):
+        return "<FacetTerm '%s'>" % self.id
+    
+    def __str__(self):
+        return self.id
+    
+    @staticmethod
+    def from_dict(facet_id, data):
+        oid = '-'.join([
+            facet_id, str(data['id'])
+        ])
+        term = FacetTerm(
+            meta = {'id': oid},
+            id = oid,
+            facet_id = facet_id,
+            term_id = data['id'],
+            title = data['title'],
+        )
+
+        if facet_id in ['topics', 'topic']:
+            term._title = data['_title']
+            term.description = data['description']
+            term.path = data['path']
+            term.ancestors = data['ancestors']
+            term.children = data['children']
+            term.siblings = data['siblings']
+            term.encyc_urls = []
+            if data.get('encyc_urls'):
+                for item in data['encyc_urls']:
+                    # just the title part of the URL
+                    url = urlparse.urlparse(item).path.replace('/','')
+                    encyc_url = {
+                        'url_title': url,
+                        'title': urlparse.unquote(url),
+                    }
+                    term.encyc_urls.append(encyc_url)
+            term.parent_id = None
+            if data.get('parent_id'):
+                term.parent_id = int(data['parent_id'])
+            term.weight = None
+            if data.get('weight'):
+                term.weight = int(data['weight'])
+        
+        elif facet_id in ['facilities', 'facility']:
+            term.type = data['type']
+            term.encyc_urls = []
+            if data.get('elinks'):
+                for item in data['elinks']:
+                    # just the title part of the URL, leave the domain etc
+                    encyc_url = {
+                        'url_title': urlparse.urlparse(item['url']).path.replace('/',''),
+                        'title': item['label'],
+                    }
+                    term.encyc_urls.append(encyc_url)
+            term.locations = []
+            # TODO make this handle multiple locations
+            term.locations.append(
+                data['location']
+            )
+        return term
+
+    @staticmethod
+    def terms(facet_id=None):
+        """Returns list of Terms for facet_id.
+        
+        @returns: list
+        """
+        s = FacetTerm.search()[0:MAX_SIZE]
+        if facet_id:
+            s = s.query("match", facet_id=facet_id)
+        s = s.sort('id')
+        response = s.execute()
+        data = [
+            FacetTerm(
+                id = hitvalue(hit, 'id'),
+                facet_id = hitvalue(hit, 'facet_id'),
+                title = hitvalue(hit, 'title'),
+                type = hitvalue(hit, 'type'),
+            )
+            for hit in response
+        ]
+        return data
+
+class Facet(DocType):
+    id = String(index='not_analyzed')  # Elasticsearch id
+    title = String()
+    description = String()
+    terms = []
+    
+    class Meta:
+        index = config.DOCSTORE_INDEX
+        doc_type = 'facets'
+    
+    def __repr__(self):
+        return "<Facet '%s'>" % self.id
+    
+    def __str__(self):
+        return self.id
+
+    @staticmethod
+    def facets():
+        """Returns list of Facets.
+        
+        @returns: list
+        """
+        s = Facet.search()[0:MAX_SIZE]
+        s = s.sort('id')
+        response = s.execute()
+        data = [
+            FacetTerm(
+                id = hitvalue(hit, 'id'),
+                title = hitvalue(hit, 'title'),
+                description = hitvalue(hit, 'description'),
+            )
+            for hit in response
+        ]
+        return data
+    
+    @staticmethod
+    def retrieve(facet_id):
+        url = '%s/%s.json' % (config.DDR_VOCABS_BASE, facet_id)
+        logging.debug(url)
+        r = requests.get(url)
+        logging.debug(r.status_code)
+        data = json.loads(r.text)
+        facet = Facet(
+            meta = {'id': facet_id},
+            id=data['id'],
+            title=data['title'],
+            description=data['description'],
+        )
+        facet.terms = [
+            FacetTerm.from_dict(facet_id, d)
+            for d in data['terms']
+        ]
+        return facet
+
+
 class Elasticsearch(object):
     """Interface to Elasticsearch backend
     NOTE: not a Django model object!
@@ -738,10 +962,12 @@ class Elasticsearch(object):
         @param json_text: unicode Raw topics.json file text.
         @param url: URL of topics.json
         """
+        logging.debug('getting topics: %s' % url)
         if url and not json_text:
             r = http.get(url)
             if r.status_code == 200:
                 json_text = r.text
+                logging.debug('ok')
         docstore.post(
             config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, 'vocab',
             'topics', json.loads(json_text),

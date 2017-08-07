@@ -258,3 +258,45 @@ def _rm_tags(html, tags=['html', 'body']):
     for tag in tags:
         html = html.replace('<%s>' % tag, '').replace('</%s>' % tag, '')
     return html
+
+def extract_databoxes(body, databox_divs_namespaces):
+    """Find the hidden databoxes, extract data. 
+    
+    <div id="databox-Books" style="display:none;">
+    <p>Title:A Bridge Between Us;
+    Author:Julie Shigekuni;
+    Illustrator:;
+    OrigTitle:;
+    </p>
+    </div>
+    
+    {
+        'databox-books': {
+            'title': 'A Bridge Between Us',
+            'author': 'Julie Shigekuni',
+            'illustrator': '',
+            'origtitle': '',
+        }
+    }
+    
+    @param body: str raw HTML
+    @param databox_divs_namespaces: dict
+    @returns: text,data
+    """
+    soup = BeautifulSoup(body, "lxml")
+    databoxes = {}
+    for div_id in databox_divs_namespaces.keys():
+        data = {}
+        tag = soup.find(id=div_id)
+        if tag:
+            for item in tag.p.contents[0].split('\n'):
+                item = item.strip()
+                if item and (':' in item):
+                    # Note: many fields contain colons
+                    key,val = item.split(':', 1)
+                    if ';' in val:
+                        val = [i.strip() for i in val.split(';') if i.strip()]
+                    # keys are lowercased
+                    data[key.lower()] = val
+            databoxes[div_id] = data
+    return databoxes

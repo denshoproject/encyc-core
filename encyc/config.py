@@ -46,6 +46,13 @@ try:
 except:
     MEDIAWIKI_API_HTPASS = None
 MEDIAWIKI_API_TIMEOUT = config.get('mediawiki', 'api_timeout')
+try:
+    MEDIAWIKI_DATABOXES = {
+        keyval.split(':')[0]: keyval.split(':')[1]
+        for keyval in config.get('mediawiki', 'databoxes').split(';')
+    }
+except:
+    raise Exception('mediawiki.databox format: "MWDIVID:PREFIX;MWDIVID:PREFIX"')
 MEDIAWIKI_HIDDEN_CATEGORIES = config.get('mediawiki', 'hidden_categories').split(',')
 MEDIAWIKI_SHOW_UNPUBLISHED = config.getboolean('mediawiki', 'show_unpublished')
 MEDIAWIKI_DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
@@ -67,6 +74,8 @@ DDR_API = config.get('ddr', 'api_url')
 DDR_MEDIA_URL = config.get('ddr', 'media_url')
 DDR_MEDIA_URL_LOCAL = config.get('ddr', 'media_url_local')
 DDR_MEDIA_URL_LOCAL_MARKER = config.get('ddr', 'media_url_local_marker')
+DDR_VOCABS_BASE = config.get('ddr', 'vocabs_base')
+DDR_VOCABS = config.get('ddr', 'vocabs').split(',')
 DDR_TOPICS_SRC_URL = config.get('ddr', 'topics_src_url')
 DDR_TOPICS_BASE = config.get('ddr', 'topics_base')
 
