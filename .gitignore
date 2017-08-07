@@ -1,7 +1,8 @@
-build
-dist
 *.egg-info
 *~
 *.pyc
+*.deb
+build
+dist
 env/
 venv/

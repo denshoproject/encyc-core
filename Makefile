@@ -1,15 +1,33 @@
-SHELL = /bin/bash
-
 PROJECT=encyc-core
-APP=encyc
+APP=encyccore
 USER=encyc
 
-INSTALL_BASE=/usr/local/src
+SHELL = /bin/bash
+DEBIAN_CODENAME := $(shell lsb_release -sc)
+DEBIAN_RELEASE := $(shell lsb_release -sr)
+VERSION := $(shell cat VERSION)
+
+GIT_SOURCE_URL=https://github.com/densho/encyc-core
+PACKAGE_SERVER=ddr.densho.org/static/$(APP)
+
+INSTALL_BASE=/opt
 INSTALLDIR=$(INSTALL_BASE)/encyc-core
 DOWNLOADS_DIR=/tmp/$(APP)-install
 PIP_REQUIREMENTS_DIR=$(INSTALLDIR)/requirements
 PIP_CACHE_DIR=$(INSTALL_BASE)/pip-cache
-VIRTUALENV=$(INSTALLDIR)/env
+
+VIRTUALENV=$(INSTALLDIR)/venv/encyccore
+
+FPM_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
+FPM_ARCH=amd64
+FPM_NAME=$(APP)-$(FPM_BRANCH)
+FPM_FILE=$(FPM_NAME)_$(VERSION)_$(FPM_ARCH).deb
+FPM_VENDOR=Densho.org
+FPM_MAINTAINER=<geoffrey.jost@densho.org>
+FPM_DESCRIPTION=Encyclopedia publishing tools
+FPM_BASE=opt/encyc-core
+
+CONF_BASE=/etc/encyc
 
 LOGS_BASE=/var/log/$(PROJECT)
 
@@ -151,8 +169,7 @@ clean-encyc-core:
 	-rm -Rf $(INSTALLDIR)/encyc_core.egg-info/
 	-rm -Rf $(INSTALLDIR)/build/
 	-rm -Rf $(INSTALLDIR)/dist/
-	-rm -Rf $(VIRTUALENV)/lib/python2.7/site-packages/encyc*
-	-rm     $(VIRTUALENV)/bin/encyc
+	-rm -Rf $(INSTALLDIR)/venv/
 	-rm -Rf /usr/local/lib/python2.7/dist-packages/encyc*
 
 clean-pip:
@@ -169,9 +186,47 @@ install-configs:
 	-mkdir /etc/encyc
 	cp $(INSTALLDIR)/conf/core.cfg /etc/encyc/
 	chown root.encyc /etc/encyc/core.cfg
-	chmod 640 /etc/encyc/core.cfg
+	chmod 644 /etc/encyc/core.cfg
 	touch /etc/encyc/core-local.cfg
 	chown root.encyc /etc/encyc/core-local.cfg
 	chmod 640 /etc/encyc/core-local.cfg
 
 uninstall-configs:
+
+
+# http://fpm.readthedocs.io/en/latest/
+# https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
+# https://brejoc.com/tag/fpm/
+deb:
+	@echo ""
+	@echo "FPM packaging ----------------------------------------------------------"
+	-rm -Rf $(FPM_FILE)
+	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
+	fpm   \
+	--verbose   \
+	--input-type dir   \
+	--output-type deb   \
+	--name $(FPM_NAME)   \
+	--version $(VERSION)   \
+	--package $(FPM_FILE)   \
+	--url "$(GIT_SOURCE_URL)"   \
+	--vendor "$(FPM_VENDOR)"   \
+	--maintainer "$(FPM_MAINTAINER)"   \
+	--description "$(FPM_DESCRIPTION)"   \
+	--chdir $(INSTALLDIR)   \
+	.git=$(FPM_BASE)   \
+	.gitignore=$(FPM_BASE)   \
+	bin=$(FPM_BASE)   \
+	conf=$(FPM_BASE)   \
+	COPYRIGHT=$(FPM_BASE)   \
+	encyc=$(FPM_BASE)   \
+	INSTALL=$(FPM_BASE)   \
+	LICENSE=$(FPM_BASE)   \
+	Makefile=$(FPM_BASE)   \
+	README.rst=$(FPM_BASE)   \
+	requirements=$(FPM_BASE)  \
+	setup.py=$(FPM_BASE)  \
+	setup.sh=$(FPM_BASE)  \
+	VERSION=$(FPM_BASE)  \
+	venv=$(FPM_BASE)   \
+	conf/core.cfg=$(CONF_BASE)/core.cfg
