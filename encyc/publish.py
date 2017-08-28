@@ -338,6 +338,10 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
         if report:
             return
     
+    logprint('debug', 'getting encycrg titles...')
+    rg_titles = Page.rg_titles()
+    logprint('debug', 'encycrg titles: %s' % len(rg_titles))
+    
     logprint('debug', 'adding articles...')
     posted = 0
     could_not_post = []
@@ -347,7 +351,7 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
         logprint('debug', '--------------------')
         logprint('debug', '%s/%s %s' % (n+1, len(articles_update), title))
         logprint('debug', 'getting from mediawiki')
-        mwpage = Proxy.page(title)
+        mwpage = Proxy.page(title, rg_titles=rg_titles)
         try:
             existing_page = Page.get(title)
             logprint('debug', 'exists in elasticsearch')

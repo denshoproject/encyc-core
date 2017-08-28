@@ -1,4 +1,5 @@
 import ConfigParser
+import os
 import sys
 
 CONFIG_FILES = [
@@ -78,6 +79,19 @@ DDR_VOCABS_BASE = config.get('ddr', 'vocabs_base')
 DDR_VOCABS = config.get('ddr', 'vocabs').split(',')
 DDR_TOPICS_SRC_URL = config.get('ddr', 'topics_src_url')
 DDR_TOPICS_BASE = config.get('ddr', 'topics_base')
+
+# encycfront
+ENCYCFRONT_DOMAIN = config.get('encycfront', 'domain')
+ENCYCFRONT_API_BASE = config.get('encycfront', 'api_base')
+ENCYCFRONT_ARTICLE_BASE = config.get('encycfront', 'article_base')
+ENCYCFRONT_API = 'http://%s%s' % (ENCYCFRONT_DOMAIN, ENCYCFRONT_API_BASE)
+
+# encycrg
+# Used to mark URLs in the Resource Guide.
+ENCYCRG_DOMAIN = config.get('encycrg', 'domain')
+ENCYCRG_API_BASE = config.get('encycrg', 'api_base')
+ENCYCRG_ARTICLE_BASE = config.get('encycrg', 'article_base')
+ENCYCRG_API = 'http://%s%s' % (ENCYCRG_DOMAIN, ENCYCRG_API_BASE)
 
 
 from rc import Cache
