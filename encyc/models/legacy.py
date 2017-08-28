@@ -210,14 +210,24 @@ class Proxy(object):
         return pages
 
     @staticmethod
-    def page(url_title, request=None, index=config.DOCSTORE_INDEX):
+    def page(url_title, request=None, rg_titles=[], index=config.DOCSTORE_INDEX):
         """
-        @param page: Page title from URL.
+        @param url_title str: Canonical page URL title
+        @param request HttpRequest: [optional] Django request object
+        @param rg_titles list: Resource Guide url_titles (used to mark links)
+        @param index str: Name of Elasticsearch index
         """
         url = helpers.page_data_url(config.MEDIAWIKI_API, url_title)
         logger.debug(url)
         status_code,text = Proxy._mw_page_text(url)
-        return Proxy._mkpage(url_title, status_code, text, request, index)
+        return Proxy._mkpage(
+            url_title,
+            status_code,
+            text,
+            request,
+            rg_titles,
+            index
+        )
     
     @staticmethod
     def _mw_page_text(url_title):
@@ -236,9 +246,15 @@ class Proxy(object):
         return r.status_code,r.text
     
     @staticmethod
-    def _mkpage(url_title, http_status, rawtext, request=None, index=config.DOCSTORE_INDEX):
+    def _mkpage(url_title, http_status, rawtext, request=None, rg_titles=[], index=config.DOCSTORE_INDEX):
         """
         TODO rename me
+        @param url_title str: Canonical page URL title
+        @param http_status int: 
+        @param rawtext str: Body of HTTP request
+        @param request HttpRequest: [optional] Django request object
+        @param rg_titles list: Resource Guide url_titles (used to mark links)
+        @param index str: Name of Elasticsearch index
         """
         logger.debug(url_title)
         url_title = url_title.encode('utf_8', errors='xmlcharrefreplace')
@@ -252,6 +268,7 @@ class Proxy(object):
         )
         page.error = pagedata.get('error', None)
         if (page.status_code == 200) and not page.error:
+            
             page.public = False
             ## hide unpublished pages on public systems
             #page.public = request.META.get('HTTP_X_FORWARDED_FOR',False)
@@ -259,32 +276,41 @@ class Proxy(object):
             # to the app server.
             page.published = helpers.page_is_published(pagedata)
             page.lastmod = helpers.page_lastmod(config.MEDIAWIKI_API, page.url_title)
+            
             # basic page context
             page.title = pagedata['parse']['displaytitle']
             page.title_sort = page.title
             for prop in pagedata['parse']['properties']:
                 if prop.get('name',None) and prop['name'] and (prop['name'] == 'defaultsort'):
                     page.title_sort = prop['*']
+            
             page.sources = helpers.find_primary_sources(
                 config.SOURCES_API,
-                pagedata['parse']['images'])
+                pagedata['parse']['images']
+            )
             page.databoxes = wikipage.extract_databoxes(
                 pagedata['parse']['text']['*'],
                 config.MEDIAWIKI_DATABOXES
             )
+            
             page.body = wikipage.parse_mediawiki_text(
-                pagedata['parse']['text']['*'],
-                page.sources,
-                page.public,
+                title=url_title,
+                html=pagedata['parse']['text']['*'],
+                primary_sources=page.sources,
+                public=page.public,
                 printed=False,
-                index=index
+                rg_titles=rg_titles,
+                index=index,
             )
+            
             # rewrite media URLs on stage
             # (external URLs not visible to Chrome on Android when connecting through SonicWall)
             if hasattr(config, 'STAGE') and config.STAGE and request:
                 page.sources = sources.replace_source_urls(page.sources, request)
+            
             page.is_article = wiki.is_article(page.title)
             if page.is_article:
+                
                 # only include categories from Category:Articles
                 categories_whitelist = [
                     category['title'].split(':')[1]
@@ -295,13 +321,16 @@ class Proxy(object):
                     for c in pagedata['parse']['categories']
                     if c['*'] in categories_whitelist
                 ]
+                
                 page.prev_page = wiki.article_prev(page.title)
                 page.next_page = wiki.article_next(page.title)
                 page.coordinates = helpers.find_databoxcamps_coordinates(pagedata['parse']['text']['*'])
                 page.authors = helpers.find_author_info(pagedata['parse']['text']['*'])
+            
             page.is_author = wiki.is_author(page.title)
             if page.is_author:
                 page.author_articles = wiki.author_articles(page.title)
+        
         return page
     
     @staticmethod

@@ -401,6 +401,20 @@ class Page(DocType):
         return ddr._balance(objects, size)
     
     @staticmethod
+    def rg_titles():
+        """List of articles appearing in the Resource Guide (encycrg)
+        """
+        url = os.path.join(config.ENCYCRG_API, 'articles')
+        try:
+            r = requests.get(url)
+            logging.debug(r.status_code)
+            articles = json.loads(r.text)['objects']
+        except:
+            logging.debug('ERROR')
+            articles = []
+        return [a['id'] for a in articles]
+
+    @staticmethod
     def from_mw(mwpage, page=None):
         """Creates an Page object from a models.legacy.Page object.
         """

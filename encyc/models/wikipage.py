@@ -14,17 +14,20 @@ from encyc.models import helpers
 TIMEOUT = float(config.MEDIAWIKI_API_TIMEOUT)
 
 
-def parse_mediawiki_text(text, primary_sources, public=False, printed=False, index=config.DOCSTORE_INDEX):
+def parse_mediawiki_text(title, html, primary_sources, public=False, printed=False, rg_titles=[], index=config.DOCSTORE_INDEX):
     """Parses the body of a MediaWiki page.
     
-    @param text: str HTML contents of page body.
+    @param title: str page title.
+    @param html: str HTML contents of page body.
     @param primary_sources: list
     @param public: Boolean
     @param printed: Boolean
+    @param rg_titles: list Resource Guide url_titles.
+    @param index: str Name of Elasticsearch index
     @returns: html, list of primary sources
     """
     soup = BeautifulSoup(
-        text.replace('<p><br />\n</p>',''),
+        html.replace('<p><br />\n</p>',''),
         features='lxml'
     )
     soup = _remove_staticpage_titles(soup)
@@ -33,6 +36,7 @@ def parse_mediawiki_text(text, primary_sources, public=False, printed=False, ind
     #soup = _wrap_sections(soup)
     soup = _rewrite_newpage_links(soup)
     soup = _rewrite_prevnext_links(soup)
+    soup = _mark_offsite_encyc_rg_links(soup, title, rg_titles)
     soup = remove_status_markers(soup)
     if not printed:
         soup = _add_top_links(soup)
@@ -154,6 +158,77 @@ def _rewrite_prevnext_links(soup):
     for a in soup.find_all('a', href=re.compile('pageuntil=')):
         a['href'] = a['href'].replace('?title=', '/')
         a['href'] = a['href'].replace('&pageuntil=', '?pageuntil=')
+    return soup
+
+def __href_title(href, base):
+    """Extract title from href
+    """
+    # can't just replace all slashes bc titles can include slashes
+    if href[-1] == '/':
+        href = href[:-1]
+    href = href.replace(base, '')
+    if href[0] == '/':
+        href = href[1:]
+    return href
+
+def __mark_tag(tag, attr, value):
+    """Add specified attr to tag
+    """
+    if not tag.get(attr, []):
+        tag[attr] = []
+    tag[attr].append(value)
+
+def __rm_tag(tag, attr, value):
+    """Remove specified attr from tag
+    """
+    orig_attrs = tag.attrs.get(attr, [])
+    tag.attrs[attr] = [a for a in orig_attrs if a != value]
+
+def _mark_offsite_encyc_rg_links(soup, title, rg_titles=[]):
+    """Add class markers to offsite, Resource Guide, and non-RG links
+    
+    @param soup: BeautifulSoup object containing page
+    @param title: str Page.url_title
+    @param rg_titles: list Resource Guide url_titles.
+    """
+    for a in soup.find_all("a"):
+        __rm_tag(a, 'class', 'offsite')
+        __rm_tag(a, 'class', 'encyc')
+        __rm_tag(a, 'class', 'rg')
+        __rm_tag(a, 'class', 'notrg')
+        a_title = __href_title(a['href'], config.ENCYCRG_ARTICLE_BASE)
+        a_title_with_spaces = a_title.replace('_', ' ')
+        
+        # ignore page nav links
+        if a['href'][0] == '#':
+            #print('   pass %s' % a['href'])
+            pass
+        
+        # offsite
+        elif ('http:' in a['href']) or ('https:' in a['href']):
+            #print('offsite %s' % a['href'])
+            __mark_tag(a, 'class', 'offsite')
+        
+        # resource guide
+        elif (a_title in rg_titles) or (a_title_with_spaces in rg_titles):
+            #print('     rg %s' % a['href'])
+            __mark_tag(a, 'class', 'encyc')
+            __mark_tag(a, 'class', 'rg')
+        
+        # encyc
+        else:
+            #print('  encyc %s' % a['href'])
+            __mark_tag(a, 'class', 'encyc')
+            __mark_tag(a, 'class', 'notrg')
+            # replace domain/base
+            encyc_url = os.path.join(
+                'http://',
+                config.ENCYCFRONT_DOMAIN,
+                config.ENCYCFRONT_ARTICLE_BASE,
+                a_title
+            )
+            a['href'] = encyc_url
+    
     return soup
 
 def remove_status_markers(soup):
