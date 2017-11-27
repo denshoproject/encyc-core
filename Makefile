@@ -13,7 +13,7 @@ PACKAGE_SERVER=ddr.densho.org/static/$(APP)
 INSTALL_BASE=/opt
 INSTALLDIR=$(INSTALL_BASE)/encyc-core
 DOWNLOADS_DIR=/tmp/$(APP)-install
-PIP_REQUIREMENTS_DIR=$(INSTALLDIR)/requirements
+PIP_REQUIREMENTS=$(INSTALLDIR)/requirements.txt
 PIP_CACHE_DIR=$(INSTALL_BASE)/pip-cache
 
 VIRTUALENV=$(INSTALLDIR)/venv/encyccore
@@ -110,19 +110,10 @@ uninstall-app: uninstall-encyc-core
 clean-app: clean-encyc-core
 
 
-get-dev:
-	source $(VIRTUALENV)/bin/activate; \
-	pip install --download=$(PIP_CACHE_DIR) --exists-action=i -r $(PIP_REQUIREMENTS_DIR)/dev.txt
-
-install-dev:
-	source $(VIRTUALENV)/bin/activate; \
-	pip install -U --find-links=$(PIP_CACHE_DIR) -r $(PIP_REQUIREMENTS_DIR)/dev.txt
-
-
 get-encyc-core:
 	git pull
 	source $(VIRTUALENV)/bin/activate; \
-	pip install --download=$(PIP_CACHE_DIR) --exists-action=i -r $(PIP_REQUIREMENTS_DIR)/production.txt
+	pip install --download=$(PIP_CACHE_DIR) --exists-action=i -r $(PIP_REQUIREMENTS)
 
 setup-encyc-core: install-configs
 	@echo ""
@@ -139,7 +130,7 @@ install-encyc-core:
 	@echo ""
 	@echo "install encyc-core -----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U --find-links=$(PIP_CACHE_DIR) -r $(PIP_REQUIREMENTS_DIR)/production.txt
+	pip install -U --find-links=$(PIP_CACHE_DIR) -r $(PIP_REQUIREMENTS)
 	cd $(INSTALLDIR)
 	source $(VIRTUALENV)/bin/activate; \
 	python setup.py install
@@ -153,14 +144,14 @@ update-encyc-core:
 	@echo "update encyc-core ---------------------------------------------------------"
 	git fetch && git pull
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U --no-download --download-cache=$(PIP_CACHE_DIR) -r $(PIP_REQUIREMENTS_DIR)/production.txt
+	pip install -U --no-download --download-cache=$(PIP_CACHE_DIR) -r $(PIP_REQUIREMENTS)
 
 uninstall-encyc-core:
 	@echo ""
 	@echo "uninstall encyc-core ------------------------------------------------------"
 	cd $(INSTALLDIR)/encyc-core
 	source $(VIRTUALENV)/bin/activate; \
-	-pip uninstall -r $(PIP_REQUIREMENTS_DIR)/production.txt
+	-pip uninstall -r $(PIP_REQUIREMENTS)
 	-rm /usr/local/lib/python2.7/dist-packages/encyc-*
 	-rm -Rf /usr/local/lib/python2.7/dist-packages/encyc
 
@@ -224,7 +215,7 @@ deb:
 	LICENSE=$(FPM_BASE)   \
 	Makefile=$(FPM_BASE)   \
 	README.rst=$(FPM_BASE)   \
-	requirements=$(FPM_BASE)  \
+	requirements.txt=$(FPM_BASE)  \
 	setup.py=$(FPM_BASE)  \
 	setup.sh=$(FPM_BASE)  \
 	VERSION=$(FPM_BASE)  \
