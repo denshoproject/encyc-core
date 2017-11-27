@@ -129,6 +129,8 @@ setup-encyc-core: install-configs
 install-encyc-core:
 	@echo ""
 	@echo "install encyc-core -----------------------------------------------------"
+# bs4 dependency
+	apt-get --assume-yes install libxml2 libxml2-dev libxslt1-dev zlib1g-dev
 	source $(VIRTUALENV)/bin/activate; \
 	pip install -U --find-links=$(PIP_CACHE_DIR) -r $(PIP_REQUIREMENTS)
 	cd $(INSTALLDIR)
