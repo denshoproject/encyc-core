@@ -20,6 +20,7 @@ from encyc.models.legacy import Proxy
 from encyc.models import Elasticsearch
 from encyc.models import Author, Page, Source
 from encyc.models import Facet, FacetTerm
+from encyc import rsync
 
 
 def stopwatch(fn):
@@ -357,15 +358,9 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
             logprint('debug', 'exists in elasticsearch')
         except:
             existing_page = None
-
+        
         if (mwpage.published or config.MEDIAWIKI_SHOW_UNPUBLISHED):
-            # publish
-            page_sources = [source['encyclopedia_id'] for source in mwpage.sources]
-            for mwsource in mwpage.sources:
-                logprint('debug', '- source %s' % mwsource['encyclopedia_id'])
-                source = Source.from_mw(mwsource, title)
-                if not dryrun:
-                    source.save()
+            
             logprint('debug', 'creating page')
             page = Page.from_mw(mwpage, page=existing_page)
             if not dryrun:
@@ -379,6 +374,42 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
                 except NotFoundError:
                     logprint('error', 'ERROR: Page(%s) NOT SAVED!' % title)
                     errors.append(title)
+                logprint('debug', 'ok')
+            
+            # publish sources to Elasticsearch
+            logprint('debug', 'saving sources')
+            sources = [
+                Source.from_mw(mwsource, title)
+                for mwsource in mwpage.sources
+            ]
+            for source in sources:
+                if dryrun:
+                    logprint('debug', source)
+                else:
+                    source.save()
+                    logprint('debug', '%s - saved' % source)
+            
+            # rsync source files to media server
+            logprint('debug', 'rsyncing sources')
+            logprint('debug', '%s... -> %s' % (config.SOURCES_BASE, config.SOURCES_DEST))
+            # IMPORTANT! WE ASSUME THAT encyc-core RUNS ON SAME MACHINE AS PSMS!
+            source_stubs = [
+                source['original'].replace(config.SOURCES_URL, '')
+                for source in mwpage.sources
+            ]
+            source_paths = [
+                os.path.join(config.SOURCES_BASE, path)
+                for path in source_stubs
+            ]
+            for path in source_paths:
+                logprint('debug', '%s %s' % (os.path.exists(path), path))
+            if not dryrun:
+                logprint('debug', 'rsyncing...')
+                result = rsync.push(
+                    [path for path in source_paths if os.path.exists(path)],
+                    config.SOURCES_DEST
+                )
+                logprint('debug', result)
         
         else:
             # delete from ES if present
@@ -387,6 +418,8 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
                 logprint('debug', 'deleting...')
                 existing_page.delete()
                 unpublished.append(mwpage)
+        
+        logprint('debug', '')
     
     if could_not_post:
         logprint('debug', '========================================================================')
