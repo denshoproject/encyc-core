@@ -130,7 +130,7 @@ install-encyc-core:
 	@echo ""
 	@echo "install encyc-core -----------------------------------------------------"
 # bs4 dependency
-	apt-get --assume-yes install libxml2 libxml2-dev libxslt1-dev zlib1g-dev
+	apt-get --assume-yes install libxml2 libxml2-dev libxslt1-dev rsync zlib1g-dev
 	source $(VIRTUALENV)/bin/activate; \
 	pip install -U --find-links=$(PIP_CACHE_DIR) -r $(PIP_REQUIREMENTS)
 	cd $(INSTALLDIR)
@@ -207,6 +207,7 @@ deb:
 	--maintainer "$(FPM_MAINTAINER)"   \
 	--description "$(FPM_DESCRIPTION)"   \
 	--chdir $(INSTALLDIR)   \
+	--depends "rsync"   \
 	.git=$(FPM_BASE)   \
 	.gitignore=$(FPM_BASE)   \
 	bin=$(FPM_BASE)   \
