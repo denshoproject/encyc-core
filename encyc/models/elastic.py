@@ -35,6 +35,7 @@ logger = logging.getLogger(__name__)
 import os
 import urlparse
 
+from dateutil import parser
 import requests
 
 from elasticsearch.exceptions import NotFoundError
@@ -599,6 +600,59 @@ class Source(DocType):
         return data
 
     @staticmethod
+    def from_psms(ps_source):
+        """Creates an Source object from a models.legacy.Proxy.source object.
+        
+        @param ps_source: encyc.models.legacy.Source
+        #@param url_title: str url_title of associated Page
+        @returns: wikiprox.models.elastic.Source
+        """
+        # source.streaming_url has to be relative to RTMP_STREAMER
+        # TODO this should really happen when it's coming in from MediaWiki.
+        if hasattr(ps_source,'streaming_url'):
+            streaming_url = ps_source.streaming_url.replace(config.RTMP_STREAMER, '')
+        else:
+            streaming_url = ''
+        # fullsize image for thumbnail
+        filename = ''
+        img_path = ''
+        if hasattr(ps_source,'display'):
+            filename = os.path.basename(ps_source.display)
+            img_path = os.path.join(config.SOURCES_MEDIA_BUCKET, filename)
+        elif hasattr(ps_source,'original'):
+            filename = os.path.basename(ps_source.original)
+            img_path = os.path.join(config.SOURCES_MEDIA_BUCKET, filename)
+        source = Source(
+            meta = {'id': ps_source.encyclopedia_id},
+            encyclopedia_id = ps_source.encyclopedia_id,
+            densho_id = ps_source.densho_id,
+            psms_id = ps_source.id,
+            psms_api_uri = ps_source.resource_uri,
+            institution_id = ps_source.institution_id,
+            collection_name = ps_source.collection_name,
+            created = ps_source.created,
+            modified = ps_source.modified,
+            published = ps_source.published,
+            creative_commons = ps_source.creative_commons,
+            headword = ps_source.headword,
+            original_url = ps_source.original,
+            streaming_url = streaming_url,
+            external_url = ps_source.external_url,
+            media_format = ps_source.media_format,
+            aspect_ratio = ps_source.aspect_ratio,
+            original_size = ps_source.original_size,
+            display_size = ps_source.display_size,
+            display = ps_source.display,
+            caption = none_strip(ps_source.caption),
+            caption_extended = none_strip(ps_source.caption_extended),
+            transcript = none_strip(ps_source.transcript),
+            courtesy = none_strip(ps_source.courtesy),
+            filename = filename,
+            img_path = img_path,
+        )
+        return source
+
+    @staticmethod
     def from_mw(mwsource, url_title):
         """Creates an Source object from a models.legacy.Source object.
         
@@ -1020,6 +1074,39 @@ class Elasticsearch(object):
             {a['title']: a for a in mw_articles if a['title'] not in mw_author_titles},
             {a.title: a for a in es_articles}
         )
+    
+    @staticmethod
+    def sources_to_update(ps_sources, es_sources):
+        """Returns encyclopedia_ids of sources to update/delete
+        
+        @param ps_sources: list of PSMS sources
+        @param es_sources: list of elastic.Source objects.
+        @returns: (update,delete)
+        """
+        # sid:lastmod dict for comparisons
+        ps_source_ids = {s['encyclopedia_id']: parser.parse(s['lastmod']) for s in ps_sources}
+        es_source_ids = {s.encyclopedia_id: s.modified for s in es_sources}
+        # PSMS sources that are not in ES
+        new = [
+            encyclopedia_id
+            for encyclopedia_id in ps_source_ids.keys()
+            if not encyclopedia_id in es_source_ids.keys()
+        ]
+        # PSMS sources that are newer than ES sources
+        updated = [
+            encyclopedia_id
+            for encyclopedia_id in es_source_ids.values()
+            if ps_source_ids.get(encyclopedia_id) \
+            and (ps_source_ids[encyclopedia_id] > es_source_ids[encyclopedia_id])
+        ]
+        # ES sources that are no longer in PSMS
+        deleted = [
+            encyclopedia_id
+            for encyclopedia_id in es_source_ids.keys()
+            if not encyclopedia_id in ps_source_ids.keys()
+        ]
+        return (new + updated, deleted)
+
     
     @staticmethod
     def authors_to_update(mw_author_titles, mw_articles, es_authors):
