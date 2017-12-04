@@ -403,14 +403,14 @@ def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None)
     
     logprint('debug', 'getting sources from PSMS...')
     ps_sources = Proxy.sources_lastmod()
-    if isinstance(ps_sources, list):
+    if ps_sources and isinstance(ps_sources, list):
         logprint('debug', 'psms sources: %s' % len(ps_sources))
     else:
         logprint('error', ps_sources)
     
     logprint('debug', 'getting sources from Elasticsearch...')
     es_sources = Source.sources()
-    if isinstance(es_sources, list):
+    if es_sources and isinstance(es_sources, list):
         logprint('debug', 'es_sources: %s' % len(es_sources))
     else:
         logprint('error', es_sources)
@@ -442,10 +442,11 @@ def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None)
     could_not_post = []
     unpublished = []
     errors = []
-    for n,sid in enumerate(sources_update[:5]):
+    for n,sid in enumerate(sources_update):
         
         logprint('debug', '--------------------')
         logprint('debug', '%s/%s %s' % (n+1, len(sources_update), sid))
+        
         logprint('debug', 'getting from PSMS: "%s"' % sid)
         ps_source = Proxy.source(sid)
         if not ps_source:
@@ -453,6 +454,7 @@ def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None)
             could_not_post.append(sid)
             continue
         logprint('debug', ps_source)
+        
         logprint('debug', 'getting from Elasticsearch')
         try:
             existing_source = Source.get(ps_source)
