@@ -400,12 +400,21 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
 def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None):
     i = set_hosts_index(hosts=hosts, index=index)
     logprint('debug', '------------------------------------------------------------------------')
+    
     logprint('debug', 'getting sources from PSMS...')
     ps_sources = Proxy.sources_lastmod()
+    if isinstance(ps_sources, list):
+        logprint('debug', 'psms sources: %s' % len(ps_sources))
+    else:
+        logprint('error', ps_sources)
+    
     logprint('debug', 'getting sources from Elasticsearch...')
     es_sources = Source.sources()
-    logprint('debug', 'psms sources: %s' % len(ps_sources))
-    logprint('debug', '  es sources: %s' % len(es_sources))
+    if isinstance(es_sources, list):
+        logprint('debug', 'es_sources: %s' % len(es_sources))
+    else:
+        logprint('error', es_sources)
+    
     if psms_id:
         sources_update = [psms_id]
     else:
@@ -488,23 +497,27 @@ def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None)
     logprint('debug', '--------------------')
     logprint('debug', 'rsyncing')
     logprint('debug', '%s... -> %s' % (config.SOURCES_BASE, config.SOURCES_DEST))
+    present_files = []
     missing_files = []
-    for n,source_path in enumerate(to_rsync):
-        if os.path.exists(source_path):
+    while(to_rsync):
+        path = to_rsync.pop()
+        if os.path.exists(path):
+            present_files.append(path)
             file_status = ''
         else:
-            missing_files.append(source_path)
+            missing_files.append(path)
             file_status = '(missing)'
-        logprint('debug', '%s/%s %s %s' % (n+1, len(to_rsync), source_path, file_status))
-        if not dryrun:
-            #if os.path.exists(source_path):
-            result = rsync.push(
-                    source_path,
-                    config.SOURCES_DEST
-                )
-            logprint('debug', result)
-            if result != '0':
-                errors.append('Could not upload %s' % source_path)
+        logprint('debug', '- %s %s' % (source_path, file_status))
+    
+    if not dryrun:
+        #if os.path.exists(source_path):
+        result = rsync.push(
+            present_files,
+            config.SOURCES_DEST
+        )
+        logprint('debug', result)
+        if result != '0':
+            errors.append('Could not upload %s' % result)
         
     if could_not_post:
         logprint('debug', '========================================================================')

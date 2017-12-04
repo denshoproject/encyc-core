@@ -12,6 +12,7 @@ def push(local_paths, remote_dest, timeout=10):
     local = ' '.join(local_paths)
     # create the rsync command
     command = '/usr/bin/rsync --timeout=%s -va %s %s' % (str(timeout), local, remote_dest)
+    print(command)
     # Run the commands.
     # shell=True is used bc escaped characters would cause failures.
     return subprocess.Popen(command, shell=True).wait()

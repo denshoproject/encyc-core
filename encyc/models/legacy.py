@@ -340,8 +340,8 @@ class Proxy(object):
     def sources_lastmod():
         """List of IDs and timestamps for all published sources.
         """
-        # TODO replace hard-coded URL!
-        URL = 'https://psms.densho.org/api/v1.0/primarysource/csv'
+        # TODO not the best URL
+        URL = config.SOURCES_API + '/primarysource/csv'
         r = http.get(URL)
         if r.status_code == 200:
             headers,rowds = csvfile.make_rowds(
@@ -363,7 +363,7 @@ class Proxy(object):
                 for rowd in rowds
                 if rowd.get('encyclopedia_id')
             ]
-        return None
+        return r
     
     @staticmethod
     def source(encyclopedia_id):
