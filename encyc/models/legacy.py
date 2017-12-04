@@ -343,27 +343,28 @@ class Proxy(object):
         # TODO not the best URL
         URL = config.SOURCES_API + '/primarysource/csv'
         r = http.get(URL)
-        if r.status_code == 200:
-            headers,rowds = csvfile.make_rowds(
-                [
-                    row
-                    for row in csvfile.csv_reader(
+        if r.status_code != 200:
+            print(r)
+            return []
+        headers,rowds = csvfile.make_rowds(
+            [
+                row
+                for row in csvfile.csv_reader(
                         codecs.encode(
                             r.text, 'ascii', 'ignore'
                         ).strip().replace('\r','').split('\n')
-                    )
-                ]
-            )
-            return [
-                {
-                    'id': rowd['id'],
-                    'encyclopedia_id': rowd['encyclopedia_id'],
-                    'lastmod': rowd['modified'],
-                }
-                for rowd in rowds
-                if rowd.get('encyclopedia_id')
+                )
             ]
-        return r
+        )
+        return [
+            {
+                'id': rowd['id'],
+                'encyclopedia_id': rowd['encyclopedia_id'],
+                'lastmod': rowd['modified'],
+            }
+            for rowd in rowds
+            if rowd.get('encyclopedia_id')
+        ]
     
     @staticmethod
     def source(encyclopedia_id):
