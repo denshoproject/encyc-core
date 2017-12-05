@@ -11,7 +11,7 @@ def encyc(debug):
     
     \b
     Index Management: create, delete, reset
-    Publishing:       topics, authors, articles
+    Publishing:       topics, authors, articles, sources
     Debugging:        config, status, list, get
     
     By default the command uses DOCSTORE_HOSTS and DOCSTORE_INDEX from the config file.  The tool will publish to at least two separate sites (Encyclopedia, Resource Guide), you can use the --hosts and --index options to override these values.
@@ -21,6 +21,7 @@ def encyc(debug):
       0,30 * * * * /usr/local/src/env/encyc/bin/encyc topics >> /var/log/encyc/core-syncwiki.log 2>&1
       1,31 * * * * /usr/local/src/env/encyc/bin/encyc authors >> /var/log/encyc/core-syncwiki.log 2>&1
       2,32 * * * * /usr/local/src/env/encyc/bin/encyc articles >> /var/log/encyc/core-syncwiki.log 2>&1
+      12,42 * * * * /usr/local/src/env/encyc/bin/encyc sources >> /var/log/encyc/core-syncwiki.log 2>&1
     """
     click.echo('Debug mode is %s' % ('on' if debug else 'off'))
 
@@ -177,6 +178,25 @@ def articles(hosts, index, report, dryrun, force, title):
     """
     publish.articles(
         hosts=hosts, index=index, report=report, dryrun=dryrun, force=force, title=title
+    )
+
+
+@encyc.command()
+@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--index', default=settings.DOCSTORE_INDEX,
+              help='Elasticsearch index to create.')
+@click.option('--report', is_flag=True,
+              help='Report number of records existing, to be indexed/updated.')
+@click.option('--dryrun', is_flag=True,
+              help='perform a trial run with no changes made')
+@click.option('--force', is_flag=True,
+              help='Forcibly update records whether they need it or not.')
+@click.option('--sourceid', help='Single article to publish.')
+def sources(hosts, index, report, dryrun, force, sourceid):
+    """Index sources.
+    """
+    publish.sources(
+        hosts=hosts, index=index, report=report, dryrun=dryrun, force=force, psms_id=sourceid
     )
 
 

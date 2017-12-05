@@ -364,7 +364,7 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
             logprint('debug', 'creating page')
             page = Page.from_mw(mwpage, page=existing_page)
             if not dryrun:
-                logprint('debug', 'saving')
+                logprint('debug', 'saving %s "%s"' % ('articles', page.url_title))
                 try:
                     page.save()
                 except SerializationError:
@@ -375,41 +375,6 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
                     logprint('error', 'ERROR: Page(%s) NOT SAVED!' % title)
                     errors.append(title)
                 logprint('debug', 'ok')
-            
-            # publish sources to Elasticsearch
-            logprint('debug', 'saving sources')
-            sources = [
-                Source.from_mw(mwsource, title)
-                for mwsource in mwpage.sources
-            ]
-            for source in sources:
-                if dryrun:
-                    logprint('debug', source)
-                else:
-                    source.save()
-                    logprint('debug', '%s - saved' % source)
-            
-            # rsync source files to media server
-            logprint('debug', 'rsyncing sources')
-            logprint('debug', '%s... -> %s' % (config.SOURCES_BASE, config.SOURCES_DEST))
-            # IMPORTANT! WE ASSUME THAT encyc-core RUNS ON SAME MACHINE AS PSMS!
-            source_stubs = [
-                source['original'].replace(config.SOURCES_URL, '')
-                for source in mwpage.sources
-            ]
-            source_paths = [
-                os.path.join(config.SOURCES_BASE, path)
-                for path in source_stubs
-            ]
-            for path in source_paths:
-                logprint('debug', '%s %s' % (os.path.exists(path), path))
-            if not dryrun:
-                logprint('debug', 'rsyncing...')
-                result = rsync.push(
-                    [path for path in source_paths if os.path.exists(path)],
-                    config.SOURCES_DEST
-                )
-                logprint('debug', result)
         
         else:
             # delete from ES if present
@@ -418,8 +383,6 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
                 logprint('debug', 'deleting...')
                 existing_page.delete()
                 unpublished.append(mwpage)
-        
-        logprint('debug', '')
     
     if could_not_post:
         logprint('debug', '========================================================================')
@@ -427,6 +390,146 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
     if unpublished:
         logprint('debug', '========================================================================')
         logprint('debug', 'Unpublished these: %s' % unpublished)
+    if errors:
+        logprint('info', 'ERROR: %s titles were unpublishable:' % len(errors))
+        for title in errors:
+            logprint('info', 'ERROR: %s' % title)
+    logprint('debug', 'DONE')
+
+@stopwatch
+def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None):
+    i = set_hosts_index(hosts=hosts, index=index)
+    logprint('debug', '------------------------------------------------------------------------')
+    
+    logprint('debug', 'getting sources from PSMS...')
+    ps_sources = Proxy.sources_lastmod()
+    if ps_sources and isinstance(ps_sources, list):
+        logprint('debug', 'psms sources: %s' % len(ps_sources))
+    else:
+        logprint('error', ps_sources)
+    
+    logprint('debug', 'getting sources from Elasticsearch...')
+    es_sources = Source.sources()
+    if es_sources and isinstance(es_sources, list):
+        logprint('debug', 'es_sources: %s' % len(es_sources))
+    else:
+        logprint('error', es_sources)
+    
+    if psms_id:
+        sources_update = [psms_id]
+    else:
+        if force:
+            logprint('debug', 'forcibly update all sources')
+            sources_update = [
+                s['encyclopedia_id']
+                for s in ps_sources
+                if s.get('encyclopedia_id')
+            ]
+            sources_delete = []
+        else:
+            logprint('debug', 'crunching numbers...')
+            sources_update,sources_delete = Elasticsearch.sources_to_update(
+                ps_sources, es_sources
+            )
+        logprint('debug', 'updates:   %s' % len(sources_update))
+        logprint('debug', 'deletions: %s' % len(sources_delete))
+        if report:
+            return
+    
+    logprint('debug', 'adding sources...')
+    posted = 0
+    to_rsync = []
+    could_not_post = []
+    unpublished = []
+    errors = []
+    for n,sid in enumerate(sources_update):
+        
+        logprint('debug', '--------------------')
+        logprint('debug', '%s/%s %s' % (n+1, len(sources_update), sid))
+        
+        logprint('debug', 'getting from PSMS: "%s"' % sid)
+        ps_source = Proxy.source(sid)
+        if not ps_source:
+            logprint('debug', 'NOT AVAILABLE')
+            could_not_post.append(sid)
+            continue
+        logprint('debug', ps_source)
+        
+        logprint('debug', 'getting from Elasticsearch')
+        try:
+            existing_source = Source.get(ps_source)
+            logprint('debug', existing_source)
+        except:
+            existing_source = None
+            logprint('debug', 'not in ES')
+        
+        if (ps_source.published):
+            
+            es_source = Source.from_psms(ps_source)
+            logprint('debug', es_source)
+            if not dryrun:
+                logprint('debug', 'saving')
+                try:
+                    es_source.save()
+                except SerializationError:
+                    logprint('error', 'ERROR: Could not serialize to Elasticsearch!')
+                try:
+                    s = Source.get(sid)
+                except NotFoundError:
+                    logprint('error', 'ERROR: Source(%s) NOT SAVED!' % sid)
+                    errors.append(sid)
+                
+                # IMPORTANT! WE ASSUME THAT encyc-core RUNS ON SAME MACHINE AS PSMS!
+                source_stub = es_source.original_url.replace(config.SOURCES_URL, '')
+                source_path = os.path.join(config.SOURCES_BASE, source_stub)
+                logprint('debug', 'source_path %s' % source_path)
+                to_rsync.append(source_path)
+                
+                logprint('debug', 'ok')
+        
+        else:
+            assert False
+            # delete from ES if present
+            if existing_page:
+                logprint('debug', 'deleting...')
+                existing_page.delete()
+                unpublished.append(mwpage)
+
+    # rsync source files to media server
+    logprint('debug', '--------------------')
+    logprint('debug', 'rsyncing')
+    logprint('debug', '%s... -> %s' % (config.SOURCES_BASE, config.SOURCES_DEST))
+    present_files = []
+    missing_files = []
+    while(to_rsync):
+        path = to_rsync.pop()
+        if os.path.exists(path):
+            present_files.append(path)
+            file_status = ''
+        else:
+            missing_files.append(path)
+            file_status = '(missing)'
+        logprint('debug', '- %s %s' % (source_path, file_status))
+    
+    if not dryrun:
+        #if os.path.exists(source_path):
+        result = rsync.push(
+            present_files,
+            config.SOURCES_DEST
+        )
+        logprint('debug', result)
+        if result != '0':
+            errors.append('Could not upload %s' % result)
+        
+    if could_not_post:
+        logprint('debug', '========================================================================')
+        logprint('debug', 'Could not post these: %s' % could_not_post)
+    if unpublished:
+        logprint('debug', '========================================================================')
+        logprint('debug', 'Unpublished these: %s' % unpublished)
+    if missing_files:
+        logprint('debug', '========================================================================')
+        logprint('debug', 'Files missing from local fs: %s' % missing_files)
     if errors:
         logprint('info', 'ERROR: %s titles were unpublishable:' % len(errors))
         for title in errors:

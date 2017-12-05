@@ -1,12 +1,15 @@
+import codecs
 from datetime import datetime
 import json
 import logging
 logger = logging.getLogger(__name__)
 import os
 
+from dateutil import parser
 from elasticsearch_dsl import Search
 
 from encyc import config
+from encyc import csvfile
 from encyc import ddr
 from encyc import docstore
 from encyc import http
@@ -334,18 +337,51 @@ class Proxy(object):
         return page
     
     @staticmethod
+    def sources_lastmod():
+        """List of IDs and timestamps for all published sources.
+        """
+        # TODO not the best URL
+        URL = config.SOURCES_API + '/primarysource/csv'
+        r = http.get(URL)
+        if r.status_code != 200:
+            print(r)
+            return []
+        headers,rowds = csvfile.make_rowds(
+            [
+                row
+                for row in csvfile.csv_reader(
+                        codecs.encode(
+                            r.text, 'ascii', 'ignore'
+                        ).strip().replace('\r','').split('\n')
+                )
+            ]
+        )
+        return [
+            {
+                'id': rowd['id'],
+                'encyclopedia_id': rowd['encyclopedia_id'],
+                'lastmod': rowd['modified'],
+            }
+            for rowd in rowds
+            if rowd.get('encyclopedia_id')
+        ]
+    
+    @staticmethod
     def source(encyclopedia_id):
         source = Source()
         source.encyclopedia_id = encyclopedia_id
         source.uri = urls.reverse('wikiprox-source', args=[encyclopedia_id])
         source.title = encyclopedia_id
         data = sources.source(encyclopedia_id)
+        if not data:
+            # TODO Source unavailable because unpublished?
+            return None
         for key,val in data.iteritems():
             setattr(source, key, val)
         source.psms_id = int(data['id'])
         source.original_size = int(data['original_size'])
-        source.created = datetime.strptime(data['created'], config.MEDIAWIKI_DATETIME_FORMAT)
-        source.modified = datetime.strptime(data['modified'], config.MEDIAWIKI_DATETIME_FORMAT)
+        source.created = parser.parse(data['created'])
+        source.modified = parser.parse(data['modified'])
         if getattr(source, 'streaming_url', None):
             source.streaming_url = source.streaming_url.replace(config.RTMP_STREAMER,'')
             source.rtmp_streamer = config.RTMP_STREAMER

@@ -1,7 +1,7 @@
 import subprocess
 
 
-def push(local_paths, remote_dest):
+def push(local_paths, remote_dest, timeout=10):
     """Sync a list of local files to a remote dir
     
     @param local_paths: list Absolute paths for local files to transfer
@@ -11,7 +11,8 @@ def push(local_paths, remote_dest):
         return 'No local_paths: %s' % local_paths
     local = ' '.join(local_paths)
     # create the rsync command
-    rsync_cmd = '/usr/bin/rsync -va %s %s' % (local, remote_dest)
+    command = '/usr/bin/rsync --timeout=%s -va %s %s' % (str(timeout), local, remote_dest)
+    print(command)
     # Run the commands.
     # shell=True is used bc escaped characters would cause failures.
-    return subprocess.Popen(rsync_cmd, shell=True).wait()
+    return subprocess.Popen(command, shell=True).wait()
