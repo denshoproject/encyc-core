@@ -95,7 +95,13 @@ class Source(object):
     streaming_url = None
     external_url = None
     original = None
+    original_url = None
+    original_path = None
+    original_path_abs = None
     display = None
+    display_url = None
+    display_path = None
+    display_path_abs = None
     media_format = None
     aspect_ratio = None
     original_size = None
@@ -122,6 +128,7 @@ class Source(object):
     
     def absolute_url(self):
         return urls.reverse('wikiprox-source', args=([self.encyclopedia_id]))
+    
 
 
 class Citation(object):
@@ -385,6 +392,20 @@ class Proxy(object):
         if getattr(source, 'streaming_url', None):
             source.streaming_url = source.streaming_url.replace(config.RTMP_STREAMER,'')
             source.rtmp_streamer = config.RTMP_STREAMER
+        source.original_url = source.original
+        if source.original:
+            source.original = os.path.basename(source.original)
+            source.original_path = source.original_url.replace(config.SOURCES_URL, '')
+            source.original_path_abs = os.path.join(
+                config.SOURCES_BASE, source.original_path
+            )
+        source.display_url = source.display
+        if source.display:
+            source.display = os.path.basename(source.display)
+            source.display_path = source.display_url.replace(config.SOURCES_URL, '')
+            source.display_path_abs = os.path.join(
+                config.SOURCES_BASE, source.display_path
+            )
         return source
 
     @staticmethod

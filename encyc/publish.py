@@ -480,10 +480,12 @@ def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None)
                     errors.append(sid)
                 
                 # IMPORTANT! WE ASSUME THAT encyc-core RUNS ON SAME MACHINE AS PSMS!
-                source_stub = es_source.original_url.replace(config.SOURCES_URL, '')
-                source_path = os.path.join(config.SOURCES_BASE, source_stub)
-                logprint('debug', 'source_path %s' % source_path)
-                to_rsync.append(source_path)
+                if es_source.original:
+                    logprint('debug', 'original_path_abs %s' % es_source.original_path_abs)
+                    to_rsync.append(es_source.original_path_abs)
+                if es_source.display:
+                    logprint('debug', 'display_path_abs %s' % es_source.display_path_abs)
+                    to_rsync.append(es_source.display_path_abs)
                 
                 logprint('debug', 'ok')
         
@@ -509,10 +511,10 @@ def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None)
         else:
             missing_files.append(path)
             file_status = '(missing)'
-        logprint('debug', '- %s %s' % (source_path, file_status))
+        logprint('debug', '- %s %s' % (path, file_status))
     
     if not dryrun:
-        #if os.path.exists(source_path):
+        #if os.path.exists(path):
         result = rsync.push(
             present_files,
             config.SOURCES_DEST

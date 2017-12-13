@@ -488,17 +488,22 @@ class Source(DocType):
     published = Boolean()
     creative_commons = Boolean()
     headword = String(index='not_analyzed')
-    #original_path = String(index='not_analyzed')
-    original_url = String(index='not_analyzed')  # TODO use original_path
+    original = String(index='not_analyzed')
+    original_size = String(index='not_analyzed')
+    original_url = String(index='not_analyzed')
+    original_path = String(index='not_analyzed')
+    original_path_abs = String(index='not_analyzed')
+    display = String(index='not_analyzed')
+    display_size = String(index='not_analyzed')
+    display_url = String(index='not_analyzed')
+    display_path = String(index='not_analyzed')
+    display_path_abs = String(index='not_analyzed')
     #streaming_path = String(index='not_analyzed')
     #rtmp_path = String(index='not_analyzed')
     streaming_url = String(index='not_analyzed')  # TODO remove
     external_url = String(index='not_analyzed')
     media_format = String(index='not_analyzed')
     aspect_ratio = String(index='not_analyzed')
-    original_size = String(index='not_analyzed')
-    display_size = String(index='not_analyzed')
-    display = String(index='not_analyzed')
     caption = String()
     caption_extended = String()
     #transcript_path = String(index='not_analyzed')
@@ -532,14 +537,6 @@ class Source(DocType):
     def transcript_url(self):
         if self.transcript_path():
             return os.path.join(config.SOURCES_MEDIA_URL, self.transcript_path())
-    
-    def original_path(self):
-        if self.original_url:
-            return os.path.join(
-                config.SOURCES_MEDIA_BUCKET,
-                os.path.basename(self.original_url)
-            )
-        return None
 
     def rtmp_path(self):
         return self.streaming_url
@@ -635,14 +632,22 @@ class Source(DocType):
             published = ps_source.published,
             creative_commons = ps_source.creative_commons,
             headword = ps_source.headword,
-            original_url = ps_source.original,
+            
+            original = os.path.basename(ps_source.original),
+            original_size = ps_source.original_size,
+            original_url = ps_source.original_url,
+            original_path = ps_source.original_path,
+            original_path_abs = ps_source.original_path_abs,
+            display = os.path.basename(ps_source.display),
+            display_size = ps_source.display_size,
+            display_url = ps_source.display_url,
+            display_path = ps_source.display_path,
+            display_path_abs = ps_source.display_path_abs,
+            
             streaming_url = streaming_url,
             external_url = ps_source.external_url,
             media_format = ps_source.media_format,
             aspect_ratio = ps_source.aspect_ratio,
-            original_size = ps_source.original_size,
-            display_size = ps_source.display_size,
-            display = ps_source.display,
             caption = none_strip(ps_source.caption),
             caption_extended = none_strip(ps_source.caption_extended),
             transcript = none_strip(ps_source.transcript),
