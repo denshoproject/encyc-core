@@ -613,10 +613,10 @@ class Source(DocType):
         # fullsize image for thumbnail
         filename = ''
         img_path = ''
-        if hasattr(ps_source,'display'):
+        if hasattr(ps_source,'display') and ps_source.display:
             filename = os.path.basename(ps_source.display)
             img_path = os.path.join(config.SOURCES_MEDIA_BUCKET, filename)
-        elif hasattr(ps_source,'original'):
+        elif hasattr(ps_source,'original') and ps_source.original:
             filename = os.path.basename(ps_source.original)
             img_path = os.path.join(config.SOURCES_MEDIA_BUCKET, filename)
         source = Source(
