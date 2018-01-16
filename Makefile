@@ -18,14 +18,14 @@ PIP_CACHE_DIR=$(INSTALL_BASE)/pip-cache
 
 VIRTUALENV=$(INSTALLDIR)/venv/encyccore
 
-FPM_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
-FPM_ARCH=amd64
-FPM_NAME=$(APP)-$(FPM_BRANCH)
-FPM_FILE=$(FPM_NAME)_$(VERSION)_$(FPM_ARCH).deb
-FPM_VENDOR=Densho.org
-FPM_MAINTAINER=<geoffrey.jost@densho.org>
-FPM_DESCRIPTION=Encyclopedia publishing tools
-FPM_BASE=opt/encyc-core
+DEB_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
+DEB_ARCH=amd64
+DEB_NAME=$(APP)-$(DEB_BRANCH)
+DEB_FILE=$(DEB_NAME)_$(VERSION)_$(DEB_ARCH).deb
+DEB_VENDOR=Densho.org
+DEB_MAINTAINER=<geoffrey.jost@densho.org>
+DEB_DESCRIPTION=Encyclopedia publishing tools
+DEB_BASE=opt/encyc-core
 
 CONF_BASE=/etc/encyc
 
@@ -193,34 +193,34 @@ uninstall-configs:
 deb:
 	@echo ""
 	@echo "FPM packaging ----------------------------------------------------------"
-	-rm -Rf $(FPM_FILE)
+	-rm -Rf $(DEB_FILE)
 	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
 	fpm   \
 	--verbose   \
 	--input-type dir   \
 	--output-type deb   \
-	--name $(FPM_NAME)   \
+	--name $(DEB_NAME)   \
 	--version $(VERSION)   \
-	--package $(FPM_FILE)   \
+	--package $(DEB_FILE)   \
 	--url "$(GIT_SOURCE_URL)"   \
-	--vendor "$(FPM_VENDOR)"   \
-	--maintainer "$(FPM_MAINTAINER)"   \
-	--description "$(FPM_DESCRIPTION)"   \
+	--vendor "$(DEB_VENDOR)"   \
+	--maintainer "$(DEB_MAINTAINER)"   \
+	--description "$(DEB_DESCRIPTION)"   \
 	--chdir $(INSTALLDIR)   \
 	--depends "rsync"   \
-	.git=$(FPM_BASE)   \
-	.gitignore=$(FPM_BASE)   \
-	bin=$(FPM_BASE)   \
-	conf=$(FPM_BASE)   \
-	COPYRIGHT=$(FPM_BASE)   \
-	encyc=$(FPM_BASE)   \
-	INSTALL=$(FPM_BASE)   \
-	LICENSE=$(FPM_BASE)   \
-	Makefile=$(FPM_BASE)   \
-	README.rst=$(FPM_BASE)   \
-	requirements.txt=$(FPM_BASE)  \
-	setup.py=$(FPM_BASE)  \
-	setup.sh=$(FPM_BASE)  \
-	VERSION=$(FPM_BASE)  \
-	venv=$(FPM_BASE)   \
+	.git=$(DEB_BASE)   \
+	.gitignore=$(DEB_BASE)   \
+	bin=$(DEB_BASE)   \
+	conf=$(DEB_BASE)   \
+	COPYRIGHT=$(DEB_BASE)   \
+	encyc=$(DEB_BASE)   \
+	INSTALL=$(DEB_BASE)   \
+	LICENSE=$(DEB_BASE)   \
+	Makefile=$(DEB_BASE)   \
+	README.rst=$(DEB_BASE)   \
+	requirements.txt=$(DEB_BASE)  \
+	setup.py=$(DEB_BASE)  \
+	setup.sh=$(DEB_BASE)  \
+	VERSION=$(DEB_BASE)  \
+	venv=$(DEB_BASE)   \
 	conf/core.cfg=$(CONF_BASE)/core.cfg
