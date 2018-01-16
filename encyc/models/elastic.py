@@ -606,7 +606,7 @@ class Source(DocType):
         """
         # source.streaming_url has to be relative to RTMP_STREAMER
         # TODO this should really happen when it's coming in from MediaWiki.
-        if hasattr(ps_source,'streaming_url'):
+        if hasattr(ps_source,'streaming_url') and ps_source.streaming_url:
             streaming_url = ps_source.streaming_url.replace(config.RTMP_STREAMER, '')
         else:
             streaming_url = ''
