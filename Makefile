@@ -1,13 +1,25 @@
 PROJECT=encyc-core
 APP=encyccore
 USER=encyc
-
 SHELL = /bin/bash
-DEBIAN_CODENAME := $(shell lsb_release -sc)
-DEBIAN_RELEASE := $(shell lsb_release -sr)
-VERSION := $(shell cat VERSION)
 
+APP_VERSION := $(shell cat VERSION)
 GIT_SOURCE_URL=https://github.com/densho/encyc-core
+
+# Release name e.g. jessie
+DEBIAN_CODENAME := $(shell lsb_release -sc)
+# Release numbers e.g. 8.10
+DEBIAN_RELEASE := $(shell lsb_release -sr)
+# Sortable major version tag e.g. deb8
+DEBIAN_RELEASE_TAG = deb$(shell lsb_release -sr | cut -c1)
+
+# current branch name minus dashes or underscores
+PACKAGE_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
+# current commit hash
+PACKAGE_COMMIT := $(shell git log -1 --pretty="%h")
+# current commit date minus dashes
+PACKAGE_TIMESTAMP := $(shell git log -1 --pretty="%ad" --date=short | tr -d -)
+
 PACKAGE_SERVER=ddr.densho.org/static/$(APP)
 
 INSTALL_BASE=/opt
@@ -20,8 +32,14 @@ VIRTUALENV=$(INSTALLDIR)/venv/encyccore
 
 DEB_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
 DEB_ARCH=amd64
-DEB_NAME=$(APP)-$(DEB_BRANCH)
-DEB_FILE=$(DEB_NAME)_$(VERSION)_$(DEB_ARCH).deb
+DEB_NAME_JESSIE=$(APP)-$(DEB_BRANCH)
+DEB_NAME_STRETCH=$(APP)-$(DEB_BRANCH)
+# Application version, separator (~), Debian release tag e.g. deb8
+# Release tag used because sortable and follows Debian project usage.
+DEB_VERSION_JESSIE=$(APP_VERSION)~deb8
+DEB_VERSION_STRETCH=$(APP_VERSION)~deb9
+DEB_FILE_JESSIE=$(DEB_NAME_JESSIE)_$(DEB_VERSION_JESSIE)_$(DEB_ARCH).deb
+DEB_FILE_STRETCH=$(DEB_NAME_STRETCH)_$(DEB_VERSION_STRETCH)_$(DEB_ARCH).deb
 DEB_VENDOR=Densho.org
 DEB_MAINTAINER=<geoffrey.jost@densho.org>
 DEB_DESCRIPTION=Encyclopedia publishing tools
@@ -190,18 +208,61 @@ uninstall-configs:
 # http://fpm.readthedocs.io/en/latest/
 # https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
 # https://brejoc.com/tag/fpm/
-deb:
+deb: deb-jessie deb-stretch
+
+# http://fpm.readthedocs.io/en/latest/
+# https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
+# https://brejoc.com/tag/fpm/
+deb-jessie:
 	@echo ""
-	@echo "FPM packaging ----------------------------------------------------------"
-	-rm -Rf $(DEB_FILE)
+	@echo "FPM packaging (jessie) -------------------------------------------------"
+	-rm -Rf $(DEB_FILE_JESSIE)
 	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
 	fpm   \
 	--verbose   \
 	--input-type dir   \
 	--output-type deb   \
-	--name $(DEB_NAME)   \
-	--version $(VERSION)   \
-	--package $(DEB_FILE)   \
+	--name $(DEB_NAME_JESSIE)   \
+	--version $(DEB_VERSION_JESSIE)   \
+	--package $(DEB_FILE_JESSIE)   \
+	--url "$(GIT_SOURCE_URL)"   \
+	--vendor "$(DEB_VENDOR)"   \
+	--maintainer "$(DEB_MAINTAINER)"   \
+	--description "$(DEB_DESCRIPTION)"   \
+	--chdir $(INSTALLDIR)   \
+	--depends "rsync"   \
+	.git=$(DEB_BASE)   \
+	.gitignore=$(DEB_BASE)   \
+	bin=$(DEB_BASE)   \
+	conf=$(DEB_BASE)   \
+	COPYRIGHT=$(DEB_BASE)   \
+	encyc=$(DEB_BASE)   \
+	INSTALL=$(DEB_BASE)   \
+	LICENSE=$(DEB_BASE)   \
+	Makefile=$(DEB_BASE)   \
+	README.rst=$(DEB_BASE)   \
+	requirements.txt=$(DEB_BASE)  \
+	setup.py=$(DEB_BASE)  \
+	setup.sh=$(DEB_BASE)  \
+	VERSION=$(DEB_BASE)  \
+	venv=$(DEB_BASE)   \
+	conf/core.cfg=$(CONF_BASE)/core.cfg
+
+# http://fpm.readthedocs.io/en/latest/
+# https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
+# https://brejoc.com/tag/fpm/
+deb-stretch:
+	@echo ""
+	@echo "FPM packaging (stretch) ------------------------------------------------"
+	-rm -Rf $(DEB_FILE_STRETCH)
+	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
+	fpm   \
+	--verbose   \
+	--input-type dir   \
+	--output-type deb   \
+	--name $(DEB_NAME_STRETCH)   \
+	--version $(DEB_VERSION_STRETCH)   \
+	--package $(DEB_FILE_STRETCH)   \
 	--url "$(GIT_SOURCE_URL)"   \
 	--vendor "$(DEB_VENDOR)"   \
 	--maintainer "$(DEB_MAINTAINER)"   \
