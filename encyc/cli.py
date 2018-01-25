@@ -63,7 +63,7 @@ def create(hosts, index):
               help='Elasticsearch index to delete.')
 @click.option('--confirm', is_flag=True,
               help='Yes I really want to delete this index.')
-def delete(hosts, index, confirm):
+def destroy(hosts, index, confirm):
     """Delete index (requires --confirm).
     """
     if confirm:
