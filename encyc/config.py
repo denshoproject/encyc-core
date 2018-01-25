@@ -49,7 +49,7 @@ except:
 MEDIAWIKI_API_TIMEOUT = config.get('mediawiki', 'api_timeout')
 try:
     MEDIAWIKI_DATABOXES = {
-        keyval.split(':')[0]: keyval.split(':')[1]
+        keyval.split(':')[0].strip(): keyval.split(':')[1].strip()
         for keyval in config.get('mediawiki', 'databoxes').split(';')
     }
 except:

@@ -235,6 +235,10 @@ class Page(DocType):
         }
     )
     
+    # list of strings: ['DATABOX_NAME|dict', 'DATABOX_NAME|dict']
+    # dicts are result of json.dumps(dict)
+    databoxes = String(index='not_analyzed', multi=True)
+    
     rg_rgmediatype = String(index='not_analyzed', multi=True)
     rg_title = String()
     rg_creators = String(multi=True)
@@ -467,9 +471,18 @@ class Page(DocType):
                 # only include databoxes in configs
                 if key in config.MEDIAWIKI_DATABOXES.keys():
                     prefix = config.MEDIAWIKI_DATABOXES.get(key)
-                    for fieldname,data in databox.iteritems():
-                        fieldname = '%s_%s' % (prefix, fieldname)
-                        setattr(page, fieldname, data)
+                    if prefix:
+                        for fieldname,data in databox.iteritems():
+                            fieldname = '%s_%s' % (prefix, fieldname)
+                            setattr(page, fieldname, data)
+            databoxes = [
+                '%s|%s' % (key, json.dumps(databox))
+                for key,databox in mwpage.databoxes.iteritems()
+                # only include databoxes in configs
+                if databox and (key in config.MEDIAWIKI_DATABOXES.keys())
+            ]
+            if databoxes:
+                setattr(page, 'databoxes', databoxes)
         return page
 
 
