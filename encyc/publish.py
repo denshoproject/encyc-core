@@ -627,6 +627,21 @@ def get(hosts, index, doctype, identifier):
             print(o.__repr__())
             _print_dict(o.to_dict())
 
+def delete(hosts, index, doctype, identifier):
+    i = set_hosts_index(hosts=hosts, index=index)
+    if doctype not in DOC_TYPES:
+        logprint('error', '"%s" is not a recognized doc_type!' % doctype)
+        return
+    print('doctype "%s"' % doctype)
+    print('identifier "%s"' % identifier)
+    
+    if   doctype == 'articles':
+        Page.get(identifier).delete()
+    elif doctype == 'authors':
+        Author.get(identifier).delete()
+    elif doctype == 'sources':
+        Source.get(identifier).delete()
+
 def _print_dict(d):
     keys = d.keys()
     keys.sort()

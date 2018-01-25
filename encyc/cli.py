@@ -224,6 +224,18 @@ def get(hosts, index, doctype, object_id):
 
 
 @encyc.command()
+@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--index', default=settings.DOCSTORE_INDEX,
+              help='Elasticsearch index.')
+@click.argument('doctype')
+@click.argument('object_id')
+def delete(hosts, index, doctype, object_id):
+    """Delete a single record
+    """
+    publish.delete(hosts, index, doctype, object_id)
+
+
+@encyc.command()
 @click.argument('title')
 @click.argument('path')
 def _json(title, path):
