@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from datetime import datetime
 import json
 import logging
@@ -337,6 +338,8 @@ def _rm_tags(html, tags=['html', 'body']):
 def extract_databoxes(body, databox_divs_namespaces):
     """Find the hidden databoxes, extract data. 
     
+    Databox data is returned as an OrderedDict to preserve field sequence.
+    
     <div id="databox-Books" style="display:none;">
     <p>Title:A Bridge Between Us;
     Author:Julie Shigekuni;
@@ -356,15 +359,25 @@ def extract_databoxes(body, databox_divs_namespaces):
     
     @param body: str raw HTML
     @param databox_divs_namespaces: dict
-    @returns: text,data
+    @returns: str,OrderedDict
     """
     soup = BeautifulSoup(body, "lxml")
     databoxes = {}
     for div_id in databox_divs_namespaces.keys():
-        data = {}
+        data = OrderedDict()
         tag = soup.find(id=div_id)
         if tag:
-            for item in tag.p.contents[0].split('\n'):
+            # BeautifulSoup returns tag contents as a list.
+            # The list is composed of strings (stretches of text) and Tag objects,
+            # which are any contents that have HTML tags e.g. "<i>title</i>".
+            # We just want a big string, so convert all Tags to strings
+            # and join everything together into a big string
+            itemparts = ''.join([
+                unicode(item)
+                for item in tag.p.contents
+            ])
+            # split into key/value pairs and populate the OrderedDict
+            for item in itemparts.split('\n'):
                 item = item.strip()
                 if item and (':' in item):
                     # Note: many fields contain colons
