@@ -58,6 +58,7 @@ class Page(object):
     is_author = None
     title_sort = None
     title = None
+    description = None
     body = None
     sources = []
     categories = []
@@ -320,6 +321,7 @@ class Proxy(object):
             
             page.is_article = wiki.is_article(page.title)
             if page.is_article:
+                page.description = wikipage.extract_description(page.body)
                 
                 # only include categories from Category:Articles
                 categories_whitelist = [

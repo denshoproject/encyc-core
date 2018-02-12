@@ -108,14 +108,15 @@ def _wrap_sections(soup):
     @param soup: BeautifulSoup object
     @returns: soup
     """
+    HEADERS = ['h2','h3','h4']
     for s in soup.find_all('span', 'mw-headline'):
-        # get the <h2> tag
+        # get header tags
         h = s.parent
         h_id = h.find('span')['id']
         # extract the rest of the section from soup
         siblings = []
         for sibling in h.next_siblings:
-            if hasattr(sibling, 'name') and sibling.name == 'h2':
+            if hasattr(sibling, 'name') and sibling.name in HEADERS:
                 break
             siblings.append(sibling)
         [sibling.extract() for sibling in siblings]
@@ -390,3 +391,15 @@ def extract_databoxes(body, databox_divs_namespaces):
                     data[key.lower()] = val
             databoxes[div_id] = data
     return databoxes
+
+def extract_description(body):
+    """Gets just the first paragraph of an article
+    
+    @param body: str raw HTML
+    @returns: str
+    """
+    soup = BeautifulSoup(body, "lxml")
+    for p in soup.find_all('p'):
+        if p.text and not (';\n' in p.text):
+            return p.text.strip()
+    return ''

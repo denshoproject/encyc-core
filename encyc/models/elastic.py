@@ -222,6 +222,7 @@ class Page(DocType):
     mw_api_url = String(index='not_analyzed')
     title_sort = String(index='not_analyzed')
     title = String()
+    description = String()
     body = String()
     prev_page = String(index='not_analyzed')
     next_page = String(index='not_analyzed')
@@ -434,6 +435,7 @@ class Page(DocType):
             page.mw_api_url = mwpage.url
             page.title_sort = mwpage.title_sort
             page.title = none_strip(mwpage.title)
+            page.description = mwpage.description
             page.body = none_strip(mwpage.body)
             page.prev_page = mwpage.prev_page
             page.next_page = mwpage.next_page
@@ -456,6 +458,7 @@ class Page(DocType):
                 mw_api_url = mwpage.url,
                 title_sort = mwpage.title_sort,
                 title = none_strip(mwpage.title),
+                description = mwpage.description,
                 body = none_strip(mwpage.body),
                 prev_page = mwpage.prev_page,
                 next_page = mwpage.next_page,
