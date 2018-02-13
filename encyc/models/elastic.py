@@ -247,7 +247,7 @@ class Page(DocType):
     rg_readinglevel = String(index='not_analyzed', multi=True)
     rg_theme = String(index='not_analyzed', multi=True)
     rg_genre = String(index='not_analyzed', multi=True)
-    rg_pov = String()
+    rg_pov = String(index='not_analyzed', multi=True)
     rg_relatedevents = String()
     rg_availability = String(index='not_analyzed')
     rg_freewebversion = String(index='not_analyzed')
