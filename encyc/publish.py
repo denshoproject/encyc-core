@@ -343,6 +343,9 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
     logprint('debug', 'getting encycrg titles...')
     rg_titles = Page.rg_titles()
     logprint('debug', 'encycrg titles: %s' % len(rg_titles))
+    if not len(rg_titles):
+        logprint('info', 'NO ENCYC-RG ARTICLES!!!')
+        logprint('info', 'RUN "encyc articles --force" AFTER THIS PASS TO MARK rg/notrg LINKS')
     
     logprint('debug', 'adding articles...')
     posted = 0
@@ -395,6 +398,9 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
         logprint('info', 'ERROR: %s titles were unpublishable:' % len(errors))
         for title in errors:
             logprint('info', 'ERROR: %s' % title)
+    if not len(rg_titles):
+        logprint('info', 'NO ENCYC-RG ARTICLES!!!')
+        logprint('info', 'RUN "encyc articles --force" AFTER THIS PASS TO MARK rg/notrg LINKS')
     logprint('debug', 'DONE')
 
 @stopwatch
