@@ -205,33 +205,36 @@ def _mark_offsite_encyc_rg_links(soup, title, rg_titles=[]):
         
         # ignore page nav links
         if a['href'][0] == '#':
-            #print('   pass %s' % a['href'])
+            #print('   PASS')
             pass
         
         # offsite
+        #elif url.netloc and (url.netloc not in [config.ENCYCRG_ALLOWED_HOSTS]):
         elif ('http:' in a['href']) or ('https:' in a['href']):
-            #print('offsite %s' % a['href'])
+            #print('OFFSITE %s' % a['href'])
             __mark_tag(a, 'class', 'offsite')
         
         # resource guide
         elif (a_title in rg_titles) or (a_title_with_spaces in rg_titles):
-            #print('     rg %s' % a['href'])
+            #print('     RG %s' % a['href'])
             __mark_tag(a, 'class', 'encyc')
             __mark_tag(a, 'class', 'rg')
         
         # encyc
         else:
-            #print('  encyc %s' % a['href'])
+            #print('  ENCYC %s' % a['href'])
             __mark_tag(a, 'class', 'encyc')
             __mark_tag(a, 'class', 'notrg')
-            # replace domain/base
-            encyc_url = os.path.join(
-                'http://',
-                config.ENCYCFRONT_DOMAIN,
-                config.ENCYCFRONT_ARTICLE_BASE,
-                a_title
-            )
-            a['href'] = encyc_url
+
+        # Previous iterations of this function rewrote links to the main
+        # encyclopedia ('encyc' links) with the encycfront domain, adding
+        # the protocol ('http://') and domain.  When the function was run
+        # subsequently, these links were understood by the function as offsite
+        # links, the markers were removed, and subsequent passes would fail
+        # to mark links properly.
+        # This function now marks links as rg/notrg but does not modify the
+        # href attribute.  It is the consuming app's (e.g. encycrg) job to
+        # rewrite the links.
     
     return soup
 
