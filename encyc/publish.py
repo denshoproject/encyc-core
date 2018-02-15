@@ -401,6 +401,7 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
     if not len(rg_titles):
         logprint('info', 'NO ENCYC-RG ARTICLES!!!')
         logprint('info', 'RUN "encyc articles --force" AFTER THIS PASS TO MARK rg/notrg LINKS')
+        logprint('info', 'NOTE: ENCYC-RG MUST BE ACCESSIBLE IN ORDER TO BUILD RG ARTICLES LIST.')
     logprint('debug', 'DONE')
 
 @stopwatch
