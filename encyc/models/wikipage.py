@@ -31,13 +31,13 @@ def parse_mediawiki_text(title, html, primary_sources, public=False, printed=Fal
         html.replace('<p><br />\n</p>',''),
         features='lxml'
     )
+    soup = _mark_offsite_encyc_rg_links(soup, title, rg_titles)
     soup = _remove_staticpage_titles(soup)
     soup = _remove_comments(soup)
     soup = _remove_edit_links(soup)
     soup = _wrap_sections(soup)
     soup = _rewrite_newpage_links(soup)
     soup = _rewrite_prevnext_links(soup)
-    soup = _mark_offsite_encyc_rg_links(soup, title, rg_titles)
     soup = remove_status_markers(soup)
     if not printed:
         soup = _add_top_links(soup)
@@ -196,15 +196,22 @@ def _mark_offsite_encyc_rg_links(soup, title, rg_titles=[]):
     @param rg_titles: list Resource Guide url_titles.
     """
     for a in soup.find_all("a"):
+        #print(a)
+        
         __rm_tag(a, 'class', 'offsite')
         __rm_tag(a, 'class', 'encyc')
         __rm_tag(a, 'class', 'rg')
         __rm_tag(a, 'class', 'notrg')
-        a_title = __href_title(a['href'], config.ENCYCRG_ARTICLE_BASE)
-        a_title_with_spaces = a_title.replace('_', ' ')
         
-        # ignore page nav links
-        if a['href'][0] == '#':
+        a_title = __href_title(a['href'], config.ENCYCRG_ARTICLE_BASE)
+        if 'http' in a_title:
+            a_title = ''
+        a_title_with_spaces = a_title.replace('_', ' ')
+        #print('a_title        "%s"' % a_title)
+        #print('a_title_spaces "%s"' % a_title_with_spaces)
+        
+        # ignore page nav and image links
+        if (a['href'][0] == '#') or ('File' in a['href']):
             #print('   PASS')
             pass
         
@@ -215,7 +222,7 @@ def _mark_offsite_encyc_rg_links(soup, title, rg_titles=[]):
             __mark_tag(a, 'class', 'offsite')
         
         # resource guide
-        elif (a_title in rg_titles) or (a_title_with_spaces in rg_titles):
+        elif a_title and( (a_title in rg_titles) or (a_title_with_spaces in rg_titles)):
             #print('     RG %s' % a['href'])
             __mark_tag(a, 'class', 'encyc')
             __mark_tag(a, 'class', 'rg')
@@ -225,7 +232,7 @@ def _mark_offsite_encyc_rg_links(soup, title, rg_titles=[]):
             #print('  ENCYC %s' % a['href'])
             __mark_tag(a, 'class', 'encyc')
             __mark_tag(a, 'class', 'notrg')
-
+        
         # Previous iterations of this function rewrote links to the main
         # encyclopedia ('encyc' links) with the encycfront domain, adding
         # the protocol ('http://') and domain.  When the function was run
