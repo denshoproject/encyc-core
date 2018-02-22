@@ -19,7 +19,23 @@ from encyc.models import citations
 from encyc.models import sources
 from encyc.models import helpers
 from encyc.models import wikipage
-    
+
+STOP_WORDS = ['a', 'an', 'the']
+
+def make_titlesort(title_sort, title):
+    """make title_sort from title if necessary; normalize title_sort
+    """
+    if title_sort:
+        text = title_sort
+    else:
+        # no title_sort, use title and rm initial stop word
+        text = title
+        first_word = text.split(' ')[0]
+        if first_word in STOP_WORDS:
+            text = text.replace('%s ' % first_word, '', 1)
+    # rm spaces and punctuation, make lowercase
+    return ''.join([c for c in text.lower() if c.isalnum()])
+
 
 # ----------------------------------------------------------------------
 
@@ -290,10 +306,13 @@ class Proxy(object):
             
             # basic page context
             page.title = pagedata['parse']['displaytitle']
-            page.title_sort = page.title
+            
+            title_sort = ''
             for prop in pagedata['parse']['properties']:
-                if prop.get('name',None) and prop['name'] and (prop['name'] == 'defaultsort'):
-                    page.title_sort = prop['*']
+                if prop.get('name',None) and prop['name'] \
+                and (prop['name'].lower() == 'defaultsort'):
+                    title_sort = prop['*']
+            page.title_sort = make_titlesort(title_sort, page.title)
             
             page.sources = helpers.find_primary_sources(
                 config.SOURCES_API,
