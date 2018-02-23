@@ -218,6 +218,8 @@ class Page(DocType):
     url_title = String(index='not_analyzed')  # Elasticsearch id
     public = Boolean()
     published = Boolean()
+    published_encyc = Boolean()
+    published_rg = Boolean()
     modified = Date()
     mw_api_url = String(index='not_analyzed')
     title_sort = String(index='not_analyzed')
@@ -486,6 +488,13 @@ class Page(DocType):
             ]
             if databoxes:
                 setattr(page, 'databoxes', databoxes)
+        
+        page.published_encyc = True
+        
+        page.published_rg = False
+        if hasattr(page, 'rg_rgmediatype'):
+            page.published_rg = True
+        
         return page
 
 
