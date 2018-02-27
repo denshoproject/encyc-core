@@ -433,6 +433,8 @@ class Page(DocType):
         if page:
             page.public = mwpage.public
             page.published = mwpage.published
+            page.published_encyc = mwpage.published_encyc
+            page.published_rg = mwpage.published_rg
             page.modified = mwpage.lastmod
             page.mw_api_url = mwpage.url
             page.title_sort = mwpage.title_sort
@@ -456,6 +458,8 @@ class Page(DocType):
                 url_title = mwpage.url_title,
                 public = mwpage.public,
                 published = mwpage.published,
+                published_encyc = mwpage.published_encyc,
+                published_rg = mwpage.published_rg,
                 modified = mwpage.lastmod,
                 mw_api_url = mwpage.url,
                 title_sort = mwpage.title_sort,
@@ -488,12 +492,6 @@ class Page(DocType):
             ]
             if databoxes:
                 setattr(page, 'databoxes', databoxes)
-        
-        page.published_encyc = True
-        
-        page.published_rg = False
-        if hasattr(page, 'rg_rgmediatype'):
-            page.published_rg = True
         
         return page
 
