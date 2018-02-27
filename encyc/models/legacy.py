@@ -365,6 +365,8 @@ class Proxy(object):
                 page.author_articles = wiki.author_articles(page.title)
         
             page.published_encyc = True
+            if wikipage.not_published_encyc(page.body):
+                page.published_encyc = False
             
             page.published_rg = False
             if hasattr(page, 'databoxes') and page.databoxes \
