@@ -49,7 +49,7 @@ except:
 MEDIAWIKI_API_TIMEOUT = config.get('mediawiki', 'api_timeout')
 try:
     MEDIAWIKI_DATABOXES = {
-        keyval.split(':')[0]: keyval.split(':')[1]
+        keyval.split(':')[0].strip(): keyval.split(':')[1].strip()
         for keyval in config.get('mediawiki', 'databoxes').split(';')
     }
 except:
@@ -84,17 +84,20 @@ DDR_TOPICS_SRC_URL = config.get('ddr', 'topics_src_url')
 DDR_TOPICS_BASE = config.get('ddr', 'topics_base')
 
 # encycfront
+ENCYCFRONT_PROTOCOL = config.get('encycfront', 'protocol')
 ENCYCFRONT_DOMAIN = config.get('encycfront', 'domain')
 ENCYCFRONT_API_BASE = config.get('encycfront', 'api_base')
 ENCYCFRONT_ARTICLE_BASE = config.get('encycfront', 'article_base')
-ENCYCFRONT_API = 'http://%s%s' % (ENCYCFRONT_DOMAIN, ENCYCFRONT_API_BASE)
+ENCYCFRONT_API = '%s://%s%s' % (ENCYCFRONT_PROTOCOL, ENCYCFRONT_DOMAIN, ENCYCFRONT_API_BASE)
 
 # encycrg
 # Used to mark URLs in the Resource Guide.
+ENCYCRG_PROTOCOL = config.get('encycrg', 'protocol')
 ENCYCRG_DOMAIN = config.get('encycrg', 'domain')
+ENCYCRG_ALLOWED_HOSTS = config.get('encycrg', 'allowed_hosts')
 ENCYCRG_API_BASE = config.get('encycrg', 'api_base')
 ENCYCRG_ARTICLE_BASE = config.get('encycrg', 'article_base')
-ENCYCRG_API = 'http://%s%s' % (ENCYCRG_DOMAIN, ENCYCRG_API_BASE)
+ENCYCRG_API = '%s://%s%s' % (ENCYCRG_PROTOCOL, ENCYCRG_DOMAIN, ENCYCRG_API_BASE)
 
 
 from rc import Cache

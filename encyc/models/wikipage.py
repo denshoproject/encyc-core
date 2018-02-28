@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from datetime import datetime
 import json
 import logging
@@ -30,13 +31,13 @@ def parse_mediawiki_text(title, html, primary_sources, public=False, printed=Fal
         html.replace('<p><br />\n</p>',''),
         features='lxml'
     )
+    soup = _mark_offsite_encyc_rg_links(soup, title, rg_titles)
     soup = _remove_staticpage_titles(soup)
     soup = _remove_comments(soup)
     soup = _remove_edit_links(soup)
-    #soup = _wrap_sections(soup)
+    soup = _wrap_sections(soup)
     soup = _rewrite_newpage_links(soup)
     soup = _rewrite_prevnext_links(soup)
-    soup = _mark_offsite_encyc_rg_links(soup, title, rg_titles)
     soup = remove_status_markers(soup)
     if not printed:
         soup = _add_top_links(soup)
@@ -107,19 +108,22 @@ def _wrap_sections(soup):
     @param soup: BeautifulSoup object
     @returns: soup
     """
+    HEADERS = ['h2','h3','h4']
     for s in soup.find_all('span', 'mw-headline'):
-        # get the <h2> tag
+        # get header tags
         h = s.parent
+        h_id = h.find('span')['id']
         # extract the rest of the section from soup
         siblings = []
         for sibling in h.next_siblings:
-            if hasattr(sibling, 'name') and sibling.name == 'h2':
+            if hasattr(sibling, 'name') and sibling.name in HEADERS:
                 break
             siblings.append(sibling)
         [sibling.extract() for sibling in siblings]
         # wrap h in a <div>
         div = soup.new_tag('div')
         div['class'] = 'section'
+        div['id'] = h_id
         h = h.wrap(div)
         # append section contents into <div>
         div2 = soup.new_tag('div')
@@ -192,42 +196,52 @@ def _mark_offsite_encyc_rg_links(soup, title, rg_titles=[]):
     @param rg_titles: list Resource Guide url_titles.
     """
     for a in soup.find_all("a"):
+        #print(a)
+        
         __rm_tag(a, 'class', 'offsite')
         __rm_tag(a, 'class', 'encyc')
         __rm_tag(a, 'class', 'rg')
         __rm_tag(a, 'class', 'notrg')
-        a_title = __href_title(a['href'], config.ENCYCRG_ARTICLE_BASE)
-        a_title_with_spaces = a_title.replace('_', ' ')
         
-        # ignore page nav links
-        if a['href'][0] == '#':
-            #print('   pass %s' % a['href'])
+        a_title = __href_title(a['href'], config.ENCYCRG_ARTICLE_BASE)
+        if 'http' in a_title:
+            a_title = ''
+        a_title_with_spaces = a_title.replace('_', ' ')
+        #print('a_title        "%s"' % a_title)
+        #print('a_title_spaces "%s"' % a_title_with_spaces)
+        
+        # ignore page nav and image links
+        if (a['href'][0] == '#') or ('File' in a['href']):
+            #print('   PASS')
             pass
         
         # offsite
+        #elif url.netloc and (url.netloc not in [config.ENCYCRG_ALLOWED_HOSTS]):
         elif ('http:' in a['href']) or ('https:' in a['href']):
-            #print('offsite %s' % a['href'])
+            #print('OFFSITE %s' % a['href'])
             __mark_tag(a, 'class', 'offsite')
         
         # resource guide
-        elif (a_title in rg_titles) or (a_title_with_spaces in rg_titles):
-            #print('     rg %s' % a['href'])
+        elif a_title and( (a_title in rg_titles) or (a_title_with_spaces in rg_titles)):
+            #print('     RG %s' % a['href'])
             __mark_tag(a, 'class', 'encyc')
             __mark_tag(a, 'class', 'rg')
         
         # encyc
         else:
-            #print('  encyc %s' % a['href'])
+            #print('  ENCYC %s' % a['href'])
             __mark_tag(a, 'class', 'encyc')
             __mark_tag(a, 'class', 'notrg')
-            # replace domain/base
-            encyc_url = os.path.join(
-                'http://',
-                config.ENCYCFRONT_DOMAIN,
-                config.ENCYCFRONT_ARTICLE_BASE,
-                a_title
-            )
-            a['href'] = encyc_url
+        
+        # Previous iterations of this function rewrote links to the main
+        # encyclopedia ('encyc' links) with the encycfront domain, adding
+        # the protocol ('http://') and domain.  When the function was run
+        # subsequently, these links were understood by the function as offsite
+        # links, the markers were removed, and subsequent passes would fail
+        # to mark links properly.
+        # This function now marks links as rg/notrg but does not modify the
+        # href attribute.  It is the consuming app's (e.g. encycrg) job to
+        # rewrite the links.
     
     return soup
 
@@ -337,6 +351,8 @@ def _rm_tags(html, tags=['html', 'body']):
 def extract_databoxes(body, databox_divs_namespaces):
     """Find the hidden databoxes, extract data. 
     
+    Databox data is returned as an OrderedDict to preserve field sequence.
+    
     <div id="databox-Books" style="display:none;">
     <p>Title:A Bridge Between Us;
     Author:Julie Shigekuni;
@@ -356,15 +372,25 @@ def extract_databoxes(body, databox_divs_namespaces):
     
     @param body: str raw HTML
     @param databox_divs_namespaces: dict
-    @returns: text,data
+    @returns: str,OrderedDict
     """
     soup = BeautifulSoup(body, "lxml")
     databoxes = {}
     for div_id in databox_divs_namespaces.keys():
-        data = {}
+        data = OrderedDict()
         tag = soup.find(id=div_id)
         if tag:
-            for item in tag.p.contents[0].split('\n'):
+            # BeautifulSoup returns tag contents as a list.
+            # The list is composed of strings (stretches of text) and Tag objects,
+            # which are any contents that have HTML tags e.g. "<i>title</i>".
+            # We just want a big string, so convert all Tags to strings
+            # and join everything together into a big string
+            itemparts = ''.join([
+                unicode(item)
+                for item in tag.p.contents
+            ])
+            # split into key/value pairs and populate the OrderedDict
+            for item in itemparts.split('\n'):
                 item = item.strip()
                 if item and (':' in item):
                     # Note: many fields contain colons
@@ -375,3 +401,21 @@ def extract_databoxes(body, databox_divs_namespaces):
                     data[key.lower()] = val
             databoxes[div_id] = data
     return databoxes
+
+def extract_description(body):
+    """Gets just the first paragraph of an article
+    
+    @param body: str raw HTML
+    @returns: str
+    """
+    soup = BeautifulSoup(body, "lxml")
+    for p in soup.find_all('p'):
+        if p.text and not (';\n' in p.text):
+            return p.text.strip()
+    return ''
+
+def not_published_encyc(body):
+    soup = BeautifulSoup(body, "lxml")
+    for div in soup.find_all('div', attrs={'class':'nopublish-encycfront'}):
+        return True
+    return False

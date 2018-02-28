@@ -218,10 +218,13 @@ class Page(DocType):
     url_title = String(index='not_analyzed')  # Elasticsearch id
     public = Boolean()
     published = Boolean()
+    published_encyc = Boolean()
+    published_rg = Boolean()
     modified = Date()
     mw_api_url = String(index='not_analyzed')
     title_sort = String(index='not_analyzed')
     title = String()
+    description = String()
     body = String()
     prev_page = String(index='not_analyzed')
     next_page = String(index='not_analyzed')
@@ -235,6 +238,10 @@ class Page(DocType):
         }
     )
     
+    # list of strings: ['DATABOX_NAME|dict', 'DATABOX_NAME|dict']
+    # dicts are result of json.dumps(dict)
+    databoxes = String(index='not_analyzed', multi=True)
+    
     rg_rgmediatype = String(index='not_analyzed', multi=True)
     rg_title = String()
     rg_creators = String(multi=True)
@@ -242,7 +249,7 @@ class Page(DocType):
     rg_readinglevel = String(index='not_analyzed', multi=True)
     rg_theme = String(index='not_analyzed', multi=True)
     rg_genre = String(index='not_analyzed', multi=True)
-    rg_pov = String()
+    rg_pov = String(index='not_analyzed', multi=True)
     rg_relatedevents = String()
     rg_availability = String(index='not_analyzed')
     rg_freewebversion = String(index='not_analyzed')
@@ -426,10 +433,13 @@ class Page(DocType):
         if page:
             page.public = mwpage.public
             page.published = mwpage.published
+            page.published_encyc = mwpage.published_encyc
+            page.published_rg = mwpage.published_rg
             page.modified = mwpage.lastmod
             page.mw_api_url = mwpage.url
             page.title_sort = mwpage.title_sort
             page.title = none_strip(mwpage.title)
+            page.description = mwpage.description
             page.body = none_strip(mwpage.body)
             page.prev_page = mwpage.prev_page
             page.next_page = mwpage.next_page
@@ -448,10 +458,13 @@ class Page(DocType):
                 url_title = mwpage.url_title,
                 public = mwpage.public,
                 published = mwpage.published,
+                published_encyc = mwpage.published_encyc,
+                published_rg = mwpage.published_rg,
                 modified = mwpage.lastmod,
                 mw_api_url = mwpage.url,
                 title_sort = mwpage.title_sort,
                 title = none_strip(mwpage.title),
+                description = mwpage.description,
                 body = none_strip(mwpage.body),
                 prev_page = mwpage.prev_page,
                 next_page = mwpage.next_page,
@@ -467,9 +480,19 @@ class Page(DocType):
                 # only include databoxes in configs
                 if key in config.MEDIAWIKI_DATABOXES.keys():
                     prefix = config.MEDIAWIKI_DATABOXES.get(key)
-                    for fieldname,data in databox.iteritems():
-                        fieldname = '%s_%s' % (prefix, fieldname)
-                        setattr(page, fieldname, data)
+                    if prefix:
+                        for fieldname,data in databox.iteritems():
+                            fieldname = '%s_%s' % (prefix, fieldname)
+                            setattr(page, fieldname, data)
+            databoxes = [
+                '%s|%s' % (key, json.dumps(databox))
+                for key,databox in mwpage.databoxes.iteritems()
+                # only include databoxes in configs
+                if databox and (key in config.MEDIAWIKI_DATABOXES.keys())
+            ]
+            if databoxes:
+                setattr(page, 'databoxes', databoxes)
+        
         return page
 
 
@@ -488,17 +511,22 @@ class Source(DocType):
     published = Boolean()
     creative_commons = Boolean()
     headword = String(index='not_analyzed')
-    #original_path = String(index='not_analyzed')
-    original_url = String(index='not_analyzed')  # TODO use original_path
+    original = String(index='not_analyzed')
+    original_size = String(index='not_analyzed')
+    original_url = String(index='not_analyzed')
+    original_path = String(index='not_analyzed')
+    original_path_abs = String(index='not_analyzed')
+    display = String(index='not_analyzed')
+    display_size = String(index='not_analyzed')
+    display_url = String(index='not_analyzed')
+    display_path = String(index='not_analyzed')
+    display_path_abs = String(index='not_analyzed')
     #streaming_path = String(index='not_analyzed')
     #rtmp_path = String(index='not_analyzed')
     streaming_url = String(index='not_analyzed')  # TODO remove
     external_url = String(index='not_analyzed')
     media_format = String(index='not_analyzed')
     aspect_ratio = String(index='not_analyzed')
-    original_size = String(index='not_analyzed')
-    display_size = String(index='not_analyzed')
-    display = String(index='not_analyzed')
     caption = String()
     caption_extended = String()
     #transcript_path = String(index='not_analyzed')
@@ -532,14 +560,6 @@ class Source(DocType):
     def transcript_url(self):
         if self.transcript_path():
             return os.path.join(config.SOURCES_MEDIA_URL, self.transcript_path())
-    
-    def original_path(self):
-        if self.original_url:
-            return os.path.join(
-                config.SOURCES_MEDIA_BUCKET,
-                os.path.basename(self.original_url)
-            )
-        return None
 
     def rtmp_path(self):
         return self.streaming_url
@@ -609,17 +629,17 @@ class Source(DocType):
         """
         # source.streaming_url has to be relative to RTMP_STREAMER
         # TODO this should really happen when it's coming in from MediaWiki.
-        if hasattr(ps_source,'streaming_url'):
+        if hasattr(ps_source,'streaming_url') and ps_source.streaming_url:
             streaming_url = ps_source.streaming_url.replace(config.RTMP_STREAMER, '')
         else:
             streaming_url = ''
         # fullsize image for thumbnail
         filename = ''
         img_path = ''
-        if hasattr(ps_source,'display'):
+        if hasattr(ps_source,'display') and ps_source.display:
             filename = os.path.basename(ps_source.display)
             img_path = os.path.join(config.SOURCES_MEDIA_BUCKET, filename)
-        elif hasattr(ps_source,'original'):
+        elif hasattr(ps_source,'original') and ps_source.original:
             filename = os.path.basename(ps_source.original)
             img_path = os.path.join(config.SOURCES_MEDIA_BUCKET, filename)
         source = Source(
@@ -635,14 +655,22 @@ class Source(DocType):
             published = ps_source.published,
             creative_commons = ps_source.creative_commons,
             headword = ps_source.headword,
-            original_url = ps_source.original,
+            
+            original = os.path.basename(ps_source.original),
+            original_size = ps_source.original_size,
+            original_url = ps_source.original_url,
+            original_path = ps_source.original_path,
+            original_path_abs = ps_source.original_path_abs,
+            display = os.path.basename(ps_source.display),
+            display_size = ps_source.display_size,
+            display_url = ps_source.display_url,
+            display_path = ps_source.display_path,
+            display_path_abs = ps_source.display_path_abs,
+            
             streaming_url = streaming_url,
             external_url = ps_source.external_url,
             media_format = ps_source.media_format,
             aspect_ratio = ps_source.aspect_ratio,
-            original_size = ps_source.original_size,
-            display_size = ps_source.display_size,
-            display = ps_source.display,
             caption = none_strip(ps_source.caption),
             caption_extended = none_strip(ps_source.caption_extended),
             transcript = none_strip(ps_source.transcript),

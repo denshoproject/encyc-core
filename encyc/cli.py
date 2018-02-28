@@ -63,7 +63,7 @@ def create(hosts, index):
               help='Elasticsearch index to delete.')
 @click.option('--confirm', is_flag=True,
               help='Yes I really want to delete this index.')
-def delete(hosts, index, confirm):
+def destroy(hosts, index, confirm):
     """Delete index (requires --confirm).
     """
     if confirm:
@@ -221,6 +221,18 @@ def get(hosts, index, doctype, object_id):
     """Pretty-print a single record
     """
     publish.get(hosts, index, doctype, object_id)
+
+
+@encyc.command()
+@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--index', default=settings.DOCSTORE_INDEX,
+              help='Elasticsearch index.')
+@click.argument('doctype')
+@click.argument('object_id')
+def delete(hosts, index, doctype, object_id):
+    """Delete a single record
+    """
+    publish.delete(hosts, index, doctype, object_id)
 
 
 @encyc.command()

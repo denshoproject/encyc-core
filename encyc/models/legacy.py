@@ -19,7 +19,23 @@ from encyc.models import citations
 from encyc.models import sources
 from encyc.models import helpers
 from encyc.models import wikipage
-    
+
+STOP_WORDS = ['a', 'an', 'the']
+
+def make_titlesort(title_sort, title):
+    """make title_sort from title if necessary; normalize title_sort
+    """
+    if title_sort:
+        text = title_sort
+    else:
+        # no title_sort, use title and rm initial stop word
+        text = title
+        first_word = text.split(' ')[0]
+        if first_word in STOP_WORDS:
+            text = text.replace('%s ' % first_word, '', 1)
+    # rm spaces and punctuation, make lowercase
+    return ''.join([c for c in text.lower() if c.isalnum()])
+
 
 # ----------------------------------------------------------------------
 
@@ -53,11 +69,14 @@ class Page(object):
     error = None
     public = None
     published = None
+    published_encyc = None
+    published_rg = None
     lastmod = None
     is_article = None
     is_author = None
     title_sort = None
     title = None
+    description = None
     body = None
     sources = []
     categories = []
@@ -95,7 +114,13 @@ class Source(object):
     streaming_url = None
     external_url = None
     original = None
+    original_url = None
+    original_path = None
+    original_path_abs = None
     display = None
+    display_url = None
+    display_path = None
+    display_path_abs = None
     media_format = None
     aspect_ratio = None
     original_size = None
@@ -122,6 +147,7 @@ class Source(object):
     
     def absolute_url(self):
         return urls.reverse('wikiprox-source', args=([self.encyclopedia_id]))
+    
 
 
 class Citation(object):
@@ -282,10 +308,13 @@ class Proxy(object):
             
             # basic page context
             page.title = pagedata['parse']['displaytitle']
-            page.title_sort = page.title
+            
+            title_sort = ''
             for prop in pagedata['parse']['properties']:
-                if prop.get('name',None) and prop['name'] and (prop['name'] == 'defaultsort'):
-                    page.title_sort = prop['*']
+                if prop.get('name',None) and prop['name'] \
+                and (prop['name'].lower() == 'defaultsort'):
+                    title_sort = prop['*']
+            page.title_sort = make_titlesort(title_sort, page.title)
             
             page.sources = helpers.find_primary_sources(
                 config.SOURCES_API,
@@ -313,6 +342,7 @@ class Proxy(object):
             
             page.is_article = wiki.is_article(page.title)
             if page.is_article:
+                page.description = wikipage.extract_description(page.body)
                 
                 # only include categories from Category:Articles
                 categories_whitelist = [
@@ -334,6 +364,15 @@ class Proxy(object):
             if page.is_author:
                 page.author_articles = wiki.author_articles(page.title)
         
+            page.published_encyc = True
+            if wikipage.not_published_encyc(page.body):
+                page.published_encyc = False
+            
+            page.published_rg = False
+            if hasattr(page, 'databoxes') and page.databoxes \
+            and page.databoxes.get('rgdatabox-Core',{}).get('rgmediatype'):
+                page.published_rg = True
+            
         return page
     
     @staticmethod
@@ -385,6 +424,20 @@ class Proxy(object):
         if getattr(source, 'streaming_url', None):
             source.streaming_url = source.streaming_url.replace(config.RTMP_STREAMER,'')
             source.rtmp_streamer = config.RTMP_STREAMER
+        source.original_url = source.original
+        if source.original:
+            source.original = os.path.basename(source.original)
+            source.original_path = source.original_url.replace(config.SOURCES_URL, '')
+            source.original_path_abs = os.path.join(
+                config.SOURCES_BASE, source.original_path
+            )
+        source.display_url = source.display
+        if source.display:
+            source.display = os.path.basename(source.display)
+            source.display_path = source.display_url.replace(config.SOURCES_URL, '')
+            source.display_path_abs = os.path.join(
+                config.SOURCES_BASE, source.display_path
+            )
         return source
 
     @staticmethod
