@@ -46,6 +46,7 @@ def parse_mediawiki_text(title, html, primary_sources, public=False, printed=Fal
         selectors=config.HIDDEN_TAGS.get(index, []),
         comments=config.HIDDEN_TAG_COMMENTS
     )
+    soup = _remove_nonrg_divs(soup)
     soup = _remove_primary_sources(soup, primary_sources)
     html = unicode(soup)
     html = _rewrite_mediawiki_urls(html)
@@ -323,6 +324,14 @@ def _remove_divs(soup, selectors=[], comments=True, separator="="):
                 )
             else:
                 tag.decompose()
+    return soup
+
+def _remove_nonrg_divs(soup):
+    """Removes divs inserted by the {{ publish-rgonly }} tag/template.
+    TODO this should be part of _remove_divs
+    """
+    for tag in soup.find_all('div', class_='nopublish-encycfront'):
+        tag.decompose()
     return soup
 
 def _rewrite_mediawiki_urls(html):
