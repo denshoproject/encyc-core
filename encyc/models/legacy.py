@@ -69,8 +69,6 @@ class Page(object):
     error = None
     public = None
     published = None
-    published_encyc = None
-    published_rg = None
     lastmod = None
     is_article = None
     is_author = None
@@ -364,15 +362,6 @@ class Proxy(object):
             if page.is_author:
                 page.author_articles = wiki.author_articles(page.title)
         
-            page.published_encyc = True
-            if wikipage.not_published_encyc(page.body):
-                page.published_encyc = False
-            
-            page.published_rg = False
-            if hasattr(page, 'databoxes') and page.databoxes \
-            and page.databoxes.get('rgdatabox-Core',{}).get('rgmediatype'):
-                page.published_rg = True
-            
         return page
     
     @staticmethod
