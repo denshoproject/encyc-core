@@ -323,6 +323,17 @@ class Proxy(object):
                 config.MEDIAWIKI_DATABOXES
             )
             
+            page.published_encyc = True
+            if wikipage.not_published_encyc(pagedata['parse']['text']['*']):
+                # Must be called before marker divs are removed
+                # in wikipage._remove_nonrg_divs
+                page.published_encyc = False
+            
+            page.published_rg = False
+            if hasattr(page, 'databoxes') and page.databoxes \
+            and page.databoxes.get('rgdatabox-Core',{}).get('rgmediatype'):
+                page.published_rg = True
+            
             page.body = wikipage.parse_mediawiki_text(
                 title=url_title,
                 html=pagedata['parse']['text']['*'],
@@ -361,7 +372,7 @@ class Proxy(object):
             page.is_author = wiki.is_author(page.title)
             if page.is_author:
                 page.author_articles = wiki.author_articles(page.title)
-        
+            
         return page
     
     @staticmethod
