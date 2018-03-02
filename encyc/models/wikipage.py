@@ -422,3 +422,9 @@ def extract_description(body):
         if p.text and not (';\n' in p.text):
             return p.text.strip()
     return ''
+
+def not_published_encyc(body):
+    soup = BeautifulSoup(body, "lxml")
+    for div in soup.find_all('div', attrs={'class':'nopublish-encycfront'}):
+        return True
+    return False

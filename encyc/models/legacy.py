@@ -69,6 +69,8 @@ class Page(object):
     error = None
     public = None
     published = None
+    published_encyc = None
+    published_rg = None
     lastmod = None
     is_article = None
     is_author = None

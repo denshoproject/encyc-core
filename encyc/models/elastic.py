@@ -218,6 +218,8 @@ class Page(DocType):
     url_title = String(index='not_analyzed')  # Elasticsearch id
     public = Boolean()
     published = Boolean()
+    published_encyc = None
+    published_rg = None
     modified = Date()
     mw_api_url = String(index='not_analyzed')
     title_sort = String(index='not_analyzed')
@@ -431,6 +433,8 @@ class Page(DocType):
         if page:
             page.public = mwpage.public
             page.published = mwpage.published
+            page.published_encyc = mwpage.published_encyc
+            page.published_rg = mwpage.published_rg
             page.modified = mwpage.lastmod
             page.mw_api_url = mwpage.url
             page.title_sort = mwpage.title_sort
@@ -454,6 +458,8 @@ class Page(DocType):
                 url_title = mwpage.url_title,
                 public = mwpage.public,
                 published = mwpage.published,
+                published_encyc = mwpage.published_encyc,
+                published_rg = mwpage.published_rg,
                 modified = mwpage.lastmod,
                 mw_api_url = mwpage.url,
                 title_sort = mwpage.title_sort,
