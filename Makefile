@@ -122,7 +122,7 @@ clean-app: clean-encyc-core
 get-encyc-core:
 	git pull
 	source $(VIRTUALENV)/bin/activate; \
-	pip install --download=$(PIP_CACHE_DIR) --exists-action=i -r $(PIP_REQUIREMENTS)
+	pip install --exists-action=i -r $(PIP_REQUIREMENTS)
 
 setup-encyc-core: install-configs
 	@echo ""
