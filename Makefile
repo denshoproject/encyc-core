@@ -56,8 +56,6 @@ help:
 	@echo ""
 	@echo "install - Installs app, config files, and static assets.  Does not download."
 	@echo ""
-	@echo "update  - Updates encyc-core and re-copies config files."
-	@echo ""
 	@echo "uninstall - Deletes 'compiled' Python files. Leaves build dirs and configs."
 	@echo "clean   - Deletes files created by building the program. Leaves configs."
 	@echo ""
@@ -68,8 +66,6 @@ help:
 get: get-app apt-update
 
 install: install-prep install-app install-configs
-
-update: update-app
 
 uninstall: uninstall-app
 
@@ -111,14 +107,12 @@ install-setuptools: install-virtualenv
 	@echo "install-setuptools -----------------------------------------------------"
 	apt-get --assume-yes install python-dev
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U --download-cache=$(PIP_CACHE_DIR) setuptools
+	pip install -U bpython setuptools
 
 
 get-app: get-encyc-core
 
 install-app: install-setuptools install-encyc-core
-
-update-app: update-encyc-core install-configs
 
 uninstall-app: uninstall-encyc-core
 
@@ -155,13 +149,6 @@ install-encyc-core:
 	-mkdir $(LOGS_BASE)
 	chown -R $(USER).root $(LOGS_BASE)
 	chmod -R 755 $(LOGS_BASE)
-
-update-encyc-core:
-	@echo ""
-	@echo "update encyc-core ---------------------------------------------------------"
-	git fetch && git pull
-	source $(VIRTUALENV)/bin/activate; \
-	pip install -U --no-download --download-cache=$(PIP_CACHE_DIR) -r $(PIP_REQUIREMENTS)
 
 uninstall-encyc-core:
 	@echo ""
