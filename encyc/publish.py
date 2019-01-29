@@ -407,10 +407,12 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
 @stopwatch
 def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None):
     i = set_hosts_index(hosts=hosts, index=index)
-    logprint('debug', '------------------------------------------------------------------------')
+    logprint(
+        'debug',
+        '------------------------------------------------------------------------')
     
     logprint('debug', 'getting sources from PSMS...')
-    ps_sources = Proxy.sources_lastmod()
+    ps_sources = Proxy.sources_all()
     if ps_sources and isinstance(ps_sources, list):
         logprint('debug', 'psms sources: %s' % len(ps_sources))
     else:
@@ -421,7 +423,7 @@ def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None)
     if es_sources and isinstance(es_sources, list):
         logprint('debug', 'es_sources: %s' % len(es_sources))
     else:
-        logprint('error', es_sources)
+        logprint('error', 'error: %s' % es_sources)
     
     if psms_id:
         sources_update = [psms_id]
@@ -431,7 +433,7 @@ def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None)
             sources_update = [
                 s['encyclopedia_id']
                 for s in ps_sources
-                if s.get('encyclopedia_id')
+                if s.encyclopedia_id
             ]
             sources_delete = []
         else:
@@ -443,7 +445,12 @@ def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None)
         logprint('debug', 'deletions: %s' % len(sources_delete))
         if report:
             return
-    
+
+    sources_by_id = {
+        source.encyclopedia_id: source
+        for source in ps_sources
+    }
+        
     logprint('debug', 'adding sources...')
     posted = 0
     to_rsync = []
@@ -451,12 +458,13 @@ def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None)
     unpublished = []
     errors = []
     for n,sid in enumerate(sources_update):
-        
         logprint('debug', '--------------------')
         logprint('debug', '%s/%s %s' % (n+1, len(sources_update), sid))
         
-        logprint('debug', 'getting from PSMS: "%s"' % sid)
-        ps_source = Proxy.source(sid)
+        if not sid:
+            continue
+        
+        ps_source = sources_by_id[sid]
         if not ps_source:
             logprint('debug', 'NOT AVAILABLE')
             could_not_post.append(sid)

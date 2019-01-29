@@ -540,10 +540,7 @@ class Source(DocType):
         doc_type = 'sources'
     
     def __repr__(self):
-        return "<Source '%s'>" % self.encyclopedia_id
-    
-    def __str__(self):
-        return self.encyclopedia_id
+        return "<elastic.Source '%s'>" % self.encyclopedia_id
     
     def absolute_url(self):
         return urls.reverse('wikiprox-source', args=([self.encyclopedia_id]))
@@ -1116,7 +1113,7 @@ class Elasticsearch(object):
         @returns: (update,delete)
         """
         # sid:lastmod dict for comparisons
-        ps_source_ids = {s['encyclopedia_id']: parser.parse(s['lastmod']) for s in ps_sources}
+        ps_source_ids = {s.encyclopedia_id: s.modified for s in ps_sources}
         es_source_ids = {s.encyclopedia_id: s.modified for s in es_sources}
         # PSMS sources that are not in ES
         new = [

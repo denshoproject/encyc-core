@@ -103,51 +103,69 @@ class Page(object):
         return terms
 
 
+SOURCE_FIELDS = [
+    'id', 'encyclopedia_id', 'densho_id', 'resource_uri', 'institution_id',
+    'collection_name', 'created', 'modified', 'published', 'creative_commons',
+    'headword',
+    'original', 'original_size', 'original_url', 'original_path',
+    'original_path_abs',
+    'display', 'display_size', 'display_url', 'display_path', 'display_path_abs',
+    'external_url', 'media_format', 'aspect_ratio',
+    'caption', 'caption_extended', 'transcript', 'courtesy',
+]
+
 class Source(object):
-    encyclopedia_id = None
-    psms_id = None
-    densho_id = None
-    institution_id = None
-    url = None
-    uri = None
-    resource_uri = None
-    streaming_url = None
-    external_url = None
-    original = None
-    original_url = None
-    original_path = None
-    original_path_abs = None
-    display = None
-    display_url = None
-    display_path = None
-    display_path_abs = None
-    media_format = None
-    aspect_ratio = None
-    original_size = None
-    display_size = None
-    title = encyclopedia_id
-    collection_name = None
-    headword = None
-    caption = None
-    caption_extended = None
-    transcript = None
-    courtesy = None
-    creative_commons = None
-    created = None
-    modified = None
-    published = None
-    rtmp_streamer = config.RTMP_STREAMER
-    authors = {'display':[], 'parsed':[],}
+    
+    def __init__(self, *args, **kwargs):
+        self.rtmp_streamer = config.RTMP_STREAMER
+        self.authors = {'display':[], 'parsed':[],}
+        for field in SOURCE_FIELDS:
+            setattr(self, field, '')
     
     def __repr__(self):
-        return "<Source '%s'>" % self.encyclopedia_id
-    
-    def __str__(self):
-        return self.encyclopedia_id
+        return "<legacy.Source '%s'>" % self.encyclopedia_id
     
     def absolute_url(self):
         return urls.reverse('wikiprox-source', args=([self.encyclopedia_id]))
     
+    @staticmethod
+    def source(data):
+        encyclopedia_id = data['encyclopedia_id']
+        source = Source()
+        source.encyclopedia_id = encyclopedia_id
+        source.uri = urls.reverse('wikiprox-source', args=[encyclopedia_id])
+        source.title = encyclopedia_id
+        for key,val in data.iteritems():
+            setattr(source, key, val)
+        source.psms_id = int(data['id'])
+        if data.get('original_size'):
+            source.original_size = int(data['original_size'])
+        source.created = parser.parse(data['created'])
+        source.modified = parser.parse(data['modified'])
+        if getattr(source, 'streaming_url', None):
+            source.streaming_url = source.streaming_url.replace(
+                config.RTMP_STREAMER,''
+            )
+            source.rtmp_streamer = config.RTMP_STREAMER
+        source.original_url = source.original
+        if source.original:
+            source.original = os.path.basename(source.original)
+            source.original_path = source.original_url.replace(
+                config.SOURCES_URL, ''
+            )
+            source.original_path_abs = os.path.join(
+                config.SOURCES_BASE, source.original_path
+            )
+        source.display_url = source.display
+        if source.display:
+            source.display = os.path.basename(source.display)
+            source.display_path = source.display_url.replace(
+                config.SOURCES_URL, ''
+            )
+            source.display_path_abs = os.path.join(
+                config.SOURCES_BASE, source.display_path
+            )
+        return source
 
 
 class Citation(object):
@@ -378,69 +396,15 @@ class Proxy(object):
         return page
     
     @staticmethod
-    def sources_lastmod():
-        """List of IDs and timestamps for all published sources.
+    def sources_all():
+        """Get all published sources from SOURCES_API.
         """
-        # TODO not the best URL
-        URL = config.SOURCES_API + '/primarysource/csv'
+        URL = config.SOURCES_API + '/sources'
         r = http.get(URL)
         if r.status_code != 200:
             print(r)
             return []
-        headers,rowds = csvfile.make_rowds(
-            [
-                row
-                for row in csvfile.csv_reader(
-                        codecs.encode(
-                            r.text, 'ascii', 'ignore'
-                        ).strip().replace('\r','').split('\n')
-                )
-            ]
-        )
-        return [
-            {
-                'id': rowd['id'],
-                'encyclopedia_id': rowd['encyclopedia_id'],
-                'lastmod': rowd['modified'],
-            }
-            for rowd in rowds
-            if rowd.get('encyclopedia_id')
-        ]
-    
-    @staticmethod
-    def source(encyclopedia_id):
-        source = Source()
-        source.encyclopedia_id = encyclopedia_id
-        source.uri = urls.reverse('wikiprox-source', args=[encyclopedia_id])
-        source.title = encyclopedia_id
-        data = sources.source(encyclopedia_id)
-        if not data:
-            # TODO Source unavailable because unpublished?
-            return None
-        for key,val in data.iteritems():
-            setattr(source, key, val)
-        source.psms_id = int(data['id'])
-        source.original_size = int(data['original_size'])
-        source.created = parser.parse(data['created'])
-        source.modified = parser.parse(data['modified'])
-        if getattr(source, 'streaming_url', None):
-            source.streaming_url = source.streaming_url.replace(config.RTMP_STREAMER,'')
-            source.rtmp_streamer = config.RTMP_STREAMER
-        source.original_url = source.original
-        if source.original:
-            source.original = os.path.basename(source.original)
-            source.original_path = source.original_url.replace(config.SOURCES_URL, '')
-            source.original_path_abs = os.path.join(
-                config.SOURCES_BASE, source.original_path
-            )
-        source.display_url = source.display
-        if source.display:
-            source.display = os.path.basename(source.display)
-            source.display_path = source.display_url.replace(config.SOURCES_URL, '')
-            source.display_path_abs = os.path.join(
-                config.SOURCES_BASE, source.display_path
-            )
-        return source
+        return [Source.source(data) for data in json.loads(r.text)]
 
     @staticmethod
     def citation(page):
