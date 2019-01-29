@@ -604,7 +604,11 @@ class Source(DocType):
         #    'media_format',
         #    'img_path',
         #])
-        response = s.execute()
+        try:
+            response = s.execute()
+        except Exception as err:
+            print(err)
+            return []
         data = [
             Source(
                 encyclopedia_id = hitvalue(hit, 'encyclopedia_id'),
