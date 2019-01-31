@@ -7,6 +7,7 @@ import os
 
 from dateutil import parser
 from elasticsearch_dsl import Search
+import requests
 
 from encyc import config
 from encyc import csvfile
@@ -399,8 +400,9 @@ class Proxy(object):
     def sources_all():
         """Get all published sources from SOURCES_API.
         """
-        URL = config.SOURCES_API + '/sources'
-        r = http.get(URL)
+        URL = config.SOURCES_API + '/sources/'
+        print(URL)
+        r = requests.get(URL)
         if r.status_code != 200:
             print(r)
             return []

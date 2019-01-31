@@ -6,6 +6,7 @@ import os
 import re
 
 from bs4 import BeautifulSoup
+import requests
 
 from encyc import config
 from encyc import http
@@ -110,16 +111,10 @@ def find_primary_sources(api_url, images):
             eids.append(encyclopedia_id)
     # get sources via sources API
     if eids:
-        eid_args = ['encyclopedia_id__in=%s' % eid for eid in eids]
-        url = '%s/primarysource/?%s' % (api_url, '&'.join(eid_args))
-        r = http.get(url, headers={'content-type':'application/json'}, timeout=TIMEOUT)
+        url = '%s/sources/%s' % (api_url, ','.join(eids))
+        r = requests.get(url)
         if r.status_code == 200:
-            response = json.loads(r.text)
-            response_objects = response['objects']
-            for eid in eids:
-                for s in response['objects']:
-                    if (eid == s['encyclopedia_id']) and (s not in sources):
-                        sources.append(s)
+            sources = json.loads(r.text)
     logging.debug('retrieved %s' % len(sources))
     return sources
 
