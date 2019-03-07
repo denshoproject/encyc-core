@@ -401,10 +401,8 @@ class Proxy(object):
         """Get all published sources from SOURCES_API.
         """
         URL = config.SOURCES_API + '/sources/'
-        print(URL)
-        r = requests.get(URL)
+        r = requests.get(URL, headers={'content-type':'application/json'})
         if r.status_code != 200:
-            print(r)
             return []
         return [Source.source(data) for data in json.loads(r.text)]
 
