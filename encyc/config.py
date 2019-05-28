@@ -99,10 +99,8 @@ ENCYCRG_API_BASE = config.get('encycrg', 'api_base')
 ENCYCRG_ARTICLE_BASE = config.get('encycrg', 'article_base')
 ENCYCRG_API = '%s://%s%s' % (ENCYCRG_PROTOCOL, ENCYCRG_DOMAIN, ENCYCRG_API_BASE)
 
-
-from rc import Cache
-cache = Cache()
-
+import redis
+CACHE = redis.StrictRedis()
 
 # Sample core.cfg:
 #
