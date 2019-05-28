@@ -114,7 +114,7 @@ install-setuptools: install-virtualenv
 	@echo "install-setuptools -----------------------------------------------------"
 	apt-get --assume-yes install python-dev
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U --download-cache=$(PIP_CACHE_DIR) setuptools
+	pip install -U --cache-dir=$(PIP_CACHE_DIR) setuptools
 
 
 get-app: get-encyc-core
@@ -164,7 +164,7 @@ update-encyc-core:
 	@echo "update encyc-core ---------------------------------------------------------"
 	git fetch && git pull
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U --no-download --download-cache=$(PIP_CACHE_DIR) -r $(PIP_REQUIREMENTS)
+	pip install -U --no-download --cache-dir=$(PIP_CACHE_DIR) -r $(PIP_REQUIREMENTS)
 
 uninstall-encyc-core:
 	@echo ""
