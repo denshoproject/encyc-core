@@ -18,3 +18,9 @@ unicodecsv==0.14.1
 #nose
 #snakefood
 #sphinx
+
+coverage
+pytest
+pytest-cov
+pytest-testmon
+pytest-xdist

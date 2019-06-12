@@ -56,12 +56,10 @@ help:
 	@echo "encyc-core Install Helper"
 	@echo ""
 	@echo "get     - Downloads source, installers, and assets files. Does not install."
-	@echo ""
 	@echo "install - Installs app, config files, and static assets.  Does not download."
-	@echo ""
+	@echo "test    - Run unit tests"
 	@echo "uninstall - Deletes 'compiled' Python files. Leaves build dirs and configs."
 	@echo "clean   - Deletes files created by building the program. Leaves configs."
-	@echo ""
 	@echo "branch BRANCH=[branch] - Switches encyc-core and supporting repos to [branch]."
 	@echo ""
 
@@ -69,6 +67,9 @@ help:
 get: get-app apt-update
 
 install: install-prep install-app install-configs
+
+test: test-app
+coverage: coverage-app
 
 uninstall: uninstall-app
 
@@ -117,6 +118,9 @@ get-app: get-encyc-core
 
 install-app: install-setuptools install-encyc-core
 
+test-app: test-encyc-core
+coverage-app: coverage-encyc-core
+
 uninstall-app: uninstall-encyc-core
 
 clean-app: clean-encyc-core
@@ -152,6 +156,20 @@ install-encyc-core:
 	-mkdir $(LOGS_BASE)
 	chown -R $(USER).root $(LOGS_BASE)
 	chmod -R 755 $(LOGS_BASE)
+
+test-encyc-core:
+	@echo ""
+	@echo "test-encyc-core --------------------------------------------------------"
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALLDIR)/; \
+	pytest --disable-warnings --rootdir=$(INSTALLDIR) encyc/tests.py
+
+coverage-encyc-core:
+	@echo ""
+	@echo "coverage-encyc-core ----------------------------------------------------"
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALLDIR)/; \
+	pytest --disable-warnings --rootdir=$(INSTALLDIR) --cov-config=.coveragerc --cov-report=html --cov=encyc encyc/tests.py
 
 uninstall-encyc-core:
 	@echo ""
