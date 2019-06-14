@@ -4,6 +4,7 @@ bpython==0.16
 
 click==6.7
 beautifulsoup4==4.5.3
+deepdiff
 elasticsearch==5.2.0
 elasticsearch-dsl==5.1.0
 lxml==3.7.3

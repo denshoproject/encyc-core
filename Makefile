@@ -162,14 +162,14 @@ test-encyc-core:
 	@echo "test-encyc-core --------------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALLDIR)/; \
-	pytest --disable-warnings --rootdir=$(INSTALLDIR) encyc/tests.py
+	pytest --disable-warnings --rootdir=$(INSTALLDIR) encyc/tests/
 
 coverage-encyc-core:
 	@echo ""
 	@echo "coverage-encyc-core ----------------------------------------------------"
 	source $(VIRTUALENV)/bin/activate; \
 	cd $(INSTALLDIR)/; \
-	pytest --disable-warnings --rootdir=$(INSTALLDIR) --cov-config=.coveragerc --cov-report=html --cov=encyc encyc/tests.py
+	pytest --disable-warnings --rootdir=$(INSTALLDIR) --cov-config=.coveragerc --cov-report=html --cov=encyc encyc/tests/
 
 uninstall-encyc-core:
 	@echo ""
