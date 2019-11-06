@@ -65,6 +65,14 @@ AUTHORS_DEFAULT = 'Densho Encyclopedia contributors.'
 
 # primary sources / psms
 SOURCES_API = config.get('sources', 'api_url')
+try:
+    SOURCES_API_HTUSER = config.get('sources', 'api_htuser')
+except:
+    SOURCES_API_HTUSER = None
+try:
+    SOURCES_API_HTPASS = config.get('sources', 'api_htpass')
+except:
+    SOURCES_API_HTPASS = None
 SOURCES_BASE = config.get('sources', 'local_base')
 SOURCES_URL = config.get('sources', 'source_url')
 SOURCES_DEST = config.get('sources', 'remote_dest')
