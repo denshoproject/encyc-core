@@ -7,11 +7,7 @@ logger = logging.getLogger(__name__)
 import os
 import sys
 
-from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import TransportError, NotFoundError, SerializationError
-from elasticsearch_dsl import Index, DocType, String
-from elasticsearch_dsl import Search
-from elasticsearch_dsl.connections import connections
 
 #from DDR import docstore
 from encyc import config
@@ -87,7 +83,6 @@ def print_configs():
     print('CONFIG_FILES:           %s' % config.CONFIG_FILES)
     print('')
     print('DOCSTORE_HOSTS:         %s' % config.DOCSTORE_HOSTS)
-    print('DOCSTORE_INDEX:         %s' % config.DOCSTORE_INDEX)
     print('MEDIAWIKI_API:          %s' % config.MEDIAWIKI_API)
     print('MEDIAWIKI_API_USERNAME: %s' % config.MEDIAWIKI_API_USERNAME)
     print('MEDIAWIKI_API_PASSWORD: %s' % config.MEDIAWIKI_API_PASSWORD)
@@ -99,157 +94,34 @@ def print_configs():
     print('HIDDEN_TAGS:            %s' % config.HIDDEN_TAGS)
     print('')
 
-def set_hosts_index(hosts=config.DOCSTORE_HOSTS, index=config.DOCSTORE_INDEX):
-    logprint('debug', 'hosts: %s' % hosts)
-    connections.create_connection(hosts=hosts)
-    logprint('debug', 'index: %s' % index)
-    return Index(index)
+@stopwatch
+def status(hosts):
+    pass
+    #num_es_authors = len(Author.authors())
+    #num_es_articles = len(Page.pages())
+    #pc_authors = float(num_es_authors) / num_mw_authors
+    #pc_articles = float(num_es_articles) / num_mw_articles
+    #logprint('debug', ' authors: {} of {} ({:.2%})'.format(
+    #    num_es_authors, num_mw_authors, pc_authors,
+    #))
+    #logprint('debug', 'articles: {} of {} ({:.2%})'.format(
+    #    num_es_articles, num_mw_articles, pc_articles,
+    #))
+    #logprint('debug', ' sources: %s' % len(Source.sources()))
 
 @stopwatch
-def status(hosts, index):
-    """
-"indices": {
-    "encyc-production": {
-        "index": {
-            "primary_size_in_bytes": ​1746448,
-            "size_in_bytes": ​1746448
-        },
-        "docs": {
-            "num_docs": ​247,
-            "max_doc": ​247,
-            "deleted_docs": ​0
-        },
-
-from elasticsearch import Elasticsearch
-client = Elasticsearch()
-client.info()
-s = client.indices.stats()
-
-format_json(client.indices.stats('encyc-production'))
-
-
-    """
-    logprint('debug', '------------------------------------------------------------------------')
-    logprint('debug', 'MediaWiki')
-    logprint('debug', ' MEDIAWIKI_API: %s' % config.MEDIAWIKI_API)
-    mw_author_titles = Proxy.authors(cached_ok=False)
-    mw_articles = Proxy.articles_lastmod()
-    num_mw_authors = len(mw_author_titles)
-    num_mw_articles = len(mw_articles)
-    logprint('debug', '       authors: %s' % num_mw_authors)
-    logprint('debug', '      articles: %s' % num_mw_articles)
-    
-    logprint('debug', '------------------------------------------------------------------------')
-    logprint('debug', 'Elasticsearch')
-    logprint('debug', 'DOCSTORE_HOSTS (default): %s' % config.DOCSTORE_HOSTS)
-    logprint('debug', 'DOCSTORE_INDEX (default): %s' % config.DOCSTORE_INDEX)
-    if hosts != config.DOCSTORE_HOSTS:
-        logprint('debug', 'docstore_hosts: %s' % hosts)
-    if index != config.DOCSTORE_INDEX:
-        logprint('debug', 'docstore_index: %s' % index)
-    
-    i = set_hosts_index(hosts=hosts, index=index)
-    es = i.connection
-    
-    try:
-        pingable = es.ping()
-        if not pingable:
-            logprint('error', "Can't ping the cluster!")
-            return
-    except elasticsearch.exceptions.ConnectionError:
-        logprint('error', "Connection error when trying to ping the cluster!")
-        return
-    logprint('debug', 'ping ok')
-    
-    logprint('debug', 'Indexes')
-    index_names = es.indices.stats()['indices'].keys()
-    for i in index_names:
-        logprint('debug', '- %s' % i)
-    
-    logprint('debug', 'Aliases')
-    aliases = es.cat.aliases()
-    for a in aliases:
-        logprint('debug', '- %s -> %s' % (a['alias'], a['index']))
-    
-    if es.indices.exists(index=index):
-        logprint('debug', 'Index %s present' % index)
-    else:
-        logprint('error', "Index '%s' doesn't exist!" % index)
-        return
-    
-    num_es_authors = len(Author.authors())
-    num_es_articles = len(Page.pages())
-    pc_authors = float(num_es_authors) / num_mw_authors
-    pc_articles = float(num_es_articles) / num_mw_articles
-    logprint('debug', ' authors: {} of {} ({:.2%})'.format(
-        num_es_authors, num_mw_authors, pc_authors,
-    ))
-    logprint('debug', 'articles: {} of {} ({:.2%})'.format(
-        num_es_articles, num_mw_articles, pc_articles,
-    ))
-    logprint('debug', ' sources: %s' % len(Source.sources()))
-
-@stopwatch
-def delete_index(hosts, index):
-    i = set_hosts_index(hosts=hosts, index=index)
-    logprint('debug', 'deleting old index')
-    try:
-        i.delete()
-    except NotFoundError:
-        logprint('error', 'ERROR: Index does not exist!')
-    logprint('debug', 'DONE')
+def delete_indices(hosts):
+    pass
     
 @stopwatch
-def create_index(hosts, index):
-    i = set_hosts_index(hosts=hosts, index=index)
-    logprint('debug', 'creating new index')
-    i = Index(index)
-    i.create()
-    logprint('debug', 'registering doc types')
-    i.doc_type(Author)
-    i.doc_type(Page)
-    i.doc_type(Source)
-    logprint('debug', 'DONE')
+def create_indices(hosts):
+    pass
+
+def mappings(hosts):
+    pass
 
 @stopwatch
-def delete_alias(hosts, index, alias):
-    i = set_hosts_index(hosts=hosts, index=index)
-    result = i.connection.indices.delete_alias(index=index, name=alias)
-    logprint('debug', result)
-    logprint('debug', 'DONE')
-    
-@stopwatch
-def create_alias(hosts, index, alias):
-    logprint('debug', 'creating alias "%s"' % alias)
-    i = set_hosts_index(hosts=hosts, index=index)
-    result = i.connection.indices.put_alias(index=index, name=alias)
-    logprint('debug', result)
-    logprint('debug', 'DONE')
-
-def push_mappings(hosts, index):
-    """Pushes mappings from class definitions to ES.
-    
-    @returns: nothing
-    """
-    i = set_hosts_index(hosts=hosts, index=index)
-    logprint('info', 'mappings')
-    i = Index(index)
-    logprint('info', 'Author')
-    Author.init()
-    logprint('info', 'Source')
-    Source.init()
-    logprint('info', 'Page')
-    Page.init()
-    logprint('info', 'FacetTerm')
-    FacetTerm.init()
-    logprint('info', 'Facet')
-    Facet.init()
-    logprint('info', 'ok')
-
-@stopwatch
-def authors(hosts, index, report=False, dryrun=False, force=False, title=None):
-    i = set_hosts_index(hosts=hosts, index=index)
-
+def authors(hosts, report=False, dryrun=False, force=False, title=None):
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'getting mw_authors...')
     mw_author_titles = Proxy.authors(cached_ok=False)
@@ -311,9 +183,7 @@ def authors(hosts, index, report=False, dryrun=False, force=False, title=None):
     logprint('debug', 'DONE')
 
 @stopwatch
-def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
-    i = set_hosts_index(hosts=hosts, index=index)
-    
+def articles(hosts, report=False, dryrun=False, force=False, title=None):
     logprint('debug', '------------------------------------------------------------------------')
     # authors need to be refreshed
     logprint('debug', 'getting mw_authors,articles...')
@@ -405,8 +275,7 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
     logprint('debug', 'DONE')
 
 @stopwatch
-def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None):
-    i = set_hosts_index(hosts=hosts, index=index)
+def sources(hosts, report=False, dryrun=False, force=False, psms_id=None):
     logprint(
         'debug',
         '------------------------------------------------------------------------')
@@ -555,9 +424,7 @@ def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None)
     logprint('debug', 'DONE')
 
 @stopwatch
-def topics(hosts, index, report=False, dryrun=False, force=False):
-    i = set_hosts_index(hosts=hosts, index=index)
-
+def topics(hosts, report=False, dryrun=False, force=False):
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'indexing topics...')
     logprint('debug', config.DDR_TOPICS_SRC_URL)
@@ -565,9 +432,7 @@ def topics(hosts, index, report=False, dryrun=False, force=False):
     logprint('debug', 'DONE')
 
 @stopwatch
-def vocabs(hosts, index, report=False, dryrun=False, force=False):
-    i = set_hosts_index(hosts=hosts, index=index)
-
+def vocabs(hosts, report=False, dryrun=False, force=False):
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'indexing facet terms...')
     facets = {}
@@ -589,8 +454,7 @@ DOC_TYPES = [
     'sources',
 ]
 
-def listdocs(hosts, index, doctype):
-    i = set_hosts_index(hosts=hosts, index=index)
+def listdocs(hosts, doctype):
     if doctype not in DOC_TYPES:
         logprint('error', '"%s" is not a recognized doc_type!' % doctype)
         return
@@ -602,8 +466,7 @@ def listdocs(hosts, index, doctype):
     for n,r in enumerate(results):
         print('%s/%s| %s' % (n, total, r.__repr__()))
 
-def get(hosts, index, doctype, identifier):
-    i = set_hosts_index(hosts=hosts, index=index)
+def get(hosts, doctype, identifier):
     if doctype not in DOC_TYPES:
         logprint('error', '"%s" is not a recognized doc_type!' % doctype)
         return
@@ -643,8 +506,7 @@ def get(hosts, index, doctype, identifier):
             print(o.__repr__())
             _print_dict(o.to_dict())
 
-def delete(hosts, index, doctype, identifier):
-    i = set_hosts_index(hosts=hosts, index=index)
+def delete(hosts, doctype, identifier):
     if doctype not in DOC_TYPES:
         logprint('error', '"%s" is not a recognized doc_type!' % doctype)
         return

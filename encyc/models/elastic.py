@@ -111,7 +111,6 @@ class Author(DocType):
     article_titles = String(index='not_analyzed', multi=True)
     
     class Meta:
-        index = config.DOCSTORE_INDEX
         doc_type = 'authors'
     
     def __repr__(self):
@@ -264,7 +263,6 @@ class Page(DocType):
     #rg_guidedreadinglevel = String(index='not_analyzed', multi=True)
     
     class Meta:
-        index = config.DOCSTORE_INDEX
         doc_type = 'articles'
     
     def __repr__(self):
@@ -536,7 +534,6 @@ class Source(DocType):
     img_path = String(index='not_analyzed')
     
     class Meta:
-        index = config.DOCSTORE_INDEX
         doc_type = 'sources'
     
     def __repr__(self):
@@ -833,7 +830,6 @@ class FacetTerm(DocType):
     )
     
     class Meta:
-        index = config.DOCSTORE_INDEX
         doc_type = 'facetterms'
     
     def __repr__(self):
@@ -926,7 +922,6 @@ class Facet(DocType):
     terms = []
     
     class Meta:
-        index = config.DOCSTORE_INDEX
         doc_type = 'facets'
     
     def __repr__(self):
@@ -983,7 +978,7 @@ class Elasticsearch(object):
     def topics():
         terms = []
         results = docstore.get(
-            config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, 'vocab',
+            config.DOCSTORE_HOSTS, 'vocab',
             'topics'
         )
         if results and (results['_source']['terms']):
@@ -1066,7 +1061,7 @@ class Elasticsearch(object):
                 json_text = r.text
                 logging.debug('ok')
         docstore.post(
-            config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, 'vocab',
+            config.DOCSTORE_HOSTS, 'vocab',
             'topics', json.loads(json_text),
         )
 

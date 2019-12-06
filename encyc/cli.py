@@ -14,7 +14,7 @@ def encyc(debug):
     Publishing:       topics, authors, articles, sources
     Debugging:        config, status, list, get
     
-    By default the command uses DOCSTORE_HOSTS and DOCSTORE_INDEX from the config file.  The tool will publish to at least two separate sites (Encyclopedia, Resource Guide), you can use the --hosts and --index options to override these values.
+    By default the command uses DOCSTORE_HOSTS from the config file.  The tool will publish to at least two separate sites (Encyclopedia, Resource Guide), you can use the --hosts and --index options to override these values.
     
     \b
     SAMPLE CRON TASKS
@@ -37,116 +37,87 @@ def config():
 
 @encyc.command()
 @click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
-@click.option('--index', default=settings.DOCSTORE_INDEX,
-              help='Elasticsearch index to create.')
-def status(hosts, index):
+def status(hosts):
     """Print status info.
     
     More detail since you asked.
     """
-    publish.status(hosts, index)
+    publish.status(hosts)
 
 
 @encyc.command()
 @click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
-@click.option('--index', default=settings.DOCSTORE_INDEX,
-              help='Elasticsearch index to create.')
-def create(hosts, index):
-    """Create new index.
+def create(hosts):
+    """Create new indices.
     """
-    publish.create_index(hosts, index)
+    publish.create_indices(hosts)
 
 
 @encyc.command()
 @click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
-@click.option('--index', default=settings.DOCSTORE_INDEX,
-              help='Elasticsearch index to delete.')
 @click.option('--confirm', is_flag=True,
               help='Yes I really want to delete this index.')
-def destroy(hosts, index, confirm):
-    """Delete index (requires --confirm).
+def destroy(hosts, confirm):
+    """Delete indices (requires --confirm).
     """
     if confirm:
-        publish.delete_index(hosts, index)
+        publish.delete_indices(hosts)
     else:
         click.echo("Add '--confirm' if you're sure you want to do this.")
 
 
 @encyc.command()
 @click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
-@click.option('--index', default=settings.DOCSTORE_INDEX, help='Elasticsearch index.')
-@click.option('--alias', default=settings.DOCSTORE_HOSTS, help='Alias to create.')
-@click.option('--delete', is_flag=True, help='Delete specified alias.')
-def alias(hosts, index, alias, delete):
-    """Manage aliases.
-    """
-    if delete:
-        publish.delete_alias(hosts, index, alias)
-    else:
-        publish.create_alias(hosts, index, alias)
-
-
-@encyc.command()
-@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
-@click.option('--index', default=settings.DOCSTORE_INDEX,
-              help='Elasticsearch index to reset.')
 @click.option('--confirm', is_flag=True,
               help='Yes I really want to delete this index.')
-def reset(hosts, index, confirm):
+def reset(hosts, confirm):
     """Delete existing index and create new one (requires --confirm).
     """
     if confirm:
-        publish.delete_index(hosts, index)
-        publish.create_index(hosts, index)
+        publish.delete_indices(hosts)
+        publish.create_indices(hosts)
     else:
         click.echo("Add '--confirm' if you're sure you want to do this.")
 
 
 @encyc.command()
 @click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
-@click.option('--index', default=settings.DOCSTORE_INDEX, help='Elasticsearch index to create.')
-def mappings(hosts, index):
-    """Push mappings to the specified index.
+def mappings(hosts):
+    """Get mappings.
     """
-    publish.push_mappings(hosts, index)
+    publish.mappings(hosts)
 
 
 @encyc.command()
 @click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
-@click.option('--index', default=settings.DOCSTORE_INDEX,
-              help='Elasticsearch index to create.')
 @click.option('--report', is_flag=True,
               help='Report number of records existing, to be indexed/updated.')
 @click.option('--dryrun', is_flag=True,
               help='perform a trial run with no changes made')
 @click.option('--force', is_flag=True,
               help='Forcibly update records whether they need it or not.')
-def topics(hosts, index, report, dryrun, force):
+def topics(hosts, report, dryrun, force):
     """Index DDR topics.
     """
-    publish.topics(hosts=hosts, index=index, report=report, dryrun=dryrun, force=force)
+    publish.topics(hosts=hosts, report=report, dryrun=dryrun, force=force)
 
 
 @encyc.command()
 @click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
-@click.option('--index', default=settings.DOCSTORE_INDEX,
-              help='Elasticsearch index to create.')
 @click.option('--report', is_flag=True,
               help='Report number of records existing, to be indexed/updated.')
 @click.option('--dryrun', is_flag=True,
               help='perform a trial run with no changes made')
 @click.option('--force', is_flag=True,
               help='Forcibly update records whether they need it or not.')
-def vocabs(hosts, index, report, dryrun, force):
+def vocabs(hosts, report, dryrun, force):
     """Index DDR vocabulary facets and terms.
     """
-    publish.vocabs(hosts=hosts, index=index, report=report, dryrun=dryrun, force=force)
+    publish.vocabs(hosts=hosts, report=report, dryrun=dryrun, force=force)
 
 
 @encyc.command()
 @click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
-@click.option('--index', default=settings.DOCSTORE_INDEX,
-              help='Elasticsearch index to create.')
 @click.option('--report', is_flag=True,
               help='Report number of records existing, to be indexed/updated.')
 @click.option('--dryrun', is_flag=True,
@@ -154,18 +125,16 @@ def vocabs(hosts, index, report, dryrun, force):
 @click.option('--force', is_flag=True,
               help='Forcibly update records whether they need it or not.')
 @click.option('--title', help='Single author to publish.')
-def authors(hosts, index, report, dryrun, force, title):
+def authors(hosts, report, dryrun, force, title):
     """Index authors.
     """
     publish.authors(
-        hosts=hosts, index=index, report=report, dryrun=dryrun, force=force, title=title
+        hosts=hosts, report=report, dryrun=dryrun, force=force, title=title
     )
 
 
 @encyc.command()
 @click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
-@click.option('--index', default=settings.DOCSTORE_INDEX,
-              help='Elasticsearch index to create.')
 @click.option('--report', is_flag=True,
               help='Report number of records existing, to be indexed/updated.')
 @click.option('--dryrun', is_flag=True,
@@ -173,18 +142,16 @@ def authors(hosts, index, report, dryrun, force, title):
 @click.option('--force', is_flag=True,
               help='Forcibly update records whether they need it or not.')
 @click.option('--title', help='Single article to publish.')
-def articles(hosts, index, report, dryrun, force, title):
+def articles(hosts, report, dryrun, force, title):
     """Index articles.
     """
     publish.articles(
-        hosts=hosts, index=index, report=report, dryrun=dryrun, force=force, title=title
+        hosts=hosts, report=report, dryrun=dryrun, force=force, title=title
     )
 
 
 @encyc.command()
 @click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
-@click.option('--index', default=settings.DOCSTORE_INDEX,
-              help='Elasticsearch index to create.')
 @click.option('--report', is_flag=True,
               help='Report number of records existing, to be indexed/updated.')
 @click.option('--dryrun', is_flag=True,
@@ -192,47 +159,41 @@ def articles(hosts, index, report, dryrun, force, title):
 @click.option('--force', is_flag=True,
               help='Forcibly update records whether they need it or not.')
 @click.option('--sourceid', help='Single article to publish.')
-def sources(hosts, index, report, dryrun, force, sourceid):
+def sources(hosts, report, dryrun, force, sourceid):
     """Index sources.
     """
     publish.sources(
-        hosts=hosts, index=index, report=report, dryrun=dryrun, force=force, psms_id=sourceid
+        hosts=hosts, report=report, dryrun=dryrun, force=force, psms_id=sourceid
     )
 
 
 @encyc.command()
 @click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
-@click.option('--index', default=settings.DOCSTORE_INDEX,
-              help='Elasticsearch index to create.')
 @click.argument('doctype')
-def list(hosts, index, doctype):
+def list(hosts, doctype):
     """List titles for all instances of specified doctype.
     """
-    publish.listdocs(hosts, index, doctype)
+    publish.listdocs(hosts, doctype)
 
 
 @encyc.command()
 @click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
-@click.option('--index', default=settings.DOCSTORE_INDEX,
-              help='Elasticsearch index to create.')
 @click.argument('doctype')
 @click.argument('object_id')
-def get(hosts, index, doctype, object_id):
+def get(hosts, doctype, object_id):
     """Pretty-print a single record
     """
-    publish.get(hosts, index, doctype, object_id)
+    publish.get(hosts, doctype, object_id)
 
 
 @encyc.command()
 @click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
-@click.option('--index', default=settings.DOCSTORE_INDEX,
-              help='Elasticsearch index.')
 @click.argument('doctype')
 @click.argument('object_id')
-def delete(hosts, index, doctype, object_id):
+def delete(hosts, doctype, object_id):
     """Delete a single record
     """
-    publish.delete(hosts, index, doctype, object_id)
+    publish.delete(hosts, doctype, object_id)
 
 
 @encyc.command()

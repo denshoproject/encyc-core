@@ -32,7 +32,6 @@ for node in config.get('elasticsearch', 'hosts').strip().split(','):
     DOCSTORE_HOSTS.append(
         {'host':host, 'port':port}
     )
-DOCSTORE_INDEX = config.get('elasticsearch', 'index')
 
 # mediawiki
 MEDIAWIKI_API = config.get('mediawiki', 'api_url')

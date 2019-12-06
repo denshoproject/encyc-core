@@ -258,12 +258,11 @@ class Proxy(object):
         return pages
 
     @staticmethod
-    def page(url_title, request=None, rg_titles=[], index=config.DOCSTORE_INDEX):
+    def page(url_title, request=None, rg_titles=[]):
         """
         @param url_title str: Canonical page URL title
         @param request HttpRequest: [optional] Django request object
         @param rg_titles list: Resource Guide url_titles (used to mark links)
-        @param index str: Name of Elasticsearch index
         """
         url = helpers.page_data_url(config.MEDIAWIKI_API, url_title)
         logger.debug(url)
@@ -274,7 +273,6 @@ class Proxy(object):
             text,
             request,
             rg_titles,
-            index
         )
     
     @staticmethod
@@ -294,7 +292,7 @@ class Proxy(object):
         return r.status_code,r.text
     
     @staticmethod
-    def _mkpage(url_title, http_status, rawtext, request=None, rg_titles=[], index=config.DOCSTORE_INDEX):
+    def _mkpage(url_title, http_status, rawtext, request=None, rg_titles=[]):
         """
         TODO rename me
         @param url_title str: Canonical page URL title
@@ -302,7 +300,6 @@ class Proxy(object):
         @param rawtext str: Body of HTTP request
         @param request HttpRequest: [optional] Django request object
         @param rg_titles list: Resource Guide url_titles (used to mark links)
-        @param index str: Name of Elasticsearch index
         """
         logger.debug(url_title)
         url_title = url_title.encode('utf_8', errors='xmlcharrefreplace')
@@ -362,7 +359,6 @@ class Proxy(object):
                 public=page.public,
                 printed=False,
                 rg_titles=rg_titles,
-                index=index,
             )
             
             # rewrite media URLs on stage
@@ -416,7 +412,7 @@ class Contents:
     
     def __init__(self):
         results = docstore.search(
-            config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, model='articles',
+            config.DOCSTORE_HOSTS, model='articles',
             first=0, size=docstore.MAX_SIZE,
             fields=['title', 'title_sort',],
         )
@@ -445,7 +441,6 @@ class Elasticsearch(object):
     def categories(self):
         s = Search(
             using=docstore._get_connection(config.DOCSTORE_HOSTS),
-            index=config.DOCSTORE_INDEX,
             doc_type='articles'
         ).fields([
             'title', 'title_sort', 'categories',
@@ -477,7 +472,6 @@ class Elasticsearch(object):
     def articles(self):
         s = Search(
             using=docstore._get_connection(config.DOCSTORE_HOSTS),
-            index=config.DOCSTORE_INDEX,
             doc_type='articles'
         ).fields([
             'title', 'title_sort', 'lastmod',
@@ -500,7 +494,6 @@ class Elasticsearch(object):
         """
         s = Search(
             using=docstore._get_connection(config.DOCSTORE_HOSTS),
-            index=config.DOCSTORE_INDEX,
             doc_type='authors'
         ).fields([
             'url_title', 'title', 'title_sort', 'lastmod'
@@ -526,7 +519,7 @@ class Elasticsearch(object):
 
     def author(self, url_title):
         results = docstore.get(
-            config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, 'authors',
+            config.DOCSTORE_HOSTS, 'authors',
             url_title
         )
         author = Author()
@@ -536,7 +529,7 @@ class Elasticsearch(object):
 
     def page(self, url_title):
         results = docstore.get(
-            config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, 'articles',
+            config.DOCSTORE_HOSTS, 'articles',
             url_title
         )
         if not results:
@@ -554,7 +547,7 @@ class Elasticsearch(object):
         # sources
         #sources = []
         #results = docstore.mget(
-        #    config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, 'sources',
+        #    config.DOCSTORE_HOSTS, 'sources',
         #    page.sources
         #)
         #for doc in results['docs']:
@@ -568,7 +561,7 @@ class Elasticsearch(object):
     def topics(self):
         terms = []
         results = docstore.get(
-            config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, 'vocab',
+            config.DOCSTORE_HOSTS, 'vocab',
             'topics'
         )
         if results['_source']['terms']:
@@ -604,7 +597,7 @@ class Elasticsearch(object):
     
     def source(self, encyclopedia_id):
         results = docstore.get(
-            config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, 'sources',
+            config.DOCSTORE_HOSTS, 'sources',
             encyclopedia_id
         )
         source = Source()
@@ -633,12 +626,12 @@ class Elasticsearch(object):
                     for source in page.sources:
                         logging.debug('     %s' % source['encyclopedia_id'])
                         docstore.post(
-                            config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, 'sources',
+                            config.DOCSTORE_HOSTS, 'sources',
                             source['encyclopedia_id'], source
                         )
                     page.sources = page_sources
                     docstore.post(
-                        config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, 'articles',
+                        config.DOCSTORE_HOSTS, 'articles',
                         title, page.__dict__
                     )
                     posted = posted + 1
@@ -657,7 +650,7 @@ class Elasticsearch(object):
             logging.debug('%s/%s %s' % (n, len(titles), title))
             page = Proxy.page(title)
             docstore.post(
-                config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, 'authors',
+                config.DOCSTORE_HOSTS, 'authors',
                 title, page.__dict__
             )
     
@@ -665,7 +658,7 @@ class Elasticsearch(object):
         results = []
         for title in titles:
             r = docstore.delete(
-                config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, 'articles',
+                config.DOCSTORE_HOSTS, 'articles',
                 title
             )
             results.append(r)
@@ -675,7 +668,7 @@ class Elasticsearch(object):
         results = []
         for title in titles:
             r = docstore.delete(
-                config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, 'authors',
+                config.DOCSTORE_HOSTS, 'authors',
                 title
             )
             results.append(r)
@@ -695,7 +688,7 @@ class Elasticsearch(object):
             if r.status_code == 200:
                 json_text = r.text
         docstore.post(
-            config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, 'vocab',
+            config.DOCSTORE_HOSTS, 'vocab',
             'topics', json.loads(json_text),
         )
     
