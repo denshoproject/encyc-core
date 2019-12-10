@@ -17,12 +17,8 @@ $ python manage.py encycupdate --articles
 
 Example usage:
 
->>> from elasticsearch_dsl import Index
->>> from elasticsearch_dsl.connections import connections
 >>> from encyc import config
 >>> from encyc.models import Elasticsearch, Author, Page, Source
->>> connections.create_connection(hosts=config.DOCSTORE_HOSTS)
->>> index = Index(config.DOCSTORE_INDEX)
 >>> authors = [author for author in Author.authors()]
 >>> pages = [page for page in Page.pages()]
 >>> sources = [source for source in Source.search().execute()]
@@ -58,10 +54,6 @@ if not config.DEBUG:
     from encyc.models.wikipage import remove_status_markers
 
 MAX_SIZE = 10000
-
-# set default hosts and index
-connections.create_connection(hosts=config.DOCSTORE_HOSTS)
-index = Index(config.DOCSTORE_INDEX)
 
 
 def _columnizer(things, cols):
@@ -1154,8 +1146,6 @@ class Elasticsearch(object):
         IMPORTANT: Will lock if unable to connect to MediaWiki server!
         """
         # authors
-        connections.create_connection(hosts=config.DOCSTORE_HOSTS)
-        index = Index(config.DOCSTORE_INDEX)
         mw_authors = Proxy.authors(cached_ok=False)
         es_authors = self.authors()
         authors_new,authors_delete = self.authors_to_update(mw_authors, es_authors)
@@ -1172,8 +1162,6 @@ class Elasticsearch(object):
             author.save()
         
         # articles
-        connections.create_connection(hosts=config.DOCSTORE_HOSTS)
-        index = Index(config.DOCSTORE_INDEX)
         # authors need to be refreshed
         mw_authors = Proxy.authors(cached_ok=False)
         mw_articles = Proxy.articles_lastmod()
