@@ -35,11 +35,7 @@ from dateutil import parser
 import requests
 
 from elasticsearch.exceptions import NotFoundError
-from elasticsearch_dsl import Index
-from elasticsearch_dsl import DocType, InnerObjectWrapper
-from elasticsearch_dsl import String, Date, Nested, Boolean
-from elasticsearch_dsl import Search
-from elasticsearch_dsl.connections import connections
+import elasticsearch_dsl as dsl
 
 from encyc import config
 from encyc import ddr
@@ -88,19 +84,19 @@ def none_strip(text):
     return text.strip()
 
 
-class Author(DocType):
+class Author(dsl.Document):
     """
     IMPORTANT: uses Elasticsearch-DSL, not the Django ORM.
     """
-    url_title = String(index='not_analyzed')  # Elasticsearch id
-    public = Boolean()
-    published = Boolean()
-    modified = Date()
-    mw_api_url = String(index='not_analyzed')
-    title_sort = String(index='not_analyzed')
-    title = String()
-    body = String()
-    article_titles = String(index='not_analyzed', multi=True)
+    url_title = dsl.Keyword()  # Elasticsearch id
+    public = dsl.Boolean()
+    published = dsl.Boolean()
+    modified = dsl.Date()
+    mw_api_url = dsl.Keyword()
+    title_sort = dsl.Keyword()
+    title = dsl.Text()
+    body = dsl.Text()
+    article_titles = dsl.Keyword(multi=True)
     
     class Meta:
         doc_type = 'authors'
@@ -202,57 +198,56 @@ class Author(DocType):
         return author
 
 
-class Page(DocType):
+class AuthorData(dsl.InnerDoc):
+    display = dsl.Keyword(multi=True)
+    parsed = dsl.Keyword(multi=True)
+    
+class Page(dsl.Document):
     """
     IMPORTANT: uses Elasticsearch-DSL, not the Django ORM.
     """
-    url_title = String(index='not_analyzed')  # Elasticsearch id
-    public = Boolean()
-    published = Boolean()
+    url_title = dsl.Keyword()  # Elasticsearch id
+    public = dsl.Boolean()
+    published = dsl.Boolean()
     published_encyc = None
     published_rg = None
-    modified = Date()
-    mw_api_url = String(index='not_analyzed')
-    title_sort = String(index='not_analyzed')
-    title = String()
-    description = String()
-    body = String()
-    prev_page = String(index='not_analyzed')
-    next_page = String(index='not_analyzed')
-    categories = String(index='not_analyzed', multi=True)
-    coordinates = String(index='not_analyzed', multi=True)
-    source_ids = String(index='not_analyzed', multi=True)
-    authors_data = Nested(
-        properties={
-            'display': String(index='not_analyzed', multi=True),
-            'parsed': String(index='not_analyzed', multi=True),
-        }
-    )
+    modified = dsl.Date()
+    mw_api_url = dsl.Keyword()
+    title_sort = dsl.Keyword()
+    title = dsl.Text()
+    description = dsl.Text()
+    body = dsl.Text()
+    prev_page = dsl.Keyword()
+    next_page = dsl.Keyword()
+    categories = dsl.Keyword(multi=True)
+    coordinates = dsl.Keyword(multi=True)
+    source_ids = dsl.Keyword(multi=True)
+    authors_data = dsl.Nested(AuthorData)
     
     # list of strings: ['DATABOX_NAME|dict', 'DATABOX_NAME|dict']
     # dicts are result of json.dumps(dict)
-    databoxes = String(index='not_analyzed', multi=True)
+    databoxes = dsl.Keyword(multi=True)
     
-    rg_rgmediatype = String(index='not_analyzed', multi=True)
-    rg_title = String()
-    rg_creators = String(multi=True)
-    rg_interestlevel = String(index='not_analyzed', multi=True)
-    rg_readinglevel = String(index='not_analyzed', multi=True)
-    rg_theme = String(index='not_analyzed', multi=True)
-    rg_genre = String(index='not_analyzed', multi=True)
-    rg_pov = String(index='not_analyzed', multi=True)
-    rg_relatedevents = String()
-    rg_availability = String(index='not_analyzed')
-    rg_freewebversion = String(index='not_analyzed')
-    rg_denshotopic = String(index='not_analyzed', multi=True)
-    rg_geography = String(index='not_analyzed', multi=True)
-    rg_facility = String(index='not_analyzed', multi=True)
-    rg_chronology = String(index='not_analyzed', multi=True)
-    rg_hasteachingaids = String(index='not_analyzed')
-    rg_warnings = String()
-    #rg_primarysecondary = String(index='not_analyzed', multi=True)
-    #rg_lexile = String(index='not_analyzed', multi=True)
-    #rg_guidedreadinglevel = String(index='not_analyzed', multi=True)
+    rg_rgmediatype = dsl.Keyword(multi=True)
+    rg_title = dsl.Text()
+    rg_creators = dsl.Keyword(multi=True)
+    rg_interestlevel = dsl.Keyword(multi=True)
+    rg_readinglevel = dsl.Keyword(multi=True)
+    rg_theme = dsl.Keyword(multi=True)
+    rg_genre = dsl.Keyword(multi=True)
+    rg_pov = dsl.Keyword(multi=True)
+    rg_relatedevents = dsl.Text()
+    rg_availability = dsl.Keyword()
+    rg_freewebversion = dsl.Keyword()
+    rg_denshotopic = dsl.Keyword(multi=True)
+    rg_geography = dsl.Keyword(multi=True)
+    rg_facility = dsl.Keyword(multi=True)
+    rg_chronology = dsl.Keyword(multi=True)
+    rg_hasteachingaids = dsl.Keyword()
+    rg_warnings = dsl.Text()
+    #rg_primarysecondary = dsl.Keyword(multi=True)
+    #rg_lexile = dsl.Keyword(multi=True)
+    #rg_guidedreadinglevel = dsl.Keyword(multi=True)
     
     class Meta:
         doc_type = 'articles'
@@ -486,44 +481,44 @@ class Page(DocType):
         return page
 
 
-class Source(DocType):
+class Source(dsl.Document):
     """
     IMPORTANT: uses Elasticsearch-DSL, not the Django ORM.
     """
-    encyclopedia_id = String(index='not_analyzed')  # Elasticsearch id
-    densho_id = String(index='not_analyzed')
-    psms_id = String(index='not_analyzed')
-    psms_api_uri = String(index='not_analyzed')
-    institution_id = String(index='not_analyzed')
-    collection_name = String(index='not_analyzed')
-    created = Date()
-    modified = Date()
-    published = Boolean()
-    creative_commons = Boolean()
-    headword = String(index='not_analyzed')
-    original = String(index='not_analyzed')
-    original_size = String(index='not_analyzed')
-    original_url = String(index='not_analyzed')
-    original_path = String(index='not_analyzed')
-    original_path_abs = String(index='not_analyzed')
-    display = String(index='not_analyzed')
-    display_size = String(index='not_analyzed')
-    display_url = String(index='not_analyzed')
-    display_path = String(index='not_analyzed')
-    display_path_abs = String(index='not_analyzed')
-    #streaming_path = String(index='not_analyzed')
-    #rtmp_path = String(index='not_analyzed')
-    streaming_url = String(index='not_analyzed')  # TODO remove
-    external_url = String(index='not_analyzed')
-    media_format = String(index='not_analyzed')
-    aspect_ratio = String(index='not_analyzed')
-    caption = String()
-    caption_extended = String()
-    #transcript_path = String(index='not_analyzed')
-    transcript = String()  # TODO remove
-    courtesy = String(index='not_analyzed')
-    filename = String(index='not_analyzed')
-    img_path = String(index='not_analyzed')
+    encyclopedia_id = dsl.Keyword()  # Elasticsearch id
+    densho_id = dsl.Keyword()
+    psms_id = dsl.Keyword()
+    psms_api_uri = dsl.Keyword()
+    institution_id = dsl.Keyword()
+    collection_name = dsl.Keyword()
+    created = dsl.Date()
+    modified = dsl.Date()
+    published = dsl.Boolean()
+    creative_commons = dsl.Boolean()
+    headword = dsl.Keyword()
+    original = dsl.Keyword()
+    original_size = dsl.Keyword()
+    original_url = dsl.Keyword()
+    original_path = dsl.Keyword()
+    original_path_abs = dsl.Keyword()
+    display = dsl.Keyword()
+    display_size = dsl.Keyword()
+    display_url = dsl.Keyword()
+    display_path = dsl.Keyword()
+    display_path_abs = dsl.Keyword()
+    #streaming_path = dsl.Keyword()
+    #rtmp_path = dsl.Keyword()
+    streaming_url = dsl.Keyword()  # TODO remove
+    external_url = dsl.Keyword()
+    media_format = dsl.Keyword()
+    aspect_ratio = dsl.Keyword()
+    caption = dsl.Text()
+    caption_extended = dsl.Text()
+    #transcript_path = dsl.Keyword()
+    transcript = dsl.Text()  # TODO remove
+    courtesy = dsl.Keyword()
+    filename = dsl.Keyword()
+    img_path = dsl.Keyword()
     
     class Meta:
         doc_type = 'sources'
@@ -774,55 +769,42 @@ class Citation(object):
         self.retrieved = datetime.now()
 
 
-class Location(InnerObjectWrapper):
-    pass
+class Elinks(dsl.InnerDoc):
+    label = dsl.Text()
+    url = dsl.Text()
 
-class GeoPoint(InnerObjectWrapper):
-    pass
+class Geopoint(dsl.InnerDoc):
+    lat = dsl.Double()
+    lng = dsl.Double()
 
-class ELink(InnerObjectWrapper):
-    pass
+class Location(dsl.InnerDoc):
+    geopoint = dsl.Nested(Geopoint)
+    label = dsl.Text()
 
-class FacetTerm(DocType):
-    id = String(index='not_analyzed')  # Elasticsearch id
-    facet_id = String(index='not_analyzed')
-    term_id = String(index='not_analyzed')
-    title = String()
+class FacetTerm(dsl.Document):
+    id = dsl.Keyword()
+    facet = dsl.Keyword()
+    term_id = dsl.Keyword()
+    links_html = dsl.Keyword()
+    links_json = dsl.Keyword()
+    links_children = dsl.Keyword()
+    title = dsl.Text()
+    description = dsl.Text()
     # topics
-    _title = String()
-    description = String()
-    path = String(index='not_analyzed')
-    parent_id = String(index='not_analyzed')
-    ancestors = String(index='not_analyzed', multi=True)
-    children = String(index='not_analyzed', multi=True)
-    siblings = String(index='not_analyzed', multi=True)
-    weight = String()
+    path = dsl.Text()
+    parent_id = dsl.Keyword()
+    ancestors = dsl.Long()
+    siblings = dsl.Long()
+    children = dsl.Long()
+    weight = dsl.Long()
+    encyc_urls = dsl.Text()
     # facility
-    type = String(index='not_analyzed')
-    locations = Nested(
-        doc_class=Location,
-        properties={
-            'label': String(),
-            'geopoint': Nested(
-                doc_class=GeoPoint,
-                properties={
-                    'lat': String(),
-                    'lng': String(),
-                }
-            )
-        }
-    )
-    # both
-    encyc_urls = Nested(
-        doc_class=ELink,
-        properties={
-            'label': String(),
-            'url': String(index='not_analyzed'),
-        }
-    )
+    type = dsl.Text()
+    elinks = dsl.Nested(Elinks)
+    location_geopoint = dsl.Nested(Location)
     
     class Meta:
-        doc_type = 'facetterms'
+        doc_type = 'facetterm'
     
     def __repr__(self):
         return "<FacetTerm '%s'>" % self.id
@@ -907,14 +889,17 @@ class FacetTerm(DocType):
         ]
         return data
 
-class Facet(DocType):
-    id = String(index='not_analyzed')  # Elasticsearch id
-    title = String()
-    description = String()
-    terms = []
+
+class Facet(dsl.Document):
+    id = dsl.Keyword()
+    links_html = dsl.Keyword()
+    links_json = dsl.Keyword()
+    links_children = dsl.Keyword()
+    title = dsl.Text()
+    description = dsl.Text()
     
     class Meta:
-        doc_type = 'facets'
+        doc_type = 'facet'
     
     def __repr__(self):
         return "<Facet '%s'>" % self.id
