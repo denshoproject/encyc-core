@@ -26,12 +26,8 @@ DEBUG = config.get('debug', 'debug')
 STAGE = False
 
 #elasticsearch
-DOCSTORE_HOSTS = []
-for node in config.get('elasticsearch', 'hosts').strip().split(','):
-    host,port = node.strip().split(':')
-    DOCSTORE_HOSTS.append(
-        {'host':host, 'port':port}
-    )
+DOCSTORE_HOST = config.get('elasticsearch','docstore_host')
+DOCSTORE_TIMEOUT = int(config.get('elasticsearch','docstore_timeout'))
 
 # mediawiki
 MEDIAWIKI_API = config.get('mediawiki', 'api_url')

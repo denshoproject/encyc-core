@@ -1,7 +1,9 @@
 import click
 
-from encyc import config as settings
+from encyc import config
 from encyc import publish
+
+DOCSTORE_HOST = config.DOCSTORE_HOST
 
 
 @click.group()
@@ -14,7 +16,7 @@ def encyc(debug):
     Publishing:       topics, authors, articles, sources
     Debugging:        config, status, list, get
     
-    By default the command uses DOCSTORE_HOSTS from the config file.  The tool will publish to at least two separate sites (Encyclopedia, Resource Guide), you can use the --hosts and --index options to override these values.
+    By default the command uses DOCSTORE_HOST from the config file.  The tool will publish to at least two separate sites (Encyclopedia, Resource Guide), you can use the --hosts and --index options to override these values.
     
     \b
     SAMPLE CRON TASKS
@@ -36,7 +38,7 @@ def config():
 
 
 @encyc.command()
-@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
 def status(hosts):
     """Print status info.
     
@@ -46,7 +48,7 @@ def status(hosts):
 
 
 @encyc.command()
-@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
 def create(hosts):
     """Create new indices.
     """
@@ -54,7 +56,7 @@ def create(hosts):
 
 
 @encyc.command()
-@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.option('--confirm', is_flag=True,
               help='Yes I really want to delete this index.')
 def destroy(hosts, confirm):
@@ -67,7 +69,7 @@ def destroy(hosts, confirm):
 
 
 @encyc.command()
-@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.option('--confirm', is_flag=True,
               help='Yes I really want to delete this index.')
 def reset(hosts, confirm):
@@ -81,7 +83,7 @@ def reset(hosts, confirm):
 
 
 @encyc.command()
-@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
 def mappings(hosts):
     """Get mappings.
     """
@@ -89,7 +91,7 @@ def mappings(hosts):
 
 
 @encyc.command()
-@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.option('--report', is_flag=True,
               help='Report number of records existing, to be indexed/updated.')
 @click.option('--dryrun', is_flag=True,
@@ -103,7 +105,7 @@ def topics(hosts, report, dryrun, force):
 
 
 @encyc.command()
-@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.option('--report', is_flag=True,
               help='Report number of records existing, to be indexed/updated.')
 @click.option('--dryrun', is_flag=True,
@@ -117,7 +119,7 @@ def vocabs(hosts, report, dryrun, force):
 
 
 @encyc.command()
-@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.option('--report', is_flag=True,
               help='Report number of records existing, to be indexed/updated.')
 @click.option('--dryrun', is_flag=True,
@@ -134,7 +136,7 @@ def authors(hosts, report, dryrun, force, title):
 
 
 @encyc.command()
-@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.option('--report', is_flag=True,
               help='Report number of records existing, to be indexed/updated.')
 @click.option('--dryrun', is_flag=True,
@@ -151,7 +153,7 @@ def articles(hosts, report, dryrun, force, title):
 
 
 @encyc.command()
-@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.option('--report', is_flag=True,
               help='Report number of records existing, to be indexed/updated.')
 @click.option('--dryrun', is_flag=True,
@@ -168,7 +170,7 @@ def sources(hosts, report, dryrun, force, sourceid):
 
 
 @encyc.command()
-@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.argument('doctype')
 def list(hosts, doctype):
     """List titles for all instances of specified doctype.
@@ -177,7 +179,7 @@ def list(hosts, doctype):
 
 
 @encyc.command()
-@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.argument('doctype')
 @click.argument('object_id')
 def get(hosts, doctype, object_id):
@@ -187,7 +189,7 @@ def get(hosts, doctype, object_id):
 
 
 @encyc.command()
-@click.option('--hosts', default=settings.DOCSTORE_HOSTS, help='Elasticsearch hosts.')
+@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.argument('doctype')
 @click.argument('object_id')
 def delete(hosts, doctype, object_id):

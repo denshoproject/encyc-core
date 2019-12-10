@@ -82,7 +82,7 @@ def print_configs():
     print('manage.py encyc commands will use the following settings:')
     print('CONFIG_FILES:           %s' % config.CONFIG_FILES)
     print('')
-    print('DOCSTORE_HOSTS:         %s' % config.DOCSTORE_HOSTS)
+    print('DOCSTORE_HOST:          %s' % config.DOCSTORE_HOST)
     print('MEDIAWIKI_API:          %s' % config.MEDIAWIKI_API)
     print('MEDIAWIKI_API_USERNAME: %s' % config.MEDIAWIKI_API_USERNAME)
     print('MEDIAWIKI_API_PASSWORD: %s' % config.MEDIAWIKI_API_PASSWORD)

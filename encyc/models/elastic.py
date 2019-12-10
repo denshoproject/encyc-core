@@ -977,10 +977,7 @@ class Elasticsearch(object):
     @staticmethod
     def topics():
         terms = []
-        results = docstore.get(
-            config.DOCSTORE_HOSTS, 'vocab',
-            'topics'
-        )
+        results = docstore.get(model='vocab', document_id='topics')
         if results and (results['_source']['terms']):
             terms = [
                 {
@@ -1060,10 +1057,7 @@ class Elasticsearch(object):
             if r.status_code == 200:
                 json_text = r.text
                 logging.debug('ok')
-        docstore.post(
-            config.DOCSTORE_HOSTS, 'vocab',
-            'topics', json.loads(json_text),
-        )
+        docstore.post(json.loads(json_text))
 
     @staticmethod
     def _new_update_deleted(mw_pages, es_objects):
