@@ -32,9 +32,9 @@ import requests
 
 from encyc import config
 from encyc import fileio
-#from DDR.identifier import ELASTICSEARCH_CLASSES
-#from DDR.identifier import ELASTICSEARCH_CLASSES_BY_MODEL
-#from DDR.identifier import MODEL_REPO_MODELS
+from encyc.repo_models import ELASTICSEARCH_CLASSES
+from encyc.repo_models import ELASTICSEARCH_CLASSES_BY_MODEL
+from encyc.repo_models import MODEL_REPO_MODELS
 
 INDEX_PREFIX = 'encyc'
 
