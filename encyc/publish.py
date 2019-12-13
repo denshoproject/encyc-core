@@ -111,11 +111,21 @@ def status(hosts):
 
 @stopwatch
 def delete_indices(hosts):
-    pass
+    try:
+        statuses = docstore.Docstore(hosts).delete_indices()
+        for status in statuses:
+            logprint('debug', status)
+    except Exception as err:
+        logprint('error', err)
     
 @stopwatch
 def create_indices(hosts):
-    pass
+    try:
+        statuses = docstore.Docstore(hosts).create_indices()
+        for status in statuses:
+            logprint('debug', status)
+    except Exception as err:
+        logprint('error', err)
 
 def mappings(hosts):
     pass
