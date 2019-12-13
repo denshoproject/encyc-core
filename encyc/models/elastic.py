@@ -86,12 +86,6 @@ def none_strip(text):
 
 
 class Author(repo_models.Author):
-    
-    def __repr__(self):
-        return "<Author '%s'>" % self.url_title
-    
-    def __str__(self):
-        return self.title
 
     def absolute_url(self):
         return urls.reverse('wikiprox-author', args=([self.title,]))
@@ -185,12 +179,6 @@ class Author(repo_models.Author):
 
 
 class Page(repo_models.Page):
-    
-    def __repr__(self):
-        return "<Page '%s'>" % self.url_title
-    
-    def __str__(self):
-        return self.url_title
     
     def absolute_url(self):
         return urls.reverse('wikiprox-page', args=([self.title]))
@@ -417,9 +405,6 @@ class Page(repo_models.Page):
 
 class Source(repo_models.Source):
     
-    def __repr__(self):
-        return "<elastic.Source '%s'>" % self.encyclopedia_id
-    
     def absolute_url(self):
         return urls.reverse('wikiprox-source', args=([self.encyclopedia_id]))
     
@@ -638,9 +623,6 @@ class Citation(object):
     def __repr__(self):
         return "<Citation '%s'>" % self.url_title
     
-    def __str__(self):
-        return self.url_title
-    
     def __init__(self, page, request):
         self.uri = page.absolute_url()
         self.href = 'http://%s%s' % (request.META['HTTP_HOST'], self.uri)
@@ -664,12 +646,6 @@ class Citation(object):
 
 
 class FacetTerm(repo_models.FacetTerm):
-    
-    def __repr__(self):
-        return "<FacetTerm '%s'>" % self.id
-    
-    def __str__(self):
-        return self.id
     
     @staticmethod
     def from_dict(facet_id, data):
@@ -750,12 +726,6 @@ class FacetTerm(repo_models.FacetTerm):
 
 
 class Facet(repo_models.Facet):
-    
-    def __repr__(self):
-        return "<Facet '%s'>" % self.id
-    
-    def __str__(self):
-        return self.id
 
     @staticmethod
     def facets():

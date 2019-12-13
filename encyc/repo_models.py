@@ -19,8 +19,22 @@ class Author(dsl.Document):
     body = dsl.Text()
     article_titles = dsl.Keyword(multi=True)
     
+    #class Index:
+    #    name = ???
+    # We don't define Index here because this module cannot know anything
+    # about the application configs.
+    # Instead we specify "index=OBJECT.index_name(model)" to Elasticsearch
+    # create_index(), get(), search(), delete(), etc.
+    
     class Meta:
-        doc_type = 'encycauthors'
+        doc_type = 'encycauthor'
+    
+    def __repr__(self):
+        return '<%s.%s "%s">' % (
+            self.__module__,
+            self.__class__.__name__,
+            self.url_title
+        )
 
 
 class AuthorData(dsl.InnerDoc):
@@ -74,8 +88,22 @@ class Page(dsl.Document):
     #rg_lexile = dsl.Keyword(multi=True)
     #rg_guidedreadinglevel = dsl.Keyword(multi=True)
     
+    #class Index:
+    #    name = ???
+    # We don't define Index here because this module cannot know anything
+    # about the application configs.
+    # Instead we specify "index=OBJECT.index_name(model)" to Elasticsearch
+    # create_index(), get(), search(), delete(), etc.
+    
     class Meta:
-        doc_type = 'articles'
+        doc_type = 'encycarticle'
+    
+    def __repr__(self):
+        return '<%s.%s "%s">' % (
+            self.__module__,
+            self.__class__.__name__,
+            self.url_title
+        )
 
 
 class Source(dsl.Document):
@@ -117,8 +145,22 @@ class Source(dsl.Document):
     filename = dsl.Keyword()
     img_path = dsl.Keyword()
     
+    #class Index:
+    #    name = ???
+    # We don't define Index here because this module cannot know anything
+    # about the application configs.
+    # Instead we specify "index=OBJECT.index_name(model)" to Elasticsearch
+    # create_index(), get(), search(), delete(), etc.
+    
     class Meta:
-        doc_type = 'sources'
+        doc_type = 'encycsource'
+    
+    def __repr__(self):
+        return '<%s.%s "%s">' % (
+            self.__module__,
+            self.__class__.__name__,
+            self.encyclopedia_id
+        )
 
 
 class Facet(dsl.Document):
@@ -129,8 +171,22 @@ class Facet(dsl.Document):
     title = dsl.Text()
     description = dsl.Text()
     
+    #class Index:
+    #    name = ???
+    # We don't define Index here because this module cannot know anything
+    # about the application configs.
+    # Instead we specify "index=OBJECT.index_name(model)" to Elasticsearch
+    # create_index(), get(), search(), delete(), etc.
+    
     class Meta:
-        doc_type = 'facet'
+        doc_type = 'encycfacet'
+    
+    def __repr__(self):
+        return '<%s.%s "%s">' % (
+            self.__module__,
+            self.__class__.__name__,
+            self.id
+        )
 
 
 class Elinks(dsl.InnerDoc):
@@ -167,8 +223,22 @@ class FacetTerm(dsl.Document):
     elinks = dsl.Nested(Elinks)
     location_geopoint = dsl.Nested(Location)
     
+    #class Index:
+    #    name = ???
+    # We don't define Index here because this module cannot know anything
+    # about the application configs.
+    # Instead we specify "index=OBJECT.index_name(model)" to Elasticsearch
+    # create_index(), get(), search(), delete(), etc.
+    
     class Meta:
-        doc_type = 'facetterm'
+        doc_type = 'encycfacetterm'
+    
+    def __repr__(self):
+        return '<%s.%s "%s">' % (
+            self.__module__,
+            self.__class__.__name__,
+            self.id
+        )
 
 
 ELASTICSEARCH_CLASSES = {
