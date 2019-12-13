@@ -181,6 +181,21 @@ class Author(repo_models.Author):
 
 
 class Page(repo_models.Page):
+
+    @staticmethod
+    def get(title):
+        ds = docstore.Docstore()
+        return repo_models.Page.get(
+            title, index=ds.index_name('article'), using=ds.es
+        )
+    
+    def save(self):
+        ds = docstore.Docstore()
+        return super(Page, self).save(index=ds.index_name('article'), using=ds.es)
+    
+    def delete(self):
+        ds = docstore.Docstore()
+        return super(Page, self).delete(index=ds.index_name('article'), using=ds.es)
     
     def absolute_url(self):
         return urls.reverse('wikiprox-page', args=([self.title]))
@@ -208,30 +223,14 @@ class Page(repo_models.Page):
         
         @returns: list
         """
-        s = Page.search()[0:MAX_SIZE]
-        s = s.sort('title_sort')
-        #s = s.fields([
-        #    'url_title',
-        #    'title',
-        #    'title_sort',
-        #    'published',
-        #    'modified',
-        #    'categories',
-        #])
-        response = s.execute()
-        data = [
-            Page(
-                url_title  = hitvalue(hit, 'url_title'),
-                title      = hitvalue(hit, 'title'),
-                title_sort = hitvalue(hit, 'title_sort'),
-                published  = hitvalue(hit, 'published'),
-                modified   = hitvalue(hit, 'modified'),
-                categories = hitvalue(hit, 'categories'),
-               )
-            for hit in response
-            if hitvalue(hit, 'published')
-        ]
-        return data
+        searcher = search.Searcher()
+        searcher.prepare(
+            params={},
+            search_models=[docstore.Docstore().index_name('article')],
+            fields_nested=[],
+            fields_agg={},
+        )
+        return searcher.execute(docstore.MAX_SIZE, 0)
     
     @staticmethod
     def pages_by_category():

@@ -206,7 +206,7 @@ def articles(hosts, report=False, dryrun=False, force=False, title=None):
     logprint('debug', 'getting es_articles...')
     es_articles = Page.pages()
     logprint('debug', 'mediawiki articles: %s' % len(mw_articles))
-    logprint('debug', 'elasticsearch articles: %s' % len(es_articles))
+    logprint('debug', 'elasticsearch articles: %s' % es_articles.total)
     
     if title:
         articles_update = [title]
@@ -218,7 +218,9 @@ def articles(hosts, report=False, dryrun=False, force=False, title=None):
         else:
             logprint('debug', 'determining new,delete...')
             articles_update,articles_delete = Elasticsearch.articles_to_update(
-                mw_author_titles, mw_articles, es_articles)
+                mw_author_titles, mw_articles,
+                es_articles.objects
+            )
         logprint('debug', 'articles to update: %s' % len(articles_update))
         #logprint('debug', 'articles to delete: %s' % len(articles_delete))
         if report:
