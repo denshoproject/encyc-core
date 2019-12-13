@@ -406,6 +406,21 @@ class Page(repo_models.Page):
 
 
 class Source(repo_models.Source):
+
+    @staticmethod
+    def get(title):
+        ds = docstore.Docstore()
+        return repo_models.Source.get(
+            title, index=ds.index_name('source'), using=ds.es
+        )
+    
+    def save(self):
+        ds = docstore.Docstore()
+        return super(Source, self).save(index=ds.index_name('source'), using=ds.es)
+    
+    def delete(self):
+        ds = docstore.Docstore()
+        return super(Source, self).delete(index=ds.index_name('source'), using=ds.es)
     
     def absolute_url(self):
         return urls.reverse('wikiprox-source', args=([self.encyclopedia_id]))

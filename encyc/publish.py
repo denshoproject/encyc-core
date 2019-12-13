@@ -356,7 +356,7 @@ def sources(hosts, report=False, dryrun=False, force=False, psms_id=None):
         
         logprint('debug', 'getting from Elasticsearch')
         try:
-            existing_source = Source.get(ps_source)
+            existing_source = Source.get()
             logprint('debug', existing_source)
         except:
             existing_source = None
