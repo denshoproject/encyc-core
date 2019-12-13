@@ -1,6 +1,9 @@
+import json
+
 import click
 
 from encyc import config
+from encyc import docstore
 from encyc import publish
 
 DOCSTORE_HOST = config.DOCSTORE_HOST
@@ -84,10 +87,14 @@ def reset(hosts, confirm):
 
 @encyc.command()
 @click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
-def mappings(hosts):
-    """Get mappings.
+@click.option('--indices','-i', help='Comma-separated list of indices to display.')
+def mappings(hosts, indices):
+    """Display mappings for the specified index/indices.
     """
-    publish.mappings(hosts)
+    data = docstore.Docstore(hosts).get_mappings()
+    for key,val in data.iteritems():
+        if docstore.INDEX_PREFIX in key:
+            click.echo('{}: {}'.format(key, val))
 
 
 @encyc.command()
