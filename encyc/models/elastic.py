@@ -44,6 +44,7 @@ from encyc import http
 from encyc.models import citations
 from encyc.models.legacy import Proxy
 from encyc import repo_models
+from encyc import search
 from encyc import urls
 
 if not config.DEBUG:
@@ -87,6 +88,21 @@ def none_strip(text):
 
 class Author(repo_models.Author):
 
+    @staticmethod
+    def get(title):
+        ds = docstore.Docstore()
+        return repo_models.Author.get(
+            title, index=ds.index_name('author'), using=ds.es
+    )
+    
+    def save(self):
+        ds = docstore.Docstore()
+        return super(Author, self).save(index=ds.index_name('author'), using=ds.es)
+    
+    def delete(self):
+        ds = docstore.Docstore()
+        return super(Author, self).delete(index=ds.index_name('author'), using=ds.es)
+
     def absolute_url(self):
         return urls.reverse('wikiprox-author', args=([self.title,]))
     
@@ -107,28 +123,14 @@ class Author(repo_models.Author):
         
         @returns: list
         """
-        s = Author.search()[0:MAX_SIZE]
-        s = s.sort('title_sort')
-        #s = s.fields([
-        #    'url_title',
-        #    'title',
-        #    'title_sort',
-        #    'published',
-        #    'modified',
-        #])
-        response = s.execute()
-        data = [
-            Author(
-                url_title  = hitvalue(hit, 'url_title'),
-                title      = hitvalue(hit, 'title'),
-                title_sort = hitvalue(hit, 'title_sort'),
-                published  = hitvalue(hit, 'published'),
-                modified   = hitvalue(hit, 'modified'),
-            )
-            for hit in response
-            if hitvalue(hit, 'published')
-        ]
-        return data
+        searcher = search.Searcher()
+        searcher.prepare(
+            params={},
+            search_models=[docstore.Docstore().index_name('author')],
+            fields_nested=[],
+            fields_agg={},
+        )
+        return searcher.execute(docstore.MAX_SIZE, 0)
 
     def scrub(self):
         """Removes internal editorial markers.
@@ -863,11 +865,20 @@ class Elasticsearch(object):
         @param es_objects: dict Page or Author objects keyed to titles
         @returns: tuple containing lists of titles (new+updated, deleted)
         """
-        new = [title for title in mw_pages.keys() if not title in es_objects.keys()]
-        deleted = [title for title in es_objects.keys() if not title in mw_pages.keys()]
+        def force_dt(val):
+            if isinstance(val, datetime):
+                return val
+            return parser.parse(val)
+        new = [
+            title for title in mw_pages.keys() if not title in es_objects.keys()
+        ]
+        deleted = [
+            title for title in es_objects.keys() if not title in mw_pages.keys()
+        ]
         updated = [
             es.title for es in es_objects.values()
-            if mw_pages.get(es.title) and (mw_pages[es.title]['lastmod'] > es.modified)
+            if mw_pages.get(es.title)
+            and (force_dt(mw_pages[es.title]['lastmod']) > force_dt(es.modified))
         ]
         return (new + updated, deleted)
     

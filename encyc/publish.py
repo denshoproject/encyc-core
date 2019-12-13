@@ -132,13 +132,15 @@ def mappings(hosts):
 
 @stopwatch
 def authors(hosts, report=False, dryrun=False, force=False, title=None):
+    ds = docstore.Docstore()
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'getting mw_authors...')
     mw_author_titles = Proxy.authors(cached_ok=False)
     mw_articles = Proxy.articles_lastmod()
+    logprint('debug', 'mediawiki authors: %s' % len(mw_author_titles))
     logprint('debug', 'getting es_authors...')
     es_authors = Author.authors()
-    logprint('debug', 'mediawiki authors: %s' % len(mw_author_titles))
+    logprint('debug', 'elasticsearch authors: %s' % es_authors.total)
     
     if title:
         authors_new = [title]
@@ -150,7 +152,9 @@ def authors(hosts, report=False, dryrun=False, force=False, title=None):
         else:
             logprint('debug', 'determining new,delete...')
             authors_new,authors_delete = Elasticsearch.authors_to_update(
-                mw_author_titles, mw_articles, es_authors)
+                mw_author_titles, mw_articles,
+                es_authors.objects
+            )
         logprint('debug', 'authors to add: %s' % len(authors_new))
         #logprint('debug', 'authors to delete: %s' % len(authors_delete))
         if report:
@@ -170,7 +174,7 @@ def authors(hosts, report=False, dryrun=False, force=False, title=None):
         logprint('debug', '--------------------')
         logprint('debug', '%s/%s %s' % (n, len(authors_new), title))
         logprint('debug', 'getting from mediawiki')
-        mwauthor = Proxy.page(title, index=index)
+        mwauthor = Proxy.page(title)
         try:
             existing_author = Author.get(title)
             logprint('debug', 'exists in elasticsearch')
@@ -180,7 +184,7 @@ def authors(hosts, report=False, dryrun=False, force=False, title=None):
         author = Author.from_mw(mwauthor, author=existing_author)
         if not dryrun:
             logprint('debug', 'saving')
-            author.save()
+            out = author.save()
             try:
                 a = Author.get(title)
             except NotFoundError:
