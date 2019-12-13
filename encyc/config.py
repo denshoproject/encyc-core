@@ -117,7 +117,16 @@ def read_hidden_tags(config):
                     combo = '%s=%s' % (attrib, selector)
                     if combo not in hidden[index]:
                         hidden[index].append(combo)
-    return hidden
+    # As of ES 7 we no longer have separate stage and production indices
+    # pick stage or production
+    if STAGE:
+        for key in hidden.iterkeys():
+            if 'stage' in key:
+                return hidden[key]
+    else:
+        for key in hidden.iterkeys():
+            if 'production' in key:
+                return hidden[key]
 
 # hide tags with the given attrib=selector
 HIDDEN_TAGS = read_hidden_tags(config)

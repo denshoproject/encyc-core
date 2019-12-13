@@ -42,7 +42,7 @@ def parse_mediawiki_text(title, html, primary_sources, public=False, printed=Fal
         soup = _add_top_links(soup)
     soup = _remove_divs(
         soup,
-        selectors=config.HIDDEN_TAGS.get([]),
+        selectors=config.HIDDEN_TAGS,
         comments=config.HIDDEN_TAG_COMMENTS
     )
     soup = _remove_nonrg_divs(soup)
