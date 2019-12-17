@@ -28,7 +28,7 @@ def encyc(debug):
       2,32 * * * * /usr/local/src/env/encyc/bin/encyc articles >> /var/log/encyc/core-syncwiki.log 2>&1
       12,42 * * * * /usr/local/src/env/encyc/bin/encyc sources >> /var/log/encyc/core-syncwiki.log 2>&1
     """
-    click.echo('Debug mode is %s' % ('on' if debug else 'off'))
+    pass
 
 
 @encyc.command()
