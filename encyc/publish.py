@@ -545,17 +545,18 @@ def _dumpjson(title, path):
     pretty = format_json(data)
     write_text(pretty, path)
 
-def _parse(title, path):
-    """Loads page json from file, generates Page, saves HTML to file.
+def parse(path, title):
+    """Loads raw MediaWiki JSON from file, emits parsed HTML.
     
-    The idea here is to parse text from a local file,
-    not hit Mediawiki each time
-    also, to manipulate the text without changing original data in mediawiki
+    For testing the parser without having to hit the MediaWiki API each time,
+    and without risk of modifying original data in mediawiki.
+    Protip: combine with `encyc get DOCTYPE TITLE --json`.
     
     @param title: str
     @param path: str
     """
-    path_html = os.path.splitext(path)[0] + '.html'
+    #path_html = os.path.splitext(path)[0] + '.html'
     text = read_text(path)
     mwpage = Proxy._mkpage(title, 200, text)
-    write_text(mwpage.body, path_html)
+    #write_text(mwpage.body, path_html)
+    return mwpage.body

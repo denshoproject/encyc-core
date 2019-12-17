@@ -265,8 +265,12 @@ def delete(confirm, doctype, object_id):
 @encyc.command()
 @click.argument('path')
 @click.argument('title')
-@click.argument('path')
-def _parse(title, path):
-    """Load page json from file, generate Page, save HTML to file.
+def parse(title, path):
+    """Loads raw MediaWiki JSON from file, emits parsed HTML.
+    
+    \b
+    Combine with `encyc get`:
+    encyc get article "Nisei Progressives" -mbj > /tmp/file.json
+    encyc parse /tmp/file.json "Nisei Progressives"
     """
-    publish._parse(title, path)
+    click.echo(publish.parse(path, title))
