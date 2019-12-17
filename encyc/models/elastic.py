@@ -185,8 +185,8 @@ class Page(repo_models.Page):
     @staticmethod
     def get(title):
         ds = docstore.Docstore()
-        return repo_models.Page.get(
-            title, index=ds.index_name('article'), using=ds.es
+        return super(Page, Page).get(
+            id=title, index=ds.index_name('article'), using=ds.es
         )
     
     def save(self):

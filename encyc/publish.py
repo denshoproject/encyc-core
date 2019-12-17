@@ -14,8 +14,8 @@ from encyc import config
 from encyc import docstore
 from encyc.models.legacy import Proxy
 from encyc.models import Elasticsearch
-from encyc.models import Author, Page, Source
-from encyc.models import Facet, FacetTerm
+from encyc.models.elastic import Author, Page, Source
+from encyc.models.elastic import Facet, FacetTerm
 from encyc import rsync
 
 
@@ -482,45 +482,28 @@ def listdocs(hosts, doctype):
     for n,r in enumerate(results):
         print('%s/%s| %s' % (n, total, r.__repr__()))
 
-def get(hosts, doctype, identifier):
-    if doctype not in DOC_TYPES:
-        logprint('error', '"%s" is not a recognized doc_type!' % doctype)
-        return
-    print('doctype "%s"' % doctype)
-    print('identifier "%s"' % identifier)
-    
-    if   doctype == 'articles':
-        o = None
+def get(doctype, object_id, body=False):
+    """
+    @param doctype
+    @param object_id
+    @param body: bool Include body text
+    """
+    if   doctype == 'article':
         try:
-            o = Page.get(identifier)
+            return Page.get(object_id).to_dict()
         except TransportError as e:
-            print(e)
-        if o:
-            print(o.__repr__())
-            print('TITLE: "%s"' % o.title)
-            print('--------------------')
-            print(o.body)
-            print('--------------------')
-    
-    elif doctype == 'authors':
-        o = None
+            return e
+    elif doctype == 'author':
         try:
-            o = Author.get(identifier)
+            return Author.get(object_id).to_dict()
         except TransportError as e:
-            print(e)
-        if o:
-            print(o.__repr__())
-            _print_dict(o.to_dict())
-    
-    elif doctype == 'sources':
-        o = None
+            return e
+    elif doctype == 'source':
         try:
-            o = Source.get(identifier)
+            return Source.get(object_id).to_dict()
         except TransportError as e:
-            print(e)
-        if o:
-            print(o.__repr__())
-            _print_dict(o.to_dict())
+            return e
+    return {'error': 'Unknown doctype: "{}"'.format(doctype)}
 
 def delete(hosts, doctype, identifier):
     if doctype not in DOC_TYPES:

@@ -1,4 +1,4 @@
-import json
+from datetime import datetime
 
 import click
 
@@ -186,14 +186,69 @@ def list(hosts, doctype):
 
 
 @encyc.command()
-@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.argument('doctype')
 @click.argument('object_id')
-def get(hosts, doctype, object_id):
-    """Pretty-print a single record
+@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
+@click.option('--mediawiki', '-m', is_flag=True, default=False, help='Get from MediaWiki.')
+@click.option('--json', '-j', is_flag=True, default=False, help='Return ES record as JSON.')
+@click.option('--body/--no-body', default=False, help='Include body text.')
+def get(hosts, mediawiki, json, body, doctype, object_id):
+    """Get a single record
     """
-    publish.get(hosts, doctype, object_id)
-
+    js = json
+    import json
+    data = {}
+    if mediawiki:
+        status_code,text = publish.Proxy._mw_page_text(object_id)
+        if isinstance(data, Exception):
+            click.echo(data)
+            return
+        data = json.loads(text)
+        if not body:
+            data['parse'].pop('text')
+        if js:
+            click.echo(json.dumps(data))
+            return
+        click.echo('source: Mediawiki')
+        click.echo('title: {}'.format(data['parse'].pop('title')))
+        for key,val in data['parse'].iteritems():
+            click.echo('{}: {}'.format(key, val))
+    else:
+        data = publish.get(doctype, object_id, body)
+        if isinstance(data, Exception):
+            click.echo(data)
+            return
+        for key,val in data.iteritems():
+            if isinstance(val, datetime):
+                data[key] = val.isoformat()
+        if data.get('body') and not body:
+            data.pop('body')
+        if js:
+            click.echo(json.dumps(data))
+            return
+        click.echo('source: Elasticsearch')
+        if doctype == 'article':
+            click.echo('url_title: {}'.format(data.pop('url_title')))
+            click.echo('title: {}'.format(data.pop('title')))
+            description = data.pop('description')
+            for key,val in data.iteritems():
+                click.echo('{}: {}'.format(key, val))
+            click.echo('description: {}'.format(description))
+        elif doctype == 'source':
+            click.echo('psms_id: {}'.format(data.pop('psms_id')))
+            click.echo('encyclopedia_id: {}'.format(data.pop('encyclopedia_id')))
+            click.echo('created: {}'.format(data.pop('created')))
+            click.echo('modified: {}'.format(data.pop('modified')))
+            keys = sorted([key for key in data.iterkeys()])
+            for key in keys:
+                click.echo('{}: {}'.format(key, data[key]))
+        elif doctype == 'author':
+            click.echo('title: {}'.format(data.pop('title')))
+            click.echo('url_title: {}'.format(data.pop('url_title')))
+            click.echo('title_sort: {}'.format(data.pop('title_sort')))
+            for key,val in data.iteritems():
+                click.echo('{}: {}'.format(key, val))
+            
 
 @encyc.command()
 @click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
@@ -206,14 +261,7 @@ def delete(hosts, doctype, object_id):
 
 
 @encyc.command()
-@click.argument('title')
 @click.argument('path')
-def _json(title, path):
-    """Get page text from MediaWiki, dump to file.
-    """
-    publish._dumpjson(title, path)
-
-@encyc.command()
 @click.argument('title')
 @click.argument('path')
 def _parse(title, path):
