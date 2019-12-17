@@ -251,13 +251,15 @@ def get(hosts, mediawiki, json, body, doctype, object_id):
             
 
 @encyc.command()
-@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
+@click.option('--confirm', '-C', is_flag=True,
+              help='Yes I really want to delete this index.')
 @click.argument('doctype')
 @click.argument('object_id')
-def delete(hosts, doctype, object_id):
-    """Delete a single record
+def delete(confirm, doctype, object_id):
+    """Delete a single record from Elasticsearch
     """
-    publish.delete(hosts, doctype, object_id)
+    result = publish.delete(doctype, object_id, confirm)
+    click.echo(result)
 
 
 @encyc.command()

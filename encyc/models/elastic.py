@@ -91,7 +91,7 @@ class Author(repo_models.Author):
     @staticmethod
     def get(title):
         ds = docstore.Docstore()
-        return repo_models.Author.get(
+        return super(Author, Author).get(
             title, index=ds.index_name('author'), using=ds.es
     )
     
@@ -409,7 +409,7 @@ class Source(repo_models.Source):
     @staticmethod
     def get(title):
         ds = docstore.Docstore()
-        return repo_models.Source.get(
+        return super(Source, Source).get(
             title, index=ds.index_name('source'), using=ds.es
         )
     

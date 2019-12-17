@@ -505,19 +505,20 @@ def get(doctype, object_id, body=False):
             return e
     return {'error': 'Unknown doctype: "{}"'.format(doctype)}
 
-def delete(hosts, doctype, identifier):
-    if doctype not in DOC_TYPES:
-        logprint('error', '"%s" is not a recognized doc_type!' % doctype)
-        return
-    print('doctype "%s"' % doctype)
-    print('identifier "%s"' % identifier)
-    
-    if   doctype == 'articles':
-        Page.get(identifier).delete()
-    elif doctype == 'authors':
-        Author.get(identifier).delete()
-    elif doctype == 'sources':
-        Source.get(identifier).delete()
+def delete(doctype, object_id, confirm=False):
+    print('delete({}, {}, {})'.format(doctype, object_id, confirm))
+    if not confirm:
+        return {'error': 'Confirmation required.'}
+    if   doctype == 'article':
+        o = Page.get(object_id)
+        return o.delete()
+    elif doctype == 'author':
+        o = Author.get(object_id)
+        return o.delete()
+    elif doctype == 'source':
+        o = Source.get(object_id)
+        return o.delete()
+    return {'error': '"{}" is not a recognized doc_type!'.format(doctype)}
 
 def _print_dict(d):
     keys = d.keys()
