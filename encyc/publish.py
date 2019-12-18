@@ -96,18 +96,22 @@ def print_configs():
 
 @stopwatch
 def status(hosts):
-    pass
-    #num_es_authors = len(Author.authors())
-    #num_es_articles = len(Page.pages())
-    #pc_authors = float(num_es_authors) / num_mw_authors
-    #pc_articles = float(num_es_articles) / num_mw_articles
-    #logprint('debug', ' authors: {} of {} ({:.2%})'.format(
-    #    num_es_authors, num_mw_authors, pc_authors,
-    #))
-    #logprint('debug', 'articles: {} of {} ({:.2%})'.format(
-    #    num_es_articles, num_mw_articles, pc_articles,
-    #))
-    #logprint('debug', ' sources: %s' % len(Source.sources()))
+    mw_author_titles = Proxy.authors(cached_ok=False)
+    mw_articles = Proxy.articles_lastmod()
+    num_mw_authors = len(mw_author_titles)
+    num_mw_articles = len(mw_articles)
+    num_es_authors = Author.authors().total
+    num_es_articles = Page.pages().total
+    num_es_sources = Source.sources().total
+    pc_authors = float(num_es_authors) / num_mw_authors
+    pc_articles = float(num_es_articles) / num_mw_articles
+    logprint('debug', ' authors: {} of {} ({:.2%})'.format(
+        num_es_authors, num_mw_authors, pc_authors,
+    ))
+    logprint('debug', 'articles: {} of {} ({:.2%})'.format(
+        num_es_articles, num_mw_articles, pc_articles,
+    ))
+    logprint('debug', ' sources: %s' % num_es_sources)
 
 @stopwatch
 def delete_indices(hosts):

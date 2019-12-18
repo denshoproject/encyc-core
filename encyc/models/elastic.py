@@ -470,34 +470,14 @@ class Source(repo_models.Source):
         
         @returns: list
         """
-        s = Source.search()[0:MAX_SIZE]
-        s = s.sort('encyclopedia_id')
-        #s = s.fields([
-        #    'encyclopedia_id',
-        #    'published',
-        #    'modified',
-        #    'headword',
-        #    'media_format',
-        #    'img_path',
-        #])
-        try:
-            response = s.execute()
-        except Exception as err:
-            print(err)
-            return []
-        data = [
-            Source(
-                encyclopedia_id = hitvalue(hit, 'encyclopedia_id'),
-                published = hitvalue(hit, 'published'),
-                modified = hitvalue(hit, 'modified'),
-                headword = hitvalue(hit, 'headword'),
-                media_format = hitvalue(hit, 'media_format'),
-                img_path = hitvalue(hit, 'img_path'),
-               )
-            for hit in response
-            if hitvalue(hit, 'published')
-        ]
-        return data
+        searcher = search.Searcher()
+        searcher.prepare(
+            params={},
+            search_models=[docstore.Docstore().index_name('source')],
+            fields_nested=[],
+            fields_agg={},
+        )
+        return searcher.execute(docstore.MAX_SIZE, 0)
 
     @staticmethod
     def from_psms(ps_source):

@@ -47,7 +47,7 @@ def status(hosts):
     
     More detail since you asked.
     """
-    publish.status(hosts)
+    click.echo(publish.status(hosts))
 
 
 @encyc.command()
