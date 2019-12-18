@@ -475,16 +475,18 @@ DOC_TYPES = [
 ]
 
 def listdocs(hosts, doctype):
-    if doctype not in DOC_TYPES:
+    if   doctype == 'article': results = Page.pages()
+    elif doctype == 'author': results = Author.authors()
+    elif doctype == 'source': results = Source.sources()
+    else:
         logprint('error', '"%s" is not a recognized doc_type!' % doctype)
         return
-    if   doctype == 'articles': s = Page.search()
-    elif doctype == 'authors': s = Author.search()
-    elif doctype == 'sources': s = Source.search()
-    results = s.execute()
-    total = len(results)
-    for n,r in enumerate(results):
-        print('%s/%s| %s' % (n, total, r.__repr__()))
+    total = results.total
+    for n,r in enumerate(results.objects):
+        if doctype == 'source':
+            print('%s/%s| %s' % (n, total, r.encyclopedia_id))
+        else:
+            print('%s/%s| %s' % (n, total, r.title))
 
 def get(doctype, object_id, body=False):
     """
