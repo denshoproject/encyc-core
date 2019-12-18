@@ -84,19 +84,16 @@ apt-upgrade:
 	@echo "Package upgrade --------------------------------------------------------"
 	apt-get --assume-yes upgrade
 
-install-core:
-	apt-get --assume-yes install bzip2 curl gdebi-core logrotate ntp p7zip-full wget
-
 git-config:
 	git config --global alias.st status
 	git config --global alias.co checkout
 	git config --global alias.br branch
 	git config --global alias.ci commit
 
-install-misc-tools:
+install-tools:
 	@echo ""
-	@echo "Installing miscellaneous tools -----------------------------------------"
-	apt-get --assume-yes install ack-grep byobu elinks htop mg multitail
+	@echo "Installing tools -------------------------------------------------------"
+	apt-get --assume-yes install ack-grep byobu bzip2 curl elinks gdebi-core htop logrotate mg multitail ntp p7zip-full wget
 
 install-virtualenv:
 	apt-get --assume-yes install python-pip python-virtualenv
