@@ -73,20 +73,6 @@ def destroy(hosts, confirm):
 
 @encyc.command()
 @click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
-@click.option('--confirm', is_flag=True,
-              help='Yes I really want to delete this index.')
-def reset(hosts, confirm):
-    """Delete existing index and create new one (requires --confirm).
-    """
-    if confirm:
-        publish.delete_indices(hosts)
-        publish.create_indices(hosts)
-    else:
-        click.echo("Add '--confirm' if you're sure you want to do this.")
-
-
-@encyc.command()
-@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.option('--indices','-i', help='Comma-separated list of indices to display.')
 def mappings(hosts, indices):
     """Display mappings for the specified index/indices.
