@@ -461,13 +461,6 @@ def vocabs(hosts, report=False, dryrun=False, force=False):
         
     logprint('debug', 'DONE')
 
-
-DOC_TYPES = [
-    'articles',
-    'authors',
-    'sources',
-]
-
 def listdocs(hosts, doctype):
     if   doctype == 'article': results = Page.pages()
     elif doctype == 'author': results = Author.authors()
