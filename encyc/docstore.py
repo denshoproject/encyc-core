@@ -212,7 +212,11 @@ class Docstore():
         @returns: dict Status info.
         """
         logger.debug('post_json(%s, %s)' % (indexname, document_id))
-        return self.es.index(index=indexname, id=document_id, body=json_text)
+        return self.es.index(
+            index=self.index_name(indexname),
+            id=document_id,
+            body=json_text
+        )
 
     def post(self, document, public_fields=[], additional_fields={}, force=False):
         """Add a new document to an index or update an existing one.
