@@ -328,7 +328,7 @@ def sources(hosts, report=False, dryrun=False, force=False, psms_id=None):
         else:
             logprint('debug', 'crunching numbers...')
             sources_update,sources_delete = Elasticsearch.sources_to_update(
-                ps_sources, es_sources
+                ps_sources, es_sources.objects
             )
         logprint('debug', 'updates:   %s' % len(sources_update))
         logprint('debug', 'deletions: %s' % len(sources_delete))
