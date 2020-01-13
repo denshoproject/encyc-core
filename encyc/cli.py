@@ -16,14 +16,14 @@ def encyc(debug):
     
     \b
     Index Management: create, delete, reset
-    Publishing:       topics, authors, articles, sources
+    Publishing:       authors, articles, sources, vocabs
     Debugging:        config, status, list, get
     
     By default the command uses DOCSTORE_HOST from the config file.  The tool will publish to at least two separate sites (Encyclopedia, Resource Guide), you can use the --hosts and --index options to override these values.
     
     \b
     SAMPLE CRON TASKS
-      0,30 * * * * /usr/local/src/env/encyc/bin/encyc topics >> /var/log/encyc/core-syncwiki.log 2>&1
+      0,30 * * * * /usr/local/src/env/encyc/bin/encyc vocabs >> /var/log/encyc/core-syncwiki.log 2>&1
       1,31 * * * * /usr/local/src/env/encyc/bin/encyc authors >> /var/log/encyc/core-syncwiki.log 2>&1
       2,32 * * * * /usr/local/src/env/encyc/bin/encyc articles >> /var/log/encyc/core-syncwiki.log 2>&1
       12,42 * * * * /usr/local/src/env/encyc/bin/encyc sources >> /var/log/encyc/core-syncwiki.log 2>&1
@@ -91,22 +91,8 @@ def mappings(hosts, indices):
               help='perform a trial run with no changes made')
 @click.option('--force', is_flag=True,
               help='Forcibly update records whether they need it or not.')
-def topics(hosts, report, dryrun, force):
-    """Index DDR topics.
-    """
-    publish.topics(hosts=hosts, report=report, dryrun=dryrun, force=force)
-
-
-@encyc.command()
-@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
-@click.option('--report', is_flag=True,
-              help='Report number of records existing, to be indexed/updated.')
-@click.option('--dryrun', is_flag=True,
-              help='perform a trial run with no changes made')
-@click.option('--force', is_flag=True,
-              help='Forcibly update records whether they need it or not.')
 def vocabs(hosts, report, dryrun, force):
-    """Index DDR vocabulary facets and terms.
+    """TODO Index DDR vocabulary facets and terms.
     """
     publish.vocabs(hosts=hosts, report=report, dryrun=dryrun, force=force)
 

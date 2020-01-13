@@ -882,7 +882,7 @@ class Elasticsearch(object):
             if r.status_code == 200:
                 json_text = r.text
                 logging.debug('ok')
-        docstore.post(json.loads(json_text))
+        docstore.Docstore().post_json('vocab', 'topics', json_text)
 
     @staticmethod
     def _new_update_deleted(mw_pages, es_objects):

@@ -444,14 +444,6 @@ def sources(hosts, report=False, dryrun=False, force=False, psms_id=None):
     logprint('debug', 'DONE')
 
 @stopwatch
-def topics(hosts, report=False, dryrun=False, force=False):
-    logprint('debug', '------------------------------------------------------------------------')
-    logprint('debug', 'indexing topics...')
-    logprint('debug', config.DDR_TOPICS_SRC_URL)
-    Elasticsearch.index_topics()
-    logprint('debug', 'DONE')
-
-@stopwatch
 def vocabs(hosts, report=False, dryrun=False, force=False):
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'indexing facet terms...')
@@ -460,8 +452,10 @@ def vocabs(hosts, report=False, dryrun=False, force=False):
         logprint('debug', f)
         facet = Facet.retrieve(f)
         logprint('debug', facet)
+        terms = facet.terms
+        delattr(facet, 'terms')
         facet.save()
-        for term in facet.terms:
+        for term in terms:
             logprint('debug', '- %s' % term)
             term.save()
         
