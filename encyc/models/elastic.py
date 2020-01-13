@@ -642,6 +642,23 @@ class Citation(object):
 
 
 class FacetTerm(repo_models.FacetTerm):
+
+    @staticmethod
+    def get(title):
+        ds = docstore.Docstore()
+        return repo_models.FacetTerm.get(
+            title, index=ds.index_name('facetterm'), using=ds.es
+        )
+    
+    def save(self):
+        ds = docstore.Docstore()
+        return super(FacetTerm, self).save(
+            index=ds.index_name('facetterm'), using=ds.es)
+    
+    def delete(self):
+        ds = docstore.Docstore()
+        return super(FacetTerm, self).delete(
+            index=ds.index_name('facetterm'), using=ds.es)
     
     @staticmethod
     def from_dict(facet_id, data):
@@ -722,6 +739,21 @@ class FacetTerm(repo_models.FacetTerm):
 
 
 class Facet(repo_models.Facet):
+
+    @staticmethod
+    def get(title):
+        ds = docstore.Docstore()
+        return repo_models.Facet.get(
+            title, index=ds.index_name('facet'), using=ds.es
+        )
+    
+    def save(self):
+        ds = docstore.Docstore()
+        return super(Facet, self).save(index=ds.index_name('facet'), using=ds.es)
+    
+    def delete(self):
+        ds = docstore.Docstore()
+        return super(Facet, self).delete(index=ds.index_name('facet'), using=ds.es)
 
     @staticmethod
     def facets():
