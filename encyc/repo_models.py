@@ -217,7 +217,7 @@ class FacetTerm(dsl.Document):
     siblings = dsl.Long()
     children = dsl.Long()
     weight = dsl.Long()
-    encyc_urls = dsl.Text()
+    encyc_urls = dsl.Nested(Elinks)
     # facility
     type = dsl.Text()
     elinks = dsl.Nested(Elinks)
