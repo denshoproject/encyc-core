@@ -32,13 +32,10 @@ VIRTUALENV=$(INSTALLDIR)/venv/encyccore
 
 DEB_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
 DEB_ARCH=amd64
-DEB_NAME_JESSIE=$(APP)-$(DEB_BRANCH)
 DEB_NAME_STRETCH=$(APP)-$(DEB_BRANCH)
 # Application version, separator (~), Debian release tag e.g. deb8
 # Release tag used because sortable and follows Debian project usage.
-DEB_VERSION_JESSIE=$(APP_VERSION)~deb8
 DEB_VERSION_STRETCH=$(APP_VERSION)~deb9
-DEB_FILE_JESSIE=$(DEB_NAME_JESSIE)_$(DEB_VERSION_JESSIE)_$(DEB_ARCH).deb
 DEB_FILE_STRETCH=$(DEB_NAME_STRETCH)_$(DEB_VERSION_STRETCH)_$(DEB_ARCH).deb
 DEB_VENDOR=Densho.org
 DEB_MAINTAINER=<geoffrey.jost@densho.org>
@@ -88,19 +85,16 @@ apt-upgrade:
 	@echo "Package upgrade --------------------------------------------------------"
 	apt-get --assume-yes upgrade
 
-install-core:
-	apt-get --assume-yes install bzip2 curl gdebi-core logrotate ntp p7zip-full wget
-
 git-config:
 	git config --global alias.st status
 	git config --global alias.co checkout
 	git config --global alias.br branch
 	git config --global alias.ci commit
 
-install-misc-tools:
+install-tools:
 	@echo ""
-	@echo "Installing miscellaneous tools -----------------------------------------"
-	apt-get --assume-yes install ack-grep byobu elinks htop mg multitail
+	@echo "Installing tools -------------------------------------------------------"
+	apt-get --assume-yes install ack-grep byobu bzip2 curl elinks gdebi-core htop logrotate mg multitail ntp p7zip-full wget
 
 install-virtualenv:
 	apt-get --assume-yes install python-pip python-virtualenv
@@ -129,7 +123,7 @@ clean-app: clean-encyc-core
 get-encyc-core:
 	git pull
 	source $(VIRTUALENV)/bin/activate; \
-	pip install --download=$(PIP_CACHE_DIR) --exists-action=i -r $(PIP_REQUIREMENTS)
+	pip install --exists-action=i -r $(PIP_REQUIREMENTS)
 
 setup-encyc-core: install-configs
 	@echo ""
@@ -213,45 +207,7 @@ uninstall-configs:
 # http://fpm.readthedocs.io/en/latest/
 # https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
 # https://brejoc.com/tag/fpm/
-deb: deb-jessie deb-stretch
-
-# http://fpm.readthedocs.io/en/latest/
-# https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
-# https://brejoc.com/tag/fpm/
-deb-jessie:
-	@echo ""
-	@echo "FPM packaging (jessie) -------------------------------------------------"
-	-rm -Rf $(DEB_FILE_JESSIE)
-	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
-	fpm   \
-	--verbose   \
-	--input-type dir   \
-	--output-type deb   \
-	--name $(DEB_NAME_JESSIE)   \
-	--version $(DEB_VERSION_JESSIE)   \
-	--package $(DEB_FILE_JESSIE)   \
-	--url "$(GIT_SOURCE_URL)"   \
-	--vendor "$(DEB_VENDOR)"   \
-	--maintainer "$(DEB_MAINTAINER)"   \
-	--description "$(DEB_DESCRIPTION)"   \
-	--chdir $(INSTALLDIR)   \
-	--depends "rsync"   \
-	.git=$(DEB_BASE)   \
-	.gitignore=$(DEB_BASE)   \
-	bin=$(DEB_BASE)   \
-	conf=$(DEB_BASE)   \
-	COPYRIGHT=$(DEB_BASE)   \
-	encyc=$(DEB_BASE)   \
-	INSTALL=$(DEB_BASE)   \
-	LICENSE=$(DEB_BASE)   \
-	Makefile=$(DEB_BASE)   \
-	README.rst=$(DEB_BASE)   \
-	requirements.txt=$(DEB_BASE)  \
-	setup.py=$(DEB_BASE)  \
-	setup.sh=$(DEB_BASE)  \
-	VERSION=$(DEB_BASE)  \
-	venv=$(DEB_BASE)   \
-	conf/core.cfg=$(CONF_BASE)/core.cfg
+deb: deb-stretch
 
 # http://fpm.readthedocs.io/en/latest/
 # https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
