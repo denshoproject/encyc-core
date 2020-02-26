@@ -157,6 +157,9 @@ class Source(object):
             source.original_path_abs = os.path.join(
                 config.SOURCES_BASE, source.original_path
             )
+            # just in case we end up with sources/sources
+            source.original_path_abs = source.original_path_abs.replace(
+                'sources/sources', 'sources')
         source.display_url = source.display
         if source.display:
             source.display = os.path.basename(source.display)
@@ -166,6 +169,9 @@ class Source(object):
             source.display_path_abs = os.path.join(
                 config.SOURCES_BASE, source.display_path
             )
+            # just in case we end up with sources/sources
+            source.display_path_abs = source.display_path_abs.replace(
+                'sources/sources', 'sources')
         return source
 
 
