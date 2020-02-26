@@ -10,7 +10,7 @@ elasticsearch-dsl>=7.0.0,<8.0.0
 lxml==3.7.3
 python-dateutil==2.6.1
 redis==3.2.1
-requests==2.13.0
+requests==2.20.0
 ring==0.7.2
 unicodecsv==0.14.1
 
