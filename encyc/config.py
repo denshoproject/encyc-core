@@ -26,13 +26,8 @@ DEBUG = config.get('debug', 'debug')
 STAGE = False
 
 #elasticsearch
-DOCSTORE_HOSTS = []
-for node in config.get('elasticsearch', 'hosts').strip().split(','):
-    host,port = node.strip().split(':')
-    DOCSTORE_HOSTS.append(
-        {'host':host, 'port':port}
-    )
-DOCSTORE_INDEX = config.get('elasticsearch', 'index')
+DOCSTORE_HOST = config.get('elasticsearch','docstore_host')
+DOCSTORE_TIMEOUT = int(config.get('elasticsearch','docstore_timeout'))
 
 # mediawiki
 MEDIAWIKI_API = config.get('mediawiki', 'api_url')
@@ -65,6 +60,14 @@ AUTHORS_DEFAULT = 'Densho Encyclopedia contributors.'
 
 # primary sources / psms
 SOURCES_API = config.get('sources', 'api_url')
+try:
+    SOURCES_API_HTUSER = config.get('sources', 'api_htuser')
+except:
+    SOURCES_API_HTUSER = None
+try:
+    SOURCES_API_HTPASS = config.get('sources', 'api_htpass')
+except:
+    SOURCES_API_HTPASS = None
 SOURCES_BASE = config.get('sources', 'local_base')
 SOURCES_URL = config.get('sources', 'source_url')
 SOURCES_DEST = config.get('sources', 'remote_dest')
@@ -99,10 +102,8 @@ ENCYCRG_API_BASE = config.get('encycrg', 'api_base')
 ENCYCRG_ARTICLE_BASE = config.get('encycrg', 'article_base')
 ENCYCRG_API = '%s://%s%s' % (ENCYCRG_PROTOCOL, ENCYCRG_DOMAIN, ENCYCRG_API_BASE)
 
-
-from rc import Cache
-cache = Cache()
-
+import redis
+CACHE = redis.StrictRedis()
 
 # Sample core.cfg:
 #
@@ -122,7 +123,16 @@ def read_hidden_tags(config):
                     combo = '%s=%s' % (attrib, selector)
                     if combo not in hidden[index]:
                         hidden[index].append(combo)
-    return hidden
+    # As of ES 7 we no longer have separate stage and production indices
+    # pick stage or production
+    if STAGE:
+        for key in hidden.iterkeys():
+            if 'stage' in key:
+                return hidden[key]
+    else:
+        for key in hidden.iterkeys():
+            if 'production' in key:
+                return hidden[key]
 
 # hide tags with the given attrib=selector
 HIDDEN_TAGS = read_hidden_tags(config)

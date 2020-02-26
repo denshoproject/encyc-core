@@ -4,12 +4,14 @@ bpython==0.16
 
 click==6.7
 beautifulsoup4==4.5.3
-elasticsearch==5.2.0
-elasticsearch-dsl==5.1.0
+deepdiff
+elasticsearch>=7.0.0,<8.0.0
+elasticsearch-dsl>=7.0.0,<8.0.0
 lxml==3.7.3
 python-dateutil==2.6.1
-rc==0.3.1
+redis==3.2.1
 requests==2.13.0
+ring==0.7.2
 unicodecsv==0.14.1
 
 # suggested for development environment
@@ -17,3 +19,9 @@ unicodecsv==0.14.1
 #nose
 #snakefood
 #sphinx
+
+coverage
+pytest
+pytest-cov
+pytest-testmon
+pytest-xdist

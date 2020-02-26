@@ -17,12 +17,8 @@ $ python manage.py encycupdate --articles
 
 Example usage:
 
->>> from elasticsearch_dsl import Index
->>> from elasticsearch_dsl.connections import connections
 >>> from encyc import config
 >>> from encyc.models import Elasticsearch, Author, Page, Source
->>> connections.create_connection(hosts=config.DOCSTORE_HOSTS)
->>> index = Index(config.DOCSTORE_INDEX)
 >>> authors = [author for author in Author.authors()]
 >>> pages = [page for page in Page.pages()]
 >>> sources = [source for source in Source.search().execute()]
@@ -39,11 +35,7 @@ from dateutil import parser
 import requests
 
 from elasticsearch.exceptions import NotFoundError
-from elasticsearch_dsl import Index
-from elasticsearch_dsl import DocType, InnerObjectWrapper
-from elasticsearch_dsl import String, Date, Nested, Boolean
-from elasticsearch_dsl import Search
-from elasticsearch_dsl.connections import connections
+import elasticsearch_dsl as dsl
 
 from encyc import config
 from encyc import ddr
@@ -51,6 +43,8 @@ from encyc import docstore
 from encyc import http
 from encyc.models import citations
 from encyc.models.legacy import Proxy
+from encyc import repo_models
+from encyc import search
 from encyc import urls
 
 if not config.DEBUG:
@@ -58,10 +52,6 @@ if not config.DEBUG:
     from encyc.models.wikipage import remove_status_markers
 
 MAX_SIZE = 10000
-
-# set default hosts and index
-connections.create_connection(hosts=config.DOCSTORE_HOSTS)
-index = Index(config.DOCSTORE_INDEX)
 
 
 def _columnizer(things, cols):
@@ -96,29 +86,22 @@ def none_strip(text):
     return text.strip()
 
 
-class Author(DocType):
-    """
-    IMPORTANT: uses Elasticsearch-DSL, not the Django ORM.
-    """
-    url_title = String(index='not_analyzed')  # Elasticsearch id
-    public = Boolean()
-    published = Boolean()
-    modified = Date()
-    mw_api_url = String(index='not_analyzed')
-    title_sort = String(index='not_analyzed')
-    title = String()
-    body = String()
-    article_titles = String(index='not_analyzed', multi=True)
+class Author(repo_models.Author):
+
+    @staticmethod
+    def get(title):
+        ds = docstore.Docstore()
+        return super(Author, Author).get(
+            title, index=ds.index_name('author'), using=ds.es
+    )
     
-    class Meta:
-        index = config.DOCSTORE_INDEX
-        doc_type = 'authors'
+    def save(self):
+        ds = docstore.Docstore()
+        return super(Author, self).save(index=ds.index_name('author'), using=ds.es)
     
-    def __repr__(self):
-        return "<Author '%s'>" % self.url_title
-    
-    def __str__(self):
-        return self.title
+    def delete(self):
+        ds = docstore.Docstore()
+        return super(Author, self).delete(index=ds.index_name('author'), using=ds.es)
 
     def absolute_url(self):
         return urls.reverse('wikiprox-author', args=([self.title,]))
@@ -140,28 +123,14 @@ class Author(DocType):
         
         @returns: list
         """
-        s = Author.search()[0:MAX_SIZE]
-        s = s.sort('title_sort')
-        #s = s.fields([
-        #    'url_title',
-        #    'title',
-        #    'title_sort',
-        #    'published',
-        #    'modified',
-        #])
-        response = s.execute()
-        data = [
-            Author(
-                url_title  = hitvalue(hit, 'url_title'),
-                title      = hitvalue(hit, 'title'),
-                title_sort = hitvalue(hit, 'title_sort'),
-                published  = hitvalue(hit, 'published'),
-                modified   = hitvalue(hit, 'modified'),
-            )
-            for hit in response
-            if hitvalue(hit, 'published')
-        ]
-        return data
+        searcher = search.Searcher()
+        searcher.prepare(
+            params={},
+            search_models=[docstore.Docstore().index_name('author')],
+            fields_nested=[],
+            fields_agg={},
+        )
+        return searcher.execute(docstore.MAX_SIZE, 0)
 
     def scrub(self):
         """Removes internal editorial markers.
@@ -211,67 +180,22 @@ class Author(DocType):
         return author
 
 
-class Page(DocType):
-    """
-    IMPORTANT: uses Elasticsearch-DSL, not the Django ORM.
-    """
-    url_title = String(index='not_analyzed')  # Elasticsearch id
-    public = Boolean()
-    published = Boolean()
-    published_encyc = None
-    published_rg = None
-    modified = Date()
-    mw_api_url = String(index='not_analyzed')
-    title_sort = String(index='not_analyzed')
-    title = String()
-    description = String()
-    body = String()
-    prev_page = String(index='not_analyzed')
-    next_page = String(index='not_analyzed')
-    categories = String(index='not_analyzed', multi=True)
-    coordinates = String(index='not_analyzed', multi=True)
-    source_ids = String(index='not_analyzed', multi=True)
-    authors_data = Nested(
-        properties={
-            'display': String(index='not_analyzed', multi=True),
-            'parsed': String(index='not_analyzed', multi=True),
-        }
-    )
+class Page(repo_models.Page):
+
+    @staticmethod
+    def get(title):
+        ds = docstore.Docstore()
+        return super(Page, Page).get(
+            id=title, index=ds.index_name('article'), using=ds.es
+        )
     
-    # list of strings: ['DATABOX_NAME|dict', 'DATABOX_NAME|dict']
-    # dicts are result of json.dumps(dict)
-    databoxes = String(index='not_analyzed', multi=True)
+    def save(self):
+        ds = docstore.Docstore()
+        return super(Page, self).save(index=ds.index_name('article'), using=ds.es)
     
-    rg_rgmediatype = String(index='not_analyzed', multi=True)
-    rg_title = String()
-    rg_creators = String(multi=True)
-    rg_interestlevel = String(index='not_analyzed', multi=True)
-    rg_readinglevel = String(index='not_analyzed', multi=True)
-    rg_theme = String(index='not_analyzed', multi=True)
-    rg_genre = String(index='not_analyzed', multi=True)
-    rg_pov = String(index='not_analyzed', multi=True)
-    rg_relatedevents = String()
-    rg_availability = String(index='not_analyzed')
-    rg_freewebversion = String(index='not_analyzed')
-    rg_denshotopic = String(index='not_analyzed', multi=True)
-    rg_geography = String(index='not_analyzed', multi=True)
-    rg_facility = String(index='not_analyzed', multi=True)
-    rg_chronology = String(index='not_analyzed', multi=True)
-    rg_hasteachingaids = String(index='not_analyzed')
-    rg_warnings = String()
-    #rg_primarysecondary = String(index='not_analyzed', multi=True)
-    #rg_lexile = String(index='not_analyzed', multi=True)
-    #rg_guidedreadinglevel = String(index='not_analyzed', multi=True)
-    
-    class Meta:
-        index = config.DOCSTORE_INDEX
-        doc_type = 'articles'
-    
-    def __repr__(self):
-        return "<Page '%s'>" % self.url_title
-    
-    def __str__(self):
-        return self.url_title
+    def delete(self):
+        ds = docstore.Docstore()
+        return super(Page, self).delete(index=ds.index_name('article'), using=ds.es)
     
     def absolute_url(self):
         return urls.reverse('wikiprox-page', args=([self.title]))
@@ -299,30 +223,14 @@ class Page(DocType):
         
         @returns: list
         """
-        s = Page.search()[0:MAX_SIZE]
-        s = s.sort('title_sort')
-        #s = s.fields([
-        #    'url_title',
-        #    'title',
-        #    'title_sort',
-        #    'published',
-        #    'modified',
-        #    'categories',
-        #])
-        response = s.execute()
-        data = [
-            Page(
-                url_title  = hitvalue(hit, 'url_title'),
-                title      = hitvalue(hit, 'title'),
-                title_sort = hitvalue(hit, 'title_sort'),
-                published  = hitvalue(hit, 'published'),
-                modified   = hitvalue(hit, 'modified'),
-                categories = hitvalue(hit, 'categories'),
-               )
-            for hit in response
-            if hitvalue(hit, 'published')
-        ]
-        return data
+        searcher = search.Searcher()
+        searcher.prepare(
+            params={},
+            search_models=[docstore.Docstore().index_name('article')],
+            fields_nested=[],
+            fields_agg={},
+        )
+        return searcher.execute(docstore.MAX_SIZE, 0)
     
     @staticmethod
     def pages_by_category():
@@ -496,51 +404,22 @@ class Page(DocType):
         return page
 
 
-class Source(DocType):
-    """
-    IMPORTANT: uses Elasticsearch-DSL, not the Django ORM.
-    """
-    encyclopedia_id = String(index='not_analyzed')  # Elasticsearch id
-    densho_id = String(index='not_analyzed')
-    psms_id = String(index='not_analyzed')
-    psms_api_uri = String(index='not_analyzed')
-    institution_id = String(index='not_analyzed')
-    collection_name = String(index='not_analyzed')
-    created = Date()
-    modified = Date()
-    published = Boolean()
-    creative_commons = Boolean()
-    headword = String(index='not_analyzed')
-    original = String(index='not_analyzed')
-    original_size = String(index='not_analyzed')
-    original_url = String(index='not_analyzed')
-    original_path = String(index='not_analyzed')
-    original_path_abs = String(index='not_analyzed')
-    display = String(index='not_analyzed')
-    display_size = String(index='not_analyzed')
-    display_url = String(index='not_analyzed')
-    display_path = String(index='not_analyzed')
-    display_path_abs = String(index='not_analyzed')
-    #streaming_path = String(index='not_analyzed')
-    #rtmp_path = String(index='not_analyzed')
-    streaming_url = String(index='not_analyzed')  # TODO remove
-    external_url = String(index='not_analyzed')
-    media_format = String(index='not_analyzed')
-    aspect_ratio = String(index='not_analyzed')
-    caption = String()
-    caption_extended = String()
-    #transcript_path = String(index='not_analyzed')
-    transcript = String()  # TODO remove
-    courtesy = String(index='not_analyzed')
-    filename = String(index='not_analyzed')
-    img_path = String(index='not_analyzed')
+class Source(repo_models.Source):
+
+    @staticmethod
+    def get(title):
+        ds = docstore.Docstore()
+        return super(Source, Source).get(
+            title, index=ds.index_name('source'), using=ds.es
+        )
     
-    class Meta:
-        index = config.DOCSTORE_INDEX
-        doc_type = 'sources'
+    def save(self):
+        ds = docstore.Docstore()
+        return super(Source, self).save(index=ds.index_name('source'), using=ds.es)
     
-    def __repr__(self):
-        return "<elastic.Source '%s'>" % self.encyclopedia_id
+    def delete(self):
+        ds = docstore.Docstore()
+        return super(Source, self).delete(index=ds.index_name('source'), using=ds.es)
     
     def absolute_url(self):
         return urls.reverse('wikiprox-source', args=([self.encyclopedia_id]))
@@ -591,34 +470,14 @@ class Source(DocType):
         
         @returns: list
         """
-        s = Source.search()[0:MAX_SIZE]
-        s = s.sort('encyclopedia_id')
-        #s = s.fields([
-        #    'encyclopedia_id',
-        #    'published',
-        #    'modified',
-        #    'headword',
-        #    'media_format',
-        #    'img_path',
-        #])
-        try:
-            response = s.execute()
-        except Exception as err:
-            print(err)
-            return []
-        data = [
-            Source(
-                encyclopedia_id = hitvalue(hit, 'encyclopedia_id'),
-                published = hitvalue(hit, 'published'),
-                modified = hitvalue(hit, 'modified'),
-                headword = hitvalue(hit, 'headword'),
-                media_format = hitvalue(hit, 'media_format'),
-                img_path = hitvalue(hit, 'img_path'),
-               )
-            for hit in response
-            if hitvalue(hit, 'published')
-        ]
-        return data
+        searcher = search.Searcher()
+        searcher.prepare(
+            params={},
+            search_models=[docstore.Docstore().index_name('source')],
+            fields_nested=[],
+            fields_agg={},
+        )
+        return searcher.execute(docstore.MAX_SIZE, 0)
 
     @staticmethod
     def from_psms(ps_source):
@@ -760,9 +619,6 @@ class Citation(object):
     def __repr__(self):
         return "<Citation '%s'>" % self.url_title
     
-    def __str__(self):
-        return self.url_title
-    
     def __init__(self, page, request):
         self.uri = page.absolute_url()
         self.href = 'http://%s%s' % (request.META['HTTP_HOST'], self.uri)
@@ -785,62 +641,24 @@ class Citation(object):
         self.retrieved = datetime.now()
 
 
-class Location(InnerObjectWrapper):
-    pass
+class FacetTerm(repo_models.FacetTerm):
 
-class GeoPoint(InnerObjectWrapper):
-    pass
-
-class ELink(InnerObjectWrapper):
-    pass
-
-class FacetTerm(DocType):
-    id = String(index='not_analyzed')  # Elasticsearch id
-    facet_id = String(index='not_analyzed')
-    term_id = String(index='not_analyzed')
-    title = String()
-    # topics
-    _title = String()
-    description = String()
-    path = String(index='not_analyzed')
-    parent_id = String(index='not_analyzed')
-    ancestors = String(index='not_analyzed', multi=True)
-    children = String(index='not_analyzed', multi=True)
-    siblings = String(index='not_analyzed', multi=True)
-    weight = String()
-    # facility
-    type = String(index='not_analyzed')
-    locations = Nested(
-        doc_class=Location,
-        properties={
-            'label': String(),
-            'geopoint': Nested(
-                doc_class=GeoPoint,
-                properties={
-                    'lat': String(),
-                    'lng': String(),
-                }
-            )
-        }
-    )
-    # both
-    encyc_urls = Nested(
-        doc_class=ELink,
-        properties={
-            'label': String(),
-            'url': String(index='not_analyzed'),
-        }
-    )
+    @staticmethod
+    def get(title):
+        ds = docstore.Docstore()
+        return repo_models.FacetTerm.get(
+            title, index=ds.index_name('facetterm'), using=ds.es
+        )
     
-    class Meta:
-        index = config.DOCSTORE_INDEX
-        doc_type = 'facetterms'
+    def save(self):
+        ds = docstore.Docstore()
+        return super(FacetTerm, self).save(
+            index=ds.index_name('facetterm'), using=ds.es)
     
-    def __repr__(self):
-        return "<FacetTerm '%s'>" % self.id
-    
-    def __str__(self):
-        return self.id
+    def delete(self):
+        ds = docstore.Docstore()
+        return super(FacetTerm, self).delete(
+            index=ds.index_name('facetterm'), using=ds.es)
     
     @staticmethod
     def from_dict(facet_id, data):
@@ -919,21 +737,23 @@ class FacetTerm(DocType):
         ]
         return data
 
-class Facet(DocType):
-    id = String(index='not_analyzed')  # Elasticsearch id
-    title = String()
-    description = String()
-    terms = []
+
+class Facet(repo_models.Facet):
+
+    @staticmethod
+    def get(title):
+        ds = docstore.Docstore()
+        return repo_models.Facet.get(
+            title, index=ds.index_name('facet'), using=ds.es
+        )
     
-    class Meta:
-        index = config.DOCSTORE_INDEX
-        doc_type = 'facets'
+    def save(self):
+        ds = docstore.Docstore()
+        return super(Facet, self).save(index=ds.index_name('facet'), using=ds.es)
     
-    def __repr__(self):
-        return "<Facet '%s'>" % self.id
-    
-    def __str__(self):
-        return self.id
+    def delete(self):
+        ds = docstore.Docstore()
+        return super(Facet, self).delete(index=ds.index_name('facet'), using=ds.es)
 
     @staticmethod
     def facets():
@@ -982,10 +802,7 @@ class Elasticsearch(object):
     @staticmethod
     def topics():
         terms = []
-        results = docstore.get(
-            config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, 'vocab',
-            'topics'
-        )
+        results = docstore.get(model='vocab', document_id='topics')
         if results and (results['_source']['terms']):
             terms = [
                 {
@@ -1065,10 +882,7 @@ class Elasticsearch(object):
             if r.status_code == 200:
                 json_text = r.text
                 logging.debug('ok')
-        docstore.post(
-            config.DOCSTORE_HOSTS, config.DOCSTORE_INDEX, 'vocab',
-            'topics', json.loads(json_text),
-        )
+        docstore.Docstore().post_json('vocab', 'topics', json_text)
 
     @staticmethod
     def _new_update_deleted(mw_pages, es_objects):
@@ -1077,11 +891,20 @@ class Elasticsearch(object):
         @param es_objects: dict Page or Author objects keyed to titles
         @returns: tuple containing lists of titles (new+updated, deleted)
         """
-        new = [title for title in mw_pages.keys() if not title in es_objects.keys()]
-        deleted = [title for title in es_objects.keys() if not title in mw_pages.keys()]
+        def force_dt(val):
+            if isinstance(val, datetime):
+                return val
+            return parser.parse(val)
+        new = [
+            title for title in mw_pages.keys() if not title in es_objects.keys()
+        ]
+        deleted = [
+            title for title in es_objects.keys() if not title in mw_pages.keys()
+        ]
         updated = [
             es.title for es in es_objects.values()
-            if mw_pages.get(es.title) and (mw_pages[es.title]['lastmod'] > es.modified)
+            if mw_pages.get(es.title)
+            and (force_dt(mw_pages[es.title]['lastmod']) > force_dt(es.modified))
         ]
         return (new + updated, deleted)
     
@@ -1165,8 +988,6 @@ class Elasticsearch(object):
         IMPORTANT: Will lock if unable to connect to MediaWiki server!
         """
         # authors
-        connections.create_connection(hosts=config.DOCSTORE_HOSTS)
-        index = Index(config.DOCSTORE_INDEX)
         mw_authors = Proxy.authors(cached_ok=False)
         es_authors = self.authors()
         authors_new,authors_delete = self.authors_to_update(mw_authors, es_authors)
@@ -1183,8 +1004,6 @@ class Elasticsearch(object):
             author.save()
         
         # articles
-        connections.create_connection(hosts=config.DOCSTORE_HOSTS)
-        index = Index(config.DOCSTORE_INDEX)
         # authors need to be refreshed
         mw_authors = Proxy.authors(cached_ok=False)
         mw_articles = Proxy.articles_lastmod()

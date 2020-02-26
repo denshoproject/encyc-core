@@ -15,7 +15,7 @@ from encyc.models import helpers
 TIMEOUT = float(config.MEDIAWIKI_API_TIMEOUT)
 
 
-def parse_mediawiki_text(title, html, primary_sources, public=False, printed=False, rg_titles=[], index=config.DOCSTORE_INDEX):
+def parse_mediawiki_text(title, html, primary_sources, public=False, printed=False, rg_titles=[]):
     """Parses the body of a MediaWiki page.
     
     @param title: str page title.
@@ -24,7 +24,6 @@ def parse_mediawiki_text(title, html, primary_sources, public=False, printed=Fal
     @param public: Boolean
     @param printed: Boolean
     @param rg_titles: list Resource Guide url_titles.
-    @param index: str Name of Elasticsearch index
     @returns: html, list of primary sources
     """
     soup = BeautifulSoup(
@@ -43,7 +42,7 @@ def parse_mediawiki_text(title, html, primary_sources, public=False, printed=Fal
         soup = _add_top_links(soup)
     soup = _remove_divs(
         soup,
-        selectors=config.HIDDEN_TAGS.get(index, []),
+        selectors=config.HIDDEN_TAGS,
         comments=config.HIDDEN_TAG_COMMENTS
     )
     soup = _remove_nonrg_divs(soup)

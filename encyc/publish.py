@@ -7,19 +7,15 @@ logger = logging.getLogger(__name__)
 import os
 import sys
 
-from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import TransportError, NotFoundError, SerializationError
-from elasticsearch_dsl import Index, DocType, String
-from elasticsearch_dsl import Search
-from elasticsearch_dsl.connections import connections
 
 #from DDR import docstore
 from encyc import config
 from encyc import docstore
 from encyc.models.legacy import Proxy
 from encyc.models import Elasticsearch
-from encyc.models import Author, Page, Source
-from encyc.models import Facet, FacetTerm
+from encyc.models.elastic import Author, Page, Source
+from encyc.models.elastic import Facet, FacetTerm
 from encyc import rsync
 
 
@@ -86,8 +82,7 @@ def print_configs():
     print('manage.py encyc commands will use the following settings:')
     print('CONFIG_FILES:           %s' % config.CONFIG_FILES)
     print('')
-    print('DOCSTORE_HOSTS:         %s' % config.DOCSTORE_HOSTS)
-    print('DOCSTORE_INDEX:         %s' % config.DOCSTORE_INDEX)
+    print('DOCSTORE_HOST:          %s' % config.DOCSTORE_HOST)
     print('MEDIAWIKI_API:          %s' % config.MEDIAWIKI_API)
     print('MEDIAWIKI_API_USERNAME: %s' % config.MEDIAWIKI_API_USERNAME)
     print('MEDIAWIKI_API_PASSWORD: %s' % config.MEDIAWIKI_API_PASSWORD)
@@ -99,86 +94,15 @@ def print_configs():
     print('HIDDEN_TAGS:            %s' % config.HIDDEN_TAGS)
     print('')
 
-def set_hosts_index(hosts=config.DOCSTORE_HOSTS, index=config.DOCSTORE_INDEX):
-    logprint('debug', 'hosts: %s' % hosts)
-    connections.create_connection(hosts=hosts)
-    logprint('debug', 'index: %s' % index)
-    return Index(index)
-
 @stopwatch
-def status(hosts, index):
-    """
-"indices": {
-    "encyc-production": {
-        "index": {
-            "primary_size_in_bytes": ​1746448,
-            "size_in_bytes": ​1746448
-        },
-        "docs": {
-            "num_docs": ​247,
-            "max_doc": ​247,
-            "deleted_docs": ​0
-        },
-
-from elasticsearch import Elasticsearch
-client = Elasticsearch()
-client.info()
-s = client.indices.stats()
-
-format_json(client.indices.stats('encyc-production'))
-
-
-    """
-    logprint('debug', '------------------------------------------------------------------------')
-    logprint('debug', 'MediaWiki')
-    logprint('debug', ' MEDIAWIKI_API: %s' % config.MEDIAWIKI_API)
+def status(hosts):
     mw_author_titles = Proxy.authors(cached_ok=False)
     mw_articles = Proxy.articles_lastmod()
     num_mw_authors = len(mw_author_titles)
     num_mw_articles = len(mw_articles)
-    logprint('debug', '       authors: %s' % num_mw_authors)
-    logprint('debug', '      articles: %s' % num_mw_articles)
-    
-    logprint('debug', '------------------------------------------------------------------------')
-    logprint('debug', 'Elasticsearch')
-    logprint('debug', 'DOCSTORE_HOSTS (default): %s' % config.DOCSTORE_HOSTS)
-    logprint('debug', 'DOCSTORE_INDEX (default): %s' % config.DOCSTORE_INDEX)
-    if hosts != config.DOCSTORE_HOSTS:
-        logprint('debug', 'docstore_hosts: %s' % hosts)
-    if index != config.DOCSTORE_INDEX:
-        logprint('debug', 'docstore_index: %s' % index)
-    
-    i = set_hosts_index(hosts=hosts, index=index)
-    es = i.connection
-    
-    try:
-        pingable = es.ping()
-        if not pingable:
-            logprint('error', "Can't ping the cluster!")
-            return
-    except elasticsearch.exceptions.ConnectionError:
-        logprint('error', "Connection error when trying to ping the cluster!")
-        return
-    logprint('debug', 'ping ok')
-    
-    logprint('debug', 'Indexes')
-    index_names = es.indices.stats()['indices'].keys()
-    for i in index_names:
-        logprint('debug', '- %s' % i)
-    
-    logprint('debug', 'Aliases')
-    aliases = es.cat.aliases()
-    for a in aliases:
-        logprint('debug', '- %s -> %s' % (a['alias'], a['index']))
-    
-    if es.indices.exists(index=index):
-        logprint('debug', 'Index %s present' % index)
-    else:
-        logprint('error', "Index '%s' doesn't exist!" % index)
-        return
-    
-    num_es_authors = len(Author.authors())
-    num_es_articles = len(Page.pages())
+    num_es_authors = Author.authors().total
+    num_es_articles = Page.pages().total
+    num_es_sources = Source.sources().total
     pc_authors = float(num_es_authors) / num_mw_authors
     pc_articles = float(num_es_articles) / num_mw_articles
     logprint('debug', ' authors: {} of {} ({:.2%})'.format(
@@ -187,76 +111,40 @@ format_json(client.indices.stats('encyc-production'))
     logprint('debug', 'articles: {} of {} ({:.2%})'.format(
         num_es_articles, num_mw_articles, pc_articles,
     ))
-    logprint('debug', ' sources: %s' % len(Source.sources()))
+    logprint('debug', ' sources: %s' % num_es_sources)
 
 @stopwatch
-def delete_index(hosts, index):
-    i = set_hosts_index(hosts=hosts, index=index)
-    logprint('debug', 'deleting old index')
+def delete_indices(hosts):
     try:
-        i.delete()
-    except NotFoundError:
-        logprint('error', 'ERROR: Index does not exist!')
-    logprint('debug', 'DONE')
+        statuses = docstore.Docstore(hosts).delete_indices()
+        for status in statuses:
+            logprint('debug', status)
+    except Exception as err:
+        logprint('error', err)
     
 @stopwatch
-def create_index(hosts, index):
-    i = set_hosts_index(hosts=hosts, index=index)
-    logprint('debug', 'creating new index')
-    i = Index(index)
-    i.create()
-    logprint('debug', 'registering doc types')
-    i.doc_type(Author)
-    i.doc_type(Page)
-    i.doc_type(Source)
-    logprint('debug', 'DONE')
+def create_indices(hosts):
+    try:
+        statuses = docstore.Docstore(hosts).create_indices()
+        for status in statuses:
+            logprint('debug', status)
+    except Exception as err:
+        logprint('error', err)
+
+def mappings(hosts):
+    pass
 
 @stopwatch
-def delete_alias(hosts, index, alias):
-    i = set_hosts_index(hosts=hosts, index=index)
-    result = i.connection.indices.delete_alias(index=index, name=alias)
-    logprint('debug', result)
-    logprint('debug', 'DONE')
-    
-@stopwatch
-def create_alias(hosts, index, alias):
-    logprint('debug', 'creating alias "%s"' % alias)
-    i = set_hosts_index(hosts=hosts, index=index)
-    result = i.connection.indices.put_alias(index=index, name=alias)
-    logprint('debug', result)
-    logprint('debug', 'DONE')
-
-def push_mappings(hosts, index):
-    """Pushes mappings from class definitions to ES.
-    
-    @returns: nothing
-    """
-    i = set_hosts_index(hosts=hosts, index=index)
-    logprint('info', 'mappings')
-    i = Index(index)
-    logprint('info', 'Author')
-    Author.init()
-    logprint('info', 'Source')
-    Source.init()
-    logprint('info', 'Page')
-    Page.init()
-    logprint('info', 'FacetTerm')
-    FacetTerm.init()
-    logprint('info', 'Facet')
-    Facet.init()
-    logprint('info', 'ok')
-
-@stopwatch
-def authors(hosts, index, report=False, dryrun=False, force=False, title=None):
-    i = set_hosts_index(hosts=hosts, index=index)
-
+def authors(hosts, report=False, dryrun=False, force=False, title=None):
+    ds = docstore.Docstore()
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'getting mw_authors...')
     mw_author_titles = Proxy.authors(cached_ok=False)
     mw_articles = Proxy.articles_lastmod()
+    logprint('debug', 'mediawiki authors: %s' % len(mw_author_titles))
     logprint('debug', 'getting es_authors...')
     es_authors = Author.authors()
-    logprint('debug', 'mediawiki authors: %s' % len(mw_author_titles))
+    logprint('debug', 'elasticsearch authors: %s' % es_authors.total)
     
     if title:
         authors_new = [title]
@@ -268,7 +156,9 @@ def authors(hosts, index, report=False, dryrun=False, force=False, title=None):
         else:
             logprint('debug', 'determining new,delete...')
             authors_new,authors_delete = Elasticsearch.authors_to_update(
-                mw_author_titles, mw_articles, es_authors)
+                mw_author_titles, mw_articles,
+                es_authors.objects
+            )
         logprint('debug', 'authors to add: %s' % len(authors_new))
         #logprint('debug', 'authors to delete: %s' % len(authors_delete))
         if report:
@@ -288,7 +178,7 @@ def authors(hosts, index, report=False, dryrun=False, force=False, title=None):
         logprint('debug', '--------------------')
         logprint('debug', '%s/%s %s' % (n, len(authors_new), title))
         logprint('debug', 'getting from mediawiki')
-        mwauthor = Proxy.page(title, index=index)
+        mwauthor = Proxy.page(title)
         try:
             existing_author = Author.get(title)
             logprint('debug', 'exists in elasticsearch')
@@ -298,7 +188,7 @@ def authors(hosts, index, report=False, dryrun=False, force=False, title=None):
         author = Author.from_mw(mwauthor, author=existing_author)
         if not dryrun:
             logprint('debug', 'saving')
-            author.save()
+            out = author.save()
             try:
                 a = Author.get(title)
             except NotFoundError:
@@ -311,9 +201,7 @@ def authors(hosts, index, report=False, dryrun=False, force=False, title=None):
     logprint('debug', 'DONE')
 
 @stopwatch
-def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
-    i = set_hosts_index(hosts=hosts, index=index)
-    
+def articles(hosts, report=False, dryrun=False, force=False, title=None):
     logprint('debug', '------------------------------------------------------------------------')
     # authors need to be refreshed
     logprint('debug', 'getting mw_authors,articles...')
@@ -322,7 +210,7 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
     logprint('debug', 'getting es_articles...')
     es_articles = Page.pages()
     logprint('debug', 'mediawiki articles: %s' % len(mw_articles))
-    logprint('debug', 'elasticsearch articles: %s' % len(es_articles))
+    logprint('debug', 'elasticsearch articles: %s' % es_articles.total)
     
     if title:
         articles_update = [title]
@@ -334,7 +222,9 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
         else:
             logprint('debug', 'determining new,delete...')
             articles_update,articles_delete = Elasticsearch.articles_to_update(
-                mw_author_titles, mw_articles, es_articles)
+                mw_author_titles, mw_articles,
+                es_articles.objects
+            )
         logprint('debug', 'articles to update: %s' % len(articles_update))
         #logprint('debug', 'articles to delete: %s' % len(articles_delete))
         if report:
@@ -405,8 +295,7 @@ def articles(hosts, index, report=False, dryrun=False, force=False, title=None):
     logprint('debug', 'DONE')
 
 @stopwatch
-def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None):
-    i = set_hosts_index(hosts=hosts, index=index)
+def sources(hosts, report=False, dryrun=False, force=False, psms_id=None):
     logprint(
         'debug',
         '------------------------------------------------------------------------')
@@ -439,7 +328,7 @@ def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None)
         else:
             logprint('debug', 'crunching numbers...')
             sources_update,sources_delete = Elasticsearch.sources_to_update(
-                ps_sources, es_sources
+                ps_sources, es_sources.objects
             )
         logprint('debug', 'updates:   %s' % len(sources_update))
         logprint('debug', 'deletions: %s' % len(sources_delete))
@@ -473,7 +362,7 @@ def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None)
         
         logprint('debug', 'getting from Elasticsearch')
         try:
-            existing_source = Source.get(ps_source)
+            existing_source = Source.get()
             logprint('debug', existing_source)
         except:
             existing_source = None
@@ -555,19 +444,7 @@ def sources(hosts, index, report=False, dryrun=False, force=False, psms_id=None)
     logprint('debug', 'DONE')
 
 @stopwatch
-def topics(hosts, index, report=False, dryrun=False, force=False):
-    i = set_hosts_index(hosts=hosts, index=index)
-
-    logprint('debug', '------------------------------------------------------------------------')
-    logprint('debug', 'indexing topics...')
-    logprint('debug', config.DDR_TOPICS_SRC_URL)
-    Elasticsearch.index_topics()
-    logprint('debug', 'DONE')
-
-@stopwatch
-def vocabs(hosts, index, report=False, dryrun=False, force=False):
-    i = set_hosts_index(hosts=hosts, index=index)
-
+def vocabs(hosts, report=False, dryrun=False, force=False):
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'indexing facet terms...')
     facets = {}
@@ -575,88 +452,66 @@ def vocabs(hosts, index, report=False, dryrun=False, force=False):
         logprint('debug', f)
         facet = Facet.retrieve(f)
         logprint('debug', facet)
+        terms = facet.terms
+        delattr(facet, 'terms')
         facet.save()
-        for term in facet.terms:
+        for term in terms:
             logprint('debug', '- %s' % term)
             term.save()
         
     logprint('debug', 'DONE')
 
-
-DOC_TYPES = [
-    'articles',
-    'authors',
-    'sources',
-]
-
-def listdocs(hosts, index, doctype):
-    i = set_hosts_index(hosts=hosts, index=index)
-    if doctype not in DOC_TYPES:
+def listdocs(hosts, doctype):
+    if   doctype == 'article': results = Page.pages()
+    elif doctype == 'author': results = Author.authors()
+    elif doctype == 'source': results = Source.sources()
+    else:
         logprint('error', '"%s" is not a recognized doc_type!' % doctype)
         return
-    if   doctype == 'articles': s = Page.search()
-    elif doctype == 'authors': s = Author.search()
-    elif doctype == 'sources': s = Source.search()
-    results = s.execute()
-    total = len(results)
-    for n,r in enumerate(results):
-        print('%s/%s| %s' % (n, total, r.__repr__()))
+    total = results.total
+    for n,r in enumerate(results.objects):
+        if doctype == 'source':
+            print('%s/%s| %s' % (n, total, r.encyclopedia_id))
+        else:
+            print('%s/%s| %s' % (n, total, r.title))
 
-def get(hosts, index, doctype, identifier):
-    i = set_hosts_index(hosts=hosts, index=index)
-    if doctype not in DOC_TYPES:
-        logprint('error', '"%s" is not a recognized doc_type!' % doctype)
-        return
-    print('doctype "%s"' % doctype)
-    print('identifier "%s"' % identifier)
-    
-    if   doctype == 'articles':
-        o = None
+def get(doctype, object_id, body=False):
+    """
+    @param doctype
+    @param object_id
+    @param body: bool Include body text
+    """
+    if   doctype == 'article':
         try:
-            o = Page.get(identifier)
+            return Page.get(object_id).to_dict()
         except TransportError as e:
-            print(e)
-        if o:
-            print(o.__repr__())
-            print('TITLE: "%s"' % o.title)
-            print('--------------------')
-            print(o.body)
-            print('--------------------')
-    
-    elif doctype == 'authors':
-        o = None
+            return e
+    elif doctype == 'author':
         try:
-            o = Author.get(identifier)
+            return Author.get(object_id).to_dict()
         except TransportError as e:
-            print(e)
-        if o:
-            print(o.__repr__())
-            _print_dict(o.to_dict())
-    
-    elif doctype == 'sources':
-        o = None
+            return e
+    elif doctype == 'source':
         try:
-            o = Source.get(identifier)
+            return Source.get(object_id).to_dict()
         except TransportError as e:
-            print(e)
-        if o:
-            print(o.__repr__())
-            _print_dict(o.to_dict())
+            return e
+    return {'error': 'Unknown doctype: "{}"'.format(doctype)}
 
-def delete(hosts, index, doctype, identifier):
-    i = set_hosts_index(hosts=hosts, index=index)
-    if doctype not in DOC_TYPES:
-        logprint('error', '"%s" is not a recognized doc_type!' % doctype)
-        return
-    print('doctype "%s"' % doctype)
-    print('identifier "%s"' % identifier)
-    
-    if   doctype == 'articles':
-        Page.get(identifier).delete()
-    elif doctype == 'authors':
-        Author.get(identifier).delete()
-    elif doctype == 'sources':
-        Source.get(identifier).delete()
+def delete(doctype, object_id, confirm=False):
+    print('delete({}, {}, {})'.format(doctype, object_id, confirm))
+    if not confirm:
+        return {'error': 'Confirmation required.'}
+    if   doctype == 'article':
+        o = Page.get(object_id)
+        return o.delete()
+    elif doctype == 'author':
+        o = Author.get(object_id)
+        return o.delete()
+    elif doctype == 'source':
+        o = Source.get(object_id)
+        return o.delete()
+    return {'error': '"{}" is not a recognized doc_type!'.format(doctype)}
 
 def _print_dict(d):
     keys = d.keys()
@@ -683,17 +538,18 @@ def _dumpjson(title, path):
     pretty = format_json(data)
     write_text(pretty, path)
 
-def _parse(title, path):
-    """Loads page json from file, generates Page, saves HTML to file.
+def parse(path, title):
+    """Loads raw MediaWiki JSON from file, emits parsed HTML.
     
-    The idea here is to parse text from a local file,
-    not hit Mediawiki each time
-    also, to manipulate the text without changing original data in mediawiki
+    For testing the parser without having to hit the MediaWiki API each time,
+    and without risk of modifying original data in mediawiki.
+    Protip: combine with `encyc get DOCTYPE TITLE --json`.
     
     @param title: str
     @param path: str
     """
-    path_html = os.path.splitext(path)[0] + '.html'
+    #path_html = os.path.splitext(path)[0] + '.html'
     text = read_text(path)
     mwpage = Proxy._mkpage(title, 200, text)
-    write_text(mwpage.body, path_html)
+    #write_text(mwpage.body, path_html)
+    return mwpage.body

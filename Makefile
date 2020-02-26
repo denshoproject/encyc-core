@@ -53,12 +53,10 @@ help:
 	@echo "encyc-core Install Helper"
 	@echo ""
 	@echo "get     - Downloads source, installers, and assets files. Does not install."
-	@echo ""
 	@echo "install - Installs app, config files, and static assets.  Does not download."
-	@echo ""
+	@echo "test    - Run unit tests"
 	@echo "uninstall - Deletes 'compiled' Python files. Leaves build dirs and configs."
 	@echo "clean   - Deletes files created by building the program. Leaves configs."
-	@echo ""
 	@echo "branch BRANCH=[branch] - Switches encyc-core and supporting repos to [branch]."
 	@echo ""
 
@@ -66,6 +64,9 @@ help:
 get: get-app apt-update
 
 install: install-prep install-app install-configs
+
+test: test-app
+coverage: coverage-app
 
 uninstall: uninstall-app
 
@@ -84,19 +85,16 @@ apt-upgrade:
 	@echo "Package upgrade --------------------------------------------------------"
 	apt-get --assume-yes upgrade
 
-install-core:
-	apt-get --assume-yes install bzip2 curl gdebi-core logrotate ntp p7zip-full wget
-
 git-config:
 	git config --global alias.st status
 	git config --global alias.co checkout
 	git config --global alias.br branch
 	git config --global alias.ci commit
 
-install-misc-tools:
+install-tools:
 	@echo ""
-	@echo "Installing miscellaneous tools -----------------------------------------"
-	apt-get --assume-yes install ack-grep byobu elinks htop mg multitail
+	@echo "Installing tools -------------------------------------------------------"
+	apt-get --assume-yes install ack-grep byobu bzip2 curl elinks gdebi-core htop logrotate mg multitail ntp p7zip-full wget
 
 install-virtualenv:
 	apt-get --assume-yes install python-pip python-virtualenv
@@ -107,12 +105,15 @@ install-setuptools: install-virtualenv
 	@echo "install-setuptools -----------------------------------------------------"
 	apt-get --assume-yes install python-dev
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U bpython setuptools
+	pip install -U --cache-dir=$(PIP_CACHE_DIR) setuptools
 
 
 get-app: get-encyc-core
 
 install-app: install-setuptools install-encyc-core
+
+test-app: test-encyc-core
+coverage-app: coverage-encyc-core
 
 uninstall-app: uninstall-encyc-core
 
@@ -149,6 +150,20 @@ install-encyc-core:
 	-mkdir $(LOGS_BASE)
 	chown -R $(USER).root $(LOGS_BASE)
 	chmod -R 755 $(LOGS_BASE)
+
+test-encyc-core:
+	@echo ""
+	@echo "test-encyc-core --------------------------------------------------------"
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALLDIR)/; \
+	pytest --disable-warnings --rootdir=$(INSTALLDIR) encyc/tests/
+
+coverage-encyc-core:
+	@echo ""
+	@echo "coverage-encyc-core ----------------------------------------------------"
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALLDIR)/; \
+	pytest --disable-warnings --rootdir=$(INSTALLDIR) --cov-config=.coveragerc --cov-report=html --cov=encyc encyc/tests/
 
 uninstall-encyc-core:
 	@echo ""
