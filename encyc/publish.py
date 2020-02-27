@@ -151,7 +151,7 @@ def authors(hosts, report=False, dryrun=False, force=False, title=None):
     else:
         if force:
             logprint('debug', 'forcibly update all authors')
-            authors_new = [page['title'] for page in es_authors]
+            authors_new = [page['title'] for page in es_authors.objects]
             authors_delete = []
         else:
             logprint('debug', 'determining new,delete...')
@@ -217,7 +217,7 @@ def articles(hosts, report=False, dryrun=False, force=False, title=None):
     else:
         if force:
             logprint('debug', 'forcibly update all articles')
-            articles_update = [page['title'] for page in es_articles]
+            articles_update = [page['title'] for page in es_articles.objects]
             articles_delete = []
         else:
             logprint('debug', 'determining new,delete...')
@@ -320,7 +320,7 @@ def sources(hosts, report=False, dryrun=False, force=False, psms_id=None):
         if force:
             logprint('debug', 'forcibly update all sources')
             sources_update = [
-                s['encyclopedia_id']
+                s.encyclopedia_id
                 for s in ps_sources
                 if s.encyclopedia_id
             ]
