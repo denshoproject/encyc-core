@@ -47,7 +47,6 @@ def parse_mediawiki_text(title, html, primary_sources, public=False, printed=Fal
     )
     soup = _remove_nonrg_divs(soup)
     soup = _remove_primary_sources(soup, primary_sources)
-    html = unicode(soup)
     html = _rewrite_mediawiki_urls(html)
     html = _rm_tags(html)
     return html
@@ -394,7 +393,7 @@ def extract_databoxes(body, databox_divs_namespaces):
             # We just want a big string, so convert all Tags to strings
             # and join everything together into a big string
             itemparts = ''.join([
-                unicode(item)
+                str(item)
                 for item in tag.p.contents
             ])
             # split into key/value pairs and populate the OrderedDict

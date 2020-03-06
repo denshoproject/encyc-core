@@ -138,7 +138,7 @@ class Author(repo_models.Author):
         TODO Should this happen upon import from MediaWiki?
         """
         if (not config.DEBUG) and hasattr(self,'body') and self.body:
-            self.body = unicode(remove_status_markers(BeautifulSoup(self.body)))
+            self.body = str(remove_status_markers(BeautifulSoup(self.body)))
 
     @staticmethod
     def from_mw(mwauthor, author=None):
@@ -261,7 +261,7 @@ class Page(repo_models.Page):
         TODO Should this happen upon import from MediaWiki?
         """
         if (not config.DEBUG) and hasattr(self,'body') and self.body:
-            self.body = unicode(remove_status_markers(BeautifulSoup(self.body)))
+            self.body = str(remove_status_markers(BeautifulSoup(self.body)))
     
     def sources(self):
         """Returns list of published light Source objects for this Page.
@@ -873,7 +873,7 @@ class Elasticsearch(object):
         url = 'http://partner.densho.org/vocab/api/0.2/topics.json'
         models.Elasticsearch.index_topics(url)
         
-        @param json_text: unicode Raw topics.json file text.
+        @param json_text: str Raw topics.json file text.
         @param url: URL of topics.json
         """
         logging.debug('getting topics: %s' % url)
