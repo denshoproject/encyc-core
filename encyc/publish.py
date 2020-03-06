@@ -13,7 +13,7 @@ from elasticsearch.exceptions import TransportError, NotFoundError, Serializatio
 from encyc import config
 from encyc import docstore
 from encyc.models.legacy import Proxy
-from encyc.models import Elasticsearch
+from encyc.models.elastic import Elasticsearch
 from encyc.models.elastic import Author, Page, Source
 from encyc.models.elastic import Facet, FacetTerm
 from encyc import rsync
