@@ -29,7 +29,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
-import urlparse
+from urllib.parse import unquote, urlparse
 
 from dateutil import parser
 import requests
@@ -684,10 +684,10 @@ class FacetTerm(repo_models.FacetTerm):
             if data.get('encyc_urls'):
                 for item in data['encyc_urls']:
                     # just the title part of the URL
-                    url = urlparse.urlparse(item).path.replace('/','')
+                    url = urlparse(item).path.replace('/','')
                     encyc_url = {
                         'url_title': url,
-                        'title': urlparse.unquote(url),
+                        'title': unquote(url),
                     }
                     term.encyc_urls.append(encyc_url)
             term.parent_id = None
@@ -704,7 +704,7 @@ class FacetTerm(repo_models.FacetTerm):
                 for item in data['elinks']:
                     # just the title part of the URL, leave the domain etc
                     encyc_url = {
-                        'url_title': urlparse.urlparse(item['url']).path.replace('/',''),
+                        'url_title': urlparse(item['url']).path.replace('/',''),
                         'title': item['label'],
                     }
                     term.encyc_urls.append(encyc_url)
