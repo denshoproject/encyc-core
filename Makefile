@@ -76,7 +76,7 @@ uninstall: uninstall-app
 clean: clean-app
 
 
-install-prep: apt-upgrade install-core git-config install-misc-tools install-setuptools
+install-prep: apt-upgrade install-setuptools
 
 apt-update:
 	@echo ""
@@ -88,13 +88,16 @@ apt-upgrade:
 	@echo "Package upgrade --------------------------------------------------------"
 	apt-get --assume-yes upgrade
 
+install-core:
+	apt-get --assume-yes install bzip2 curl gdebi-core git-core logrotate ntp p7zip-full python3 wget
+
 git-config:
 	git config --global alias.st status
 	git config --global alias.co checkout
 	git config --global alias.br branch
 	git config --global alias.ci commit
 
-install-tools:
+install-misc-tools:
 	@echo ""
 	@echo "Installing tools -------------------------------------------------------"
 	apt-get --assume-yes install ack-grep byobu bzip2 curl elinks gdebi-core htop logrotate mg multitail ntp p7zip-full wget
