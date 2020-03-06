@@ -78,7 +78,7 @@ def mappings(hosts, indices):
     """Display mappings for the specified index/indices.
     """
     data = docstore.Docstore(hosts).get_mappings()
-    for key,val in data.iteritems():
+    for key,val in data.items():
         if docstore.INDEX_PREFIX in key:
             click.echo('{}: {}'.format(key, val))
 
@@ -183,14 +183,14 @@ def get(hosts, mediawiki, json, body, doctype, object_id):
             return
         click.echo('source: Mediawiki')
         click.echo('title: {}'.format(data['parse'].pop('title')))
-        for key,val in data['parse'].iteritems():
+        for key,val in data['parse'].items():
             click.echo('{}: {}'.format(key, val))
     else:
         data = publish.get(doctype, object_id, body)
         if isinstance(data, Exception):
             click.echo(data)
             return
-        for key,val in data.iteritems():
+        for key,val in data.items():
             if isinstance(val, datetime):
                 data[key] = val.isoformat()
         if data.get('body') and not body:
@@ -203,7 +203,7 @@ def get(hosts, mediawiki, json, body, doctype, object_id):
             click.echo('url_title: {}'.format(data.pop('url_title')))
             click.echo('title: {}'.format(data.pop('title')))
             description = data.pop('description')
-            for key,val in data.iteritems():
+            for key,val in data.items():
                 click.echo('{}: {}'.format(key, val))
             click.echo('description: {}'.format(description))
         elif doctype == 'source':
@@ -211,14 +211,14 @@ def get(hosts, mediawiki, json, body, doctype, object_id):
             click.echo('encyclopedia_id: {}'.format(data.pop('encyclopedia_id')))
             click.echo('created: {}'.format(data.pop('created')))
             click.echo('modified: {}'.format(data.pop('modified')))
-            keys = sorted([key for key in data.iterkeys()])
+            keys = sorted([key for key in data.keys()])
             for key in keys:
                 click.echo('{}: {}'.format(key, data[key]))
         elif doctype == 'author':
             click.echo('title: {}'.format(data.pop('title')))
             click.echo('url_title: {}'.format(data.pop('url_title')))
             click.echo('title_sort: {}'.format(data.pop('title_sort')))
-            for key,val in data.iteritems():
+            for key,val in data.items():
                 click.echo('{}: {}'.format(key, val))
             
 

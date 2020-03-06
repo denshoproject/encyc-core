@@ -252,7 +252,7 @@ class Docstore():
             if not parents:
                 parents = {
                     oid: oi.object()
-                    for oid,oi in _all_parents([document.identifier]).iteritems()
+                    for oid,oi in _all_parents([document.identifier]).items()
                 }
             can_publish = publishable([document.identifier], parents)
             public = True

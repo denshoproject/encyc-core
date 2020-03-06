@@ -280,7 +280,7 @@ class Page(repo_models.Page):
         for t in Elasticsearch.topics_by_url().get(self.absolute_url(), []):
             term = {
                 key: val
-                for key,val in t.iteritems()
+                for key,val in t.items()
             }
             term.pop('encyc_urls')
             term['ddr_topic_url'] = '%s/%s/' % (
@@ -384,17 +384,17 @@ class Page(repo_models.Page):
         if mwpage.databoxes:
             # naive implementation: just dump every databox field into Page.
             # Field names are just "PREFIX_" plus lowercased fieldname.
-            for key,databox in mwpage.databoxes.iteritems():
+            for key,databox in mwpage.databoxes.items():
                 # only include databoxes in configs
                 if key in config.MEDIAWIKI_DATABOXES.keys():
                     prefix = config.MEDIAWIKI_DATABOXES.get(key)
                     if prefix:
-                        for fieldname,data in databox.iteritems():
+                        for fieldname,data in databox.items():
                             fieldname = '%s_%s' % (prefix, fieldname)
                             setattr(page, fieldname, data)
             databoxes = [
                 '%s|%s' % (key, json.dumps(databox))
-                for key,databox in mwpage.databoxes.iteritems()
+                for key,databox in mwpage.databoxes.items()
                 # only include databoxes in configs
                 if databox and (key in config.MEDIAWIKI_DATABOXES.keys())
             ]
