@@ -186,7 +186,7 @@ def find_author_info(text):
     authors = {'display':[], 'parsed':[],}
     soup = BeautifulSoup(
         text.replace('<p><br />\n</p>',''),
-        features='lxml'
+        features='html.parser'
     )
     for byline in soup.find_all('div', id='authorByline'):
         for a in byline.find_all('a'):

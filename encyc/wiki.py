@@ -27,7 +27,7 @@ def api_login_round1(lgname, lgpassword):
         raise Exception('401 Authorization Required')
     soup = BeautifulSoup(
         r.text,
-        features='lxml'
+        features='html.parser'
     )
     login = soup.find('login')
     result = {
@@ -51,7 +51,7 @@ def api_login_round2(lgname, lgpassword, result):
         raise Exception('Bad MediaWiki API credentials')
     soup = BeautifulSoup(
         r.text,
-        features='lxml'
+        features='html.parser'
     )
     login = soup.find('login')
     result = {
