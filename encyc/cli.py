@@ -162,16 +162,21 @@ def list(hosts, doctype):
 @click.argument('object_id')
 @click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.option('--mediawiki', '-m', is_flag=True, default=False, help='Get from MediaWiki.')
+@click.option('--raw', '-r', is_flag=True, default=False, help='Emit raw output.')
 @click.option('--json', '-j', is_flag=True, default=False, help='Return ES record as JSON.')
-@click.option('--body/--no-body', default=False, help='Include body text.')
-def get(hosts, mediawiki, json, body, doctype, object_id):
+@click.option('--body', '-b', default=False, help='Include body text.')
+def get(hosts, mediawiki, raw, json, body, doctype, object_id):
     """Get a single record
     """
     js = json
-    import json
+    import json  # this is kinda stupid
     data = {}
     if mediawiki:
+        check_status()
         status_code,text = publish.Proxy._mw_page_text(object_id)
+        if raw:
+            click.echo(text)
+            return
         if isinstance(data, Exception):
             click.echo(data)
             return
@@ -186,6 +191,9 @@ def get(hosts, mediawiki, json, body, doctype, object_id):
         for key,val in data['parse'].items():
             click.echo('{}: {}'.format(key, val))
     else:
+        if raw:
+            click.echo('Raw Elasticsearch output not yet implemented. Use wget?')
+            return
         data = publish.get(doctype, object_id, body)
         if isinstance(data, Exception):
             click.echo(data)
@@ -242,7 +250,7 @@ def parse(title, path):
     
     \b
     Combine with `encyc get`:
-    encyc get article "Nisei Progressives" -mbj > /tmp/file.json
+    encyc get article "Nisei Progressives" -mr > /tmp/file.json
     encyc parse /tmp/file.json "Nisei Progressives"
     """
     click.echo(publish.parse(path, title))
