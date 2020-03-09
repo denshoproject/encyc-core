@@ -1,12 +1,16 @@
+import sys
 from datetime import datetime
 
 import click
+from elasticsearch.exceptions import NotFoundError
 
 from encyc import config
 from encyc import docstore
 from encyc import publish
+from encyc import wiki
 
 DOCSTORE_HOST = config.DOCSTORE_HOST
+MEDIAWIKI_API = config.MEDIAWIKI_API
 
 
 @click.group()
@@ -47,14 +51,33 @@ def status(hosts):
     
     More detail since you asked.
     """
-    click.echo(publish.status(hosts))
-
+    try:
+        check_es_status()
+        click.echo('Elasticsearch: OK')
+        es = 1
+    except:
+        click.echo('Elasticsearch ({}): ERROR'.format(DOCSTORE_HOST))
+        es = 0
+    if es:
+        try:
+            click.echo(publish.status(hosts))
+        except NotFoundError as err:
+            click.echo(err)
+    try:
+        check_mediawiki_status()
+        click.echo('MediaWiki: OK')
+        mw = 1
+    except:
+        click.echo('ERROR: Mediawiki ({})'.format(MEDIAWIKI_API))
+        mw = 0
 
 @encyc.command()
 @click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
 def create(hosts):
     """Create new indices.
     """
+    check_es_status()
+    check_mediawiki_status()
     publish.create_indices(hosts)
 
 
@@ -65,6 +88,8 @@ def create(hosts):
 def destroy(hosts, confirm):
     """Delete indices (requires --confirm).
     """
+    check_es_status()
+    check_mediawiki_status()
     if confirm:
         publish.delete_indices(hosts)
     else:
@@ -77,6 +102,7 @@ def destroy(hosts, confirm):
 def mappings(hosts, indices):
     """Display mappings for the specified index/indices.
     """
+    check_es_status()
     data = docstore.Docstore(hosts).get_mappings()
     for key,val in data.items():
         if docstore.INDEX_PREFIX in key:
@@ -94,6 +120,8 @@ def mappings(hosts, indices):
 def vocabs(hosts, report, dryrun, force):
     """TODO Index DDR vocabulary facets and terms.
     """
+    check_es_status()
+    check_mediawiki_status()
     publish.vocabs(hosts=hosts, report=report, dryrun=dryrun, force=force)
 
 
@@ -109,6 +137,9 @@ def vocabs(hosts, report, dryrun, force):
 def authors(hosts, report, dryrun, force, title):
     """Index authors.
     """
+    check_es_status()
+    check_es_index('author')
+    check_mediawiki_status()
     publish.authors(
         hosts=hosts, report=report, dryrun=dryrun, force=force, title=title
     )
@@ -126,6 +157,9 @@ def authors(hosts, report, dryrun, force, title):
 def articles(hosts, report, dryrun, force, title):
     """Index articles.
     """
+    check_es_status()
+    check_es_index('article')
+    check_mediawiki_status()
     publish.articles(
         hosts=hosts, report=report, dryrun=dryrun, force=force, title=title
     )
@@ -143,6 +177,9 @@ def articles(hosts, report, dryrun, force, title):
 def sources(hosts, report, dryrun, force, sourceid):
     """Index sources.
     """
+    check_es_status()
+    check_es_index('source')
+    check_mediawiki_status()
     publish.sources(
         hosts=hosts, report=report, dryrun=dryrun, force=force, psms_id=sourceid
     )
@@ -154,6 +191,8 @@ def sources(hosts, report, dryrun, force, sourceid):
 def list(hosts, doctype):
     """List titles for all instances of specified doctype.
     """
+    check_es_status()
+    check_es_index(doctype)
     publish.listdocs(hosts, doctype)
 
 
@@ -172,7 +211,7 @@ def get(hosts, mediawiki, raw, json, body, doctype, object_id):
     import json  # this is kinda stupid
     data = {}
     if mediawiki:
-        check_status()
+        check_mediawiki_status()
         status_code,text = publish.Proxy._mw_page_text(object_id)
         if raw:
             click.echo(text)
@@ -191,10 +230,18 @@ def get(hosts, mediawiki, raw, json, body, doctype, object_id):
         for key,val in data['parse'].items():
             click.echo('{}: {}'.format(key, val))
     else:
+        check_es_status()
+        check_es_index(doctype)
         if raw:
             click.echo('Raw Elasticsearch output not yet implemented. Use wget?')
             return
-        data = publish.get(doctype, object_id, body)
+        try:
+            data = publish.get(doctype, object_id, body)
+        except NotFoundError as err:
+            click.echo('ERROR: 404 Not Found - {} "{}"'.format(
+                doctype, object_id
+            ))
+            sys.exit(1)
         if isinstance(data, Exception):
             click.echo(data)
             return
@@ -238,8 +285,16 @@ def get(hosts, mediawiki, raw, json, body, doctype, object_id):
 def delete(confirm, doctype, object_id):
     """Delete a single record from Elasticsearch
     """
-    result = publish.delete(doctype, object_id, confirm)
-    click.echo(result)
+    check_es_status()
+    check_es_index(doctype)
+    check_mediawiki_status()
+    try:
+        result = publish.delete(doctype, object_id, confirm)
+        click.echo(result)
+    except NotFoundError as err:
+        click.echo('ERROR: 404 Not Found - {} "{}"'.format(
+            doctype, object_id
+        ))
 
 
 @encyc.command()
@@ -254,3 +309,33 @@ def parse(title, path):
     encyc parse /tmp/file.json "Nisei Progressives"
     """
     click.echo(publish.parse(path, title))
+
+
+def check_mediawiki_status():
+    """Quit with message if cannot access Mediawiki API
+    """
+    status_code,reason = wiki.status_code()
+    if status_code != 200:
+        click.echo('ERROR: Mediawiki {} {}'.format(str(status_code), reason))
+        sys.exit(1)
+
+def check_es_status():
+    """Quit with message if cannot access Elasticssearch
+    """
+    try:
+        docstore.Docstore().start_test()
+    except docstore.TransportError as err:
+        click.echo('ERROR: Elasticsearch cluster unavailable. ({})'.format(
+            DOCSTORE_HOST
+        ))
+        sys.exit(1)
+
+def check_es_index(doctype):
+    """Quit with message if Elasticssearch index not present
+    """
+    ds = docstore.Docstore()
+    if doctype:
+        index_name = ds.index_name(doctype)
+        if not ds.index_exists(index_name):
+            click.echo('Elasticsearch: No index "{}".'.format(index_name))
+            sys.exit(1)

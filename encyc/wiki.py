@@ -16,6 +16,14 @@ NON_ARTICLE_PAGES = ['about', 'categories', 'contact', 'contents', 'search',]
 TIMEOUT = float(config.MEDIAWIKI_API_TIMEOUT)
 
 
+def status_code():
+    """Return HTTP status code from GET-ing the Mediawiki API
+    
+    @returns: int
+    """
+    r = http.get(config.MEDIAWIKI_API)
+    return r.status_code,r.reason
+
 def api_login_round1(lgname, lgpassword):
     url = '%s?action=login&format=xml' % (config.MEDIAWIKI_API)
     domain = urlparse(url).netloc
