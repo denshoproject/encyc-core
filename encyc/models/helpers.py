@@ -70,8 +70,9 @@ def page_lastmod(api_url, page_title):
     logging.debug(url)
     r = http.get(url, timeout=TIMEOUT)
     if r.status_code == 200:
-        pagedata = json.loads(r.text)
-        ts = pagedata['query']['pages'].values()[0]['revisions'][0]['timestamp']
+        pagedata = r.json()
+        pages = list(pagedata['query']['pages'].values())
+        ts = pages[0]['revisions'][0]['timestamp']
         lastmod = datetime.strptime(ts, config.MEDIAWIKI_DATETIME_FORMAT_TZ)
     return lastmod
 
@@ -185,7 +186,7 @@ def find_author_info(text):
     authors = {'display':[], 'parsed':[],}
     soup = BeautifulSoup(
         text.replace('<p><br />\n</p>',''),
-        features='lxml'
+        features='html.parser'
     )
     for byline in soup.find_all('div', id='authorByline'):
         for a in byline.find_all('a'):

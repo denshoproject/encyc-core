@@ -136,7 +136,7 @@ class Source(object):
         source.encyclopedia_id = encyclopedia_id
         source.uri = urls.reverse('wikiprox-source', args=[encyclopedia_id])
         source.title = encyclopedia_id
-        for key,val in data.iteritems():
+        for key,val in data.items():
             setattr(source, key, val)
         source.psms_id = int(data['id'])
         if data.get('original_size'):
@@ -287,7 +287,7 @@ class Proxy(object):
         @param page: Page title from URL.
         """
         logger.debug(url_title)
-        url_title = url_title.encode('utf_8', errors='xmlcharrefreplace')
+        url_title = url_title
         page = Page()
         page.url_title = url_title
         page.uri = urls.reverse('wikiprox-page', args=[url_title])
@@ -295,7 +295,7 @@ class Proxy(object):
         logger.debug(page.url)
         r = http.get(page.url)
         logger.debug(r.status_code)
-        return r.status_code,r.text
+        return r.status_code,str(r.text)
     
     @staticmethod
     def _mkpage(url_title, http_status, rawtext, request=None, rg_titles=[]):
@@ -308,15 +308,13 @@ class Proxy(object):
         @param rg_titles list: Resource Guide url_titles (used to mark links)
         """
         logger.debug(url_title)
-        url_title = url_title.encode('utf_8', errors='xmlcharrefreplace')
+        url_title = url_title
         page = Page()
         page.url_title = url_title
         page.uri = urls.reverse('wikiprox-page', args=[url_title])
         page.url = helpers.page_data_url(config.MEDIAWIKI_API, page.url_title)
         page.status_code = http_status
-        pagedata = json.loads(
-            rawtext.encode('utf_8', errors='xmlcharrefreplace')
-        )
+        pagedata = json.loads(rawtext)
         page.error = pagedata.get('error', None)
         if (page.status_code == 200) and not page.error:
             
@@ -525,7 +523,7 @@ class Elasticsearch(object):
     def author(self, url_title):
         results = docstore.get(model='authors', document_id=url_title)
         author = Author()
-        for key,val in results['_source'].iteritems():
+        for key,val in results['_source'].items():
             setattr(author, key, val)
         return author
 
@@ -534,7 +532,7 @@ class Elasticsearch(object):
         if not results:
             return None
         page = Page()
-        for key,val in results['_source'].iteritems():
+        for key,val in results['_source'].items():
             setattr(page, key, val)
         # remove page elements for internal editorial use only
         categories = [
@@ -548,7 +546,7 @@ class Elasticsearch(object):
         #results = docstore.mget('sources', page.sources)
         #for doc in results['docs']:
         #    source = Source()
-        #    for key,val in doc['_source'].iteritems():
+        #    for key,val in doc['_source'].items():
         #        setattr(source, key, val)
         #    sources.append(source)
         #page.sources = sources
@@ -591,7 +589,7 @@ class Elasticsearch(object):
     def source(self, encyclopedia_id):
         results = docstore.get(model='sources', document_id=encyclopedia_id)
         source = Source()
-        for key,val in results['_source'].iteritems():
+        for key,val in results['_source'].items():
             setattr(source, key, val)
         return source
 

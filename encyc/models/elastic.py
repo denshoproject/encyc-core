@@ -29,7 +29,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
-import urlparse
+from urllib.parse import unquote, urlparse
 
 from dateutil import parser
 import requests
@@ -138,7 +138,7 @@ class Author(repo_models.Author):
         TODO Should this happen upon import from MediaWiki?
         """
         if (not config.DEBUG) and hasattr(self,'body') and self.body:
-            self.body = unicode(remove_status_markers(BeautifulSoup(self.body)))
+            self.body = str(remove_status_markers(BeautifulSoup(self.body)))
 
     @staticmethod
     def from_mw(mwauthor, author=None):
@@ -261,7 +261,7 @@ class Page(repo_models.Page):
         TODO Should this happen upon import from MediaWiki?
         """
         if (not config.DEBUG) and hasattr(self,'body') and self.body:
-            self.body = unicode(remove_status_markers(BeautifulSoup(self.body)))
+            self.body = str(remove_status_markers(BeautifulSoup(self.body)))
     
     def sources(self):
         """Returns list of published light Source objects for this Page.
@@ -280,7 +280,7 @@ class Page(repo_models.Page):
         for t in Elasticsearch.topics_by_url().get(self.absolute_url(), []):
             term = {
                 key: val
-                for key,val in t.iteritems()
+                for key,val in t.items()
             }
             term.pop('encyc_urls')
             term['ddr_topic_url'] = '%s/%s/' % (
@@ -384,17 +384,17 @@ class Page(repo_models.Page):
         if mwpage.databoxes:
             # naive implementation: just dump every databox field into Page.
             # Field names are just "PREFIX_" plus lowercased fieldname.
-            for key,databox in mwpage.databoxes.iteritems():
+            for key,databox in mwpage.databoxes.items():
                 # only include databoxes in configs
                 if key in config.MEDIAWIKI_DATABOXES.keys():
                     prefix = config.MEDIAWIKI_DATABOXES.get(key)
                     if prefix:
-                        for fieldname,data in databox.iteritems():
+                        for fieldname,data in databox.items():
                             fieldname = '%s_%s' % (prefix, fieldname)
                             setattr(page, fieldname, data)
             databoxes = [
                 '%s|%s' % (key, json.dumps(databox))
-                for key,databox in mwpage.databoxes.iteritems()
+                for key,databox in mwpage.databoxes.items()
                 # only include databoxes in configs
                 if databox and (key in config.MEDIAWIKI_DATABOXES.keys())
             ]
@@ -684,10 +684,10 @@ class FacetTerm(repo_models.FacetTerm):
             if data.get('encyc_urls'):
                 for item in data['encyc_urls']:
                     # just the title part of the URL
-                    url = urlparse.urlparse(item).path.replace('/','')
+                    url = urlparse(item).path.replace('/','')
                     encyc_url = {
                         'url_title': url,
-                        'title': urlparse.unquote(url),
+                        'title': unquote(url),
                     }
                     term.encyc_urls.append(encyc_url)
             term.parent_id = None
@@ -704,7 +704,7 @@ class FacetTerm(repo_models.FacetTerm):
                 for item in data['elinks']:
                     # just the title part of the URL, leave the domain etc
                     encyc_url = {
-                        'url_title': urlparse.urlparse(item['url']).path.replace('/',''),
+                        'url_title': urlparse(item['url']).path.replace('/',''),
                         'title': item['label'],
                     }
                     term.encyc_urls.append(encyc_url)
@@ -873,7 +873,7 @@ class Elasticsearch(object):
         url = 'http://partner.densho.org/vocab/api/0.2/topics.json'
         models.Elasticsearch.index_topics(url)
         
-        @param json_text: unicode Raw topics.json file text.
+        @param json_text: str Raw topics.json file text.
         @param url: URL of topics.json
         """
         logging.debug('getting topics: %s' % url)

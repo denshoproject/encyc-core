@@ -5,7 +5,6 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 import re
-import urlparse
 
 from elasticsearch_dsl import Index, Search, A, Q
 from elasticsearch_dsl.query import Match, MultiMatch, QueryString

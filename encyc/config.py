@@ -1,4 +1,4 @@
-import ConfigParser
+import configparser
 import os
 import sys
 
@@ -14,7 +14,7 @@ class NoConfigError(Exception):
         return repr(self.value)
 
 def read_configs(paths):
-    config = ConfigParser.ConfigParser()
+    config = configparser.ConfigParser()
     configs_read = config.read(paths)
     if not configs_read:
         raise NoConfigError("Could not read config files: %s" % paths)
@@ -126,11 +126,11 @@ def read_hidden_tags(config):
     # As of ES 7 we no longer have separate stage and production indices
     # pick stage or production
     if STAGE:
-        for key in hidden.iterkeys():
+        for key in hidden.keys():
             if 'stage' in key:
                 return hidden[key]
     else:
-        for key in hidden.iterkeys():
+        for key in hidden.keys():
             if 'production' in key:
                 return hidden[key]
 
