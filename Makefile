@@ -76,7 +76,7 @@ uninstall: uninstall-app
 clean: clean-app
 
 
-install-prep: apt-upgrade install-core git-config install-misc-tools install-setuptools
+install-prep: apt-upgrade install-setuptools
 
 apt-update:
 	@echo ""
@@ -88,27 +88,30 @@ apt-upgrade:
 	@echo "Package upgrade --------------------------------------------------------"
 	apt-get --assume-yes upgrade
 
+install-core:
+	apt-get --assume-yes install bzip2 curl gdebi-core git-core logrotate ntp p7zip-full python3 wget
+
 git-config:
 	git config --global alias.st status
 	git config --global alias.co checkout
 	git config --global alias.br branch
 	git config --global alias.ci commit
 
-install-tools:
+install-misc-tools:
 	@echo ""
 	@echo "Installing tools -------------------------------------------------------"
 	apt-get --assume-yes install ack-grep byobu bzip2 curl elinks gdebi-core htop logrotate mg multitail ntp p7zip-full wget
 
 install-virtualenv:
-	apt-get --assume-yes install python-pip python-virtualenv
-	test -d $(VIRTUALENV) || virtualenv --distribute --setuptools $(VIRTUALENV)
+	apt-get --assume-yes install python3-pip python3-virtualenv
+	test -d $(VIRTUALENV) || virtualenv --python=python3 --distribute --setuptools $(VIRTUALENV)
 
 install-setuptools: install-virtualenv
 	@echo ""
 	@echo "install-setuptools -----------------------------------------------------"
-	apt-get --assume-yes install python-dev
+	apt-get --assume-yes install python3-dev
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U --cache-dir=$(PIP_CACHE_DIR) setuptools
+	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) setuptools
 
 
 get-app: get-encyc-core
@@ -126,7 +129,7 @@ clean-app: clean-encyc-core
 get-encyc-core:
 	git pull
 	source $(VIRTUALENV)/bin/activate; \
-	pip install --exists-action=i -r $(PIP_REQUIREMENTS)
+	pip3 install --exists-action=i -r $(PIP_REQUIREMENTS)
 
 setup-encyc-core: install-configs
 	@echo ""
@@ -145,7 +148,7 @@ install-encyc-core:
 # bs4 dependency
 	apt-get --assume-yes install libxml2 libxml2-dev libxslt1-dev rsync zlib1g-dev
 	source $(VIRTUALENV)/bin/activate; \
-	pip install -U --find-links=$(PIP_CACHE_DIR) -r $(PIP_REQUIREMENTS)
+	pip3 install -U --find-links=$(PIP_CACHE_DIR) -r $(PIP_REQUIREMENTS)
 	cd $(INSTALLDIR)
 	source $(VIRTUALENV)/bin/activate; \
 	python setup.py install
@@ -173,7 +176,7 @@ uninstall-encyc-core:
 	@echo "uninstall encyc-core ------------------------------------------------------"
 	cd $(INSTALLDIR)/encyc-core
 	source $(VIRTUALENV)/bin/activate; \
-	-pip uninstall -r $(PIP_REQUIREMENTS)
+	-pip3 uninstall -r $(PIP_REQUIREMENTS)
 	-rm /usr/local/lib/python2.7/dist-packages/encyc-*
 	-rm -Rf /usr/local/lib/python2.7/dist-packages/encyc
 
@@ -223,7 +226,7 @@ deb-stretch:
 	@echo ""
 	@echo "FPM packaging (stretch) ------------------------------------------------"
 	-rm -Rf $(DEB_FILE_STRETCH)
-	virtualenv --relocatable $(VIRTUALENV)  # Make venv relocatable
+	virtualenv --python=python3 --relocatable $(VIRTUALENV)  # Make venv relocatable
 	fpm   \
 	--verbose   \
 	--input-type dir   \
@@ -236,6 +239,7 @@ deb-stretch:
 	--maintainer "$(DEB_MAINTAINER)"   \
 	--description "$(DEB_DESCRIPTION)"   \
 	--chdir $(INSTALLDIR)   \
+	--depends "python3"   \
 	--depends "rsync"   \
 	.git=$(DEB_BASE)   \
 	.gitignore=$(DEB_BASE)   \
@@ -271,6 +275,7 @@ deb-buster:
 	--maintainer "$(DEB_MAINTAINER)"   \
 	--description "$(DEB_DESCRIPTION)"   \
 	--chdir $(INSTALLDIR)   \
+	--depends "python3"   \
 	--depends "rsync"   \
 	.git=$(DEB_BASE)   \
 	.gitignore=$(DEB_BASE)   \

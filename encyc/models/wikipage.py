@@ -28,7 +28,7 @@ def parse_mediawiki_text(title, html, primary_sources, public=False, printed=Fal
     """
     soup = BeautifulSoup(
         html.replace('<p><br />\n</p>',''),
-        features='lxml'
+        'html.parser'
     )
     soup = _mark_offsite_encyc_rg_links(soup, title, rg_titles)
     soup = _remove_staticpage_titles(soup)
@@ -47,7 +47,6 @@ def parse_mediawiki_text(title, html, primary_sources, public=False, printed=Fal
     )
     soup = _remove_nonrg_divs(soup)
     soup = _remove_primary_sources(soup, primary_sources)
-    html = unicode(soup)
     html = _rewrite_mediawiki_urls(html)
     html = _rm_tags(html)
     return html
@@ -271,7 +270,7 @@ def _add_top_links(soup):
     toplink = BeautifulSoup(
         TOPLINK_TEMPLATE,
         parse_only=SoupStrainer('div', attrs={'class':'toplink'}),
-        features='lxml'
+        features='html.parser'
     )
     n = 0
     for h in soup.find_all('h2'):
@@ -382,7 +381,7 @@ def extract_databoxes(body, databox_divs_namespaces):
     @param databox_divs_namespaces: dict
     @returns: str,OrderedDict
     """
-    soup = BeautifulSoup(body, "lxml")
+    soup = BeautifulSoup(body, 'html.parser')
     databoxes = {}
     for div_id in databox_divs_namespaces.keys():
         data = OrderedDict()
@@ -394,7 +393,7 @@ def extract_databoxes(body, databox_divs_namespaces):
             # We just want a big string, so convert all Tags to strings
             # and join everything together into a big string
             itemparts = ''.join([
-                unicode(item)
+                str(item)
                 for item in tag.p.contents
             ])
             # split into key/value pairs and populate the OrderedDict
@@ -416,14 +415,14 @@ def extract_description(body):
     @param body: str raw HTML
     @returns: str
     """
-    soup = BeautifulSoup(body, "lxml")
+    soup = BeautifulSoup(body, 'html.parser')
     for p in soup.find_all('p'):
         if p.text and not (';\n' in p.text):
             return p.text.strip()
     return ''
 
 def not_published_encyc(body):
-    soup = BeautifulSoup(body, "lxml")
+    soup = BeautifulSoup(body, 'html.parser')
     for div in soup.find_all('div', attrs={'class':'nopublish-encycfront'}):
         return True
     return False

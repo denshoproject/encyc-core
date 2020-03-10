@@ -13,7 +13,7 @@ from elasticsearch.exceptions import TransportError, NotFoundError, Serializatio
 from encyc import config
 from encyc import docstore
 from encyc.models.legacy import Proxy
-from encyc.models import Elasticsearch
+from encyc.models.elastic import Elasticsearch
 from encyc.models.elastic import Author, Page, Source
 from encyc.models.elastic import Facet, FacetTerm
 from encyc import rsync
@@ -482,24 +482,14 @@ def get(doctype, object_id, body=False):
     @param body: bool Include body text
     """
     if   doctype == 'article':
-        try:
-            return Page.get(object_id).to_dict()
-        except TransportError as e:
-            return e
+        return Page.get(object_id).to_dict()
     elif doctype == 'author':
-        try:
-            return Author.get(object_id).to_dict()
-        except TransportError as e:
-            return e
+        return Author.get(object_id).to_dict()
     elif doctype == 'source':
-        try:
-            return Source.get(object_id).to_dict()
-        except TransportError as e:
-            return e
+        return Source.get(object_id).to_dict()
     return {'error': 'Unknown doctype: "{}"'.format(doctype)}
 
 def delete(doctype, object_id, confirm=False):
-    print('delete({}, {}, {})'.format(doctype, object_id, confirm))
     if not confirm:
         return {'error': 'Confirmation required.'}
     if   doctype == 'article':

@@ -3,7 +3,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 from operator import itemgetter
-from urlparse import urlparse
+from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 import ring
@@ -16,6 +16,14 @@ NON_ARTICLE_PAGES = ['about', 'categories', 'contact', 'contents', 'search',]
 TIMEOUT = float(config.MEDIAWIKI_API_TIMEOUT)
 
 
+def status_code():
+    """Return HTTP status code from GET-ing the Mediawiki API
+    
+    @returns: int
+    """
+    r = http.get(config.MEDIAWIKI_API)
+    return r.status_code,r.reason
+
 def api_login_round1(lgname, lgpassword):
     url = '%s?action=login&format=xml' % (config.MEDIAWIKI_API)
     domain = urlparse(url).netloc
@@ -27,7 +35,7 @@ def api_login_round1(lgname, lgpassword):
         raise Exception('401 Authorization Required')
     soup = BeautifulSoup(
         r.text,
-        features='lxml'
+        features='html.parser'
     )
     login = soup.find('login')
     result = {
@@ -51,7 +59,7 @@ def api_login_round2(lgname, lgpassword, result):
         raise Exception('Bad MediaWiki API credentials')
     soup = BeautifulSoup(
         r.text,
-        features='lxml'
+        features='html.parser'
     )
     login = soup.find('login')
     result = {
@@ -271,7 +279,7 @@ def namespaces_reversed():
     """
     nspaces = {}
     namespaces_codes = namespaces()
-    for key,val in namespaces_codes.iteritems():
+    for key,val in namespaces_codes.items():
         nspaces[val] = key
     return nspaces
 

@@ -1,18 +1,15 @@
 # apt-get install redis-server
 
-bpython==0.16
-
-click==6.7
-beautifulsoup4==4.5.3
+click
+beautifulsoup4
 deepdiff
 elasticsearch>=7.0.0,<8.0.0
 elasticsearch-dsl>=7.0.0,<8.0.0
-lxml==3.7.3
-python-dateutil==2.6.1
-redis==3.2.1
-requests==2.13.0
-ring==0.7.2
-unicodecsv==0.14.1
+python-dateutil
+redis
+requests
+ring
+unicodecsv
 
 # suggested for development environment
 #coverage
@@ -20,6 +17,7 @@ unicodecsv==0.14.1
 #snakefood
 #sphinx
 
+bpython
 coverage
 pytest
 pytest-cov
