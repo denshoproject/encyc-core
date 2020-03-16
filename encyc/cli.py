@@ -311,6 +311,28 @@ def parse(title, path):
     click.echo(publish.parse(path, title))
 
 
+@encyc.command()
+@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
+def test(hosts):
+    """Load test data for encyc-front, encyc-rg
+    """
+    check_es_status()
+    check_es_index('article')
+    check_es_index('source')
+    check_es_index('author')
+    check_mediawiki_status()
+    
+    publish.articles(hosts=hosts, force=1, title="Ansel Adams")
+    publish.articles(hosts=hosts, force=1, title="Aiko Herzig-Yoshinaga")
+    publish.articles(hosts=hosts, force=1, title="A.L. Wirin")
+    publish.articles(hosts=hosts, force=1, title="Amache (Granada)")
+    publish.articles(hosts=hosts, force=1, title="December 7, 1941")
+    publish.articles(hosts=hosts, force=1, title="Hawai'i")
+    publish.articles(hosts=hosts, force=1, title="Informants / \"inu\"")
+    publish.authors(hosts=hosts, force=1, title="Brian Niiya")
+    publish.sources(hosts=hosts, force=1, psms_id="en-littletokyousa-1")
+
+
 def check_mediawiki_status():
     """Quit with message if cannot access Mediawiki API
     """
