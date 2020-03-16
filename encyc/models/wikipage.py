@@ -47,6 +47,7 @@ def parse_mediawiki_text(title, html, primary_sources, public=False, printed=Fal
     )
     soup = _remove_nonrg_divs(soup)
     soup = _remove_primary_sources(soup, primary_sources)
+    html = soup.prettify()
     html = _rewrite_mediawiki_urls(html)
     html = _rm_tags(html)
     return html

@@ -10,10 +10,12 @@ from encyc.models import wikipage
 def _mksoup(html):
     soup =  BeautifulSoup(
         html.replace('<p><br />\n</p>',''),
-        features='lxml'
+        features='html.parser'
     )
-    soup.html.body.unwrap()
-    soup.html.unwrap()
+    if soup.html and soup.html.body:
+        soup.html.body.unwrap()
+    if soup.html:
+        soup.html.unwrap()
     return soup
 
 def rm_whitespace(html):
@@ -213,7 +215,7 @@ def test_remove_primary_sources():
     soup0 = _mksoup(RM_PRIMARY_SOURCES_in0)
     soup0 = wikipage._remove_primary_sources(soup0, sources0)
     out = rm_whitespace(str(
-        wikipage._rm_tags(unicode(soup0))
+        wikipage._rm_tags(str(soup0))
     ))
     expected = rm_whitespace(str(_mksoup(
         RM_PRIMARY_SOURCES_out0

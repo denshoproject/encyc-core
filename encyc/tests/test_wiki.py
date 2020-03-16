@@ -26,7 +26,9 @@ def test__all_pages():
         {'timestamp': '2014-04-01T23:57:21Z', 'pageid': 3, 'title': 'Page 3'},
         {'timestamp': '2014-04-01T23:57:21Z', 'pageid': 2, 'title': 'Page 2'},
     ]
-    assert wiki._all_pages(json.dumps(r_text)) == expected
+    out = wiki._all_pages(json.dumps(r_text))
+    for item in expected:
+        assert item in out
 
 # all_pages()
 
@@ -141,7 +143,8 @@ def test__page_categories():
     }
     expected = [u'Category 1', u'Category 2', u'Category 4']
     out = wiki._page_categories(whitelist, json.dumps(r_text))
-    assert out == expected
+    for item in expected:
+        assert item in out
 
 #def page_categories(title, whitelist=[]):
 
