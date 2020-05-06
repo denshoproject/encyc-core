@@ -6,7 +6,6 @@ import os
 import re
 
 from bs4 import BeautifulSoup
-import requests
 
 from encyc import config
 from encyc import http
@@ -113,7 +112,7 @@ def find_primary_sources(api_url, images):
     # get sources via sources API
     if eids:
         url = '%s/sources/%s' % (api_url, ','.join(eids))
-        r = requests.get(url)
+        r = http.get(url)
         if r.status_code == 200:
             sources = json.loads(r.text)
     logging.debug('retrieved %s' % len(sources))
