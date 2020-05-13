@@ -28,7 +28,6 @@ import os
 from elasticsearch import Elasticsearch, TransportError
 from elasticsearch.client import SnapshotClient
 import elasticsearch_dsl
-import requests
 
 from encyc import config
 from encyc import fileio

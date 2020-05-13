@@ -32,7 +32,6 @@ import os
 from urllib.parse import unquote, urlparse
 
 from dateutil import parser
-import requests
 
 from elasticsearch.exceptions import NotFoundError
 import elasticsearch_dsl as dsl
@@ -322,7 +321,7 @@ class Page(repo_models.Page):
         """
         url = os.path.join(config.ENCYCRG_API, 'articles')
         try:
-            r = requests.get(url)
+            r = http.get(url)
             logging.debug(r.status_code)
             articles = json.loads(r.text)['objects']
         except:
@@ -778,7 +777,7 @@ class Facet(repo_models.Facet):
     def retrieve(facet_id):
         url = '%s/%s.json' % (config.DDR_VOCABS_BASE, facet_id)
         logging.debug(url)
-        r = requests.get(url)
+        r = http.get(url)
         logging.debug(r.status_code)
         data = json.loads(r.text)
         facet = Facet(

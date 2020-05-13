@@ -2,7 +2,6 @@ from datetime import datetime
 import json
 
 from bs4 import BeautifulSoup
-import requests
 
 from encyc import config
 from encyc import http
@@ -11,13 +10,7 @@ from encyc import http
 def source(encyclopedia_id):
     source = None
     url = '%s/sources/%s' % (config.SOURCES_API, encyclopedia_id)
-    if config.SOURCES_API_HTUSER and config.SOURCES_API_HTPASS:
-        r = requests.get(
-            url, headers={'content-type':'application/json'},
-            auth=(config.SOURCES_API_HTUSER, config.SOURCES_API_HTPASS),
-        )
-    else:
-        r = requests.get(url, headers={'content-type':'application/json'})
+    r = http.get(url, headers={'content-type':'application/json'})
     if r.status_code == 200:
         response = json.loads(r.text)
         if response and (response['meta']['total_count'] == 1):
