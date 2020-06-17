@@ -319,14 +319,10 @@ class Page(repo_models.Page):
     def rg_titles():
         """List of articles appearing in the Resource Guide (encycrg)
         """
-        url = os.path.join(config.ENCYCRG_API, 'articles')
-        try:
-            r = http.get(url)
-            logging.debug(r.status_code)
-            articles = json.loads(r.text)['objects']
-        except:
-            logging.debug('ERROR')
-            articles = []
+        url = os.path.join(config.ENCYCRG_API, 'articles/?limit=1000')
+        r = http.get(url)
+        logging.debug(r.status_code)
+        articles = json.loads(r.text)['objects']
         return [a['id'] for a in articles]
 
     @staticmethod
