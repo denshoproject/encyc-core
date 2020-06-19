@@ -4,6 +4,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
+import re
 
 from dateutil import parser
 from elasticsearch_dsl import Search
@@ -171,7 +172,23 @@ class Source(object):
             # just in case we end up with sources/sources
             source.display_path_abs = source.display_path_abs.replace(
                 'sources/sources', 'sources')
+        source.external_url = fix_external_url(source.external_url)
         return source
+
+EXTERNAL_URL_PATTERN = re.compile('http://ddr.densho.org/(\w+)/(\w+)/(\d+)/(\d+)/')
+EXTERNAL_URL_REPLACEMENT = r'http://ddr.densho.org/\1-\2-\3-\4/'
+
+def fix_external_url(url):
+    """Update Source.external_urls in legacy DDR format
+    
+    http://lccn.loc.gov/sn83025333          -> NOOP
+    http://ddr.densho.org/ddr-densho-67-19/ -> NOOP
+    http://ddr.densho.org/ddr/densho/67/19/ -> http://ddr.densho.org/ddr-densho-67-19/
+    """
+    m = re.match(EXTERNAL_URL_PATTERN, url)
+    if m:
+        return re.sub(EXTERNAL_URL_PATTERN, EXTERNAL_URL_REPLACEMENT, url)
+    return url
 
 
 class Citation(object):
