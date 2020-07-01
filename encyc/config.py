@@ -22,7 +22,7 @@ def read_configs(paths):
 
 config = read_configs(CONFIG_FILES)
 
-DEBUG = config.get('debug', 'debug')
+DEBUG = config.getboolean('debug', 'debug')
 STAGE = False
 
 #elasticsearch
@@ -41,7 +41,7 @@ try:
     MEDIAWIKI_API_HTPASS = config.get('mediawiki', 'api_htpass')
 except:
     MEDIAWIKI_API_HTPASS = None
-MEDIAWIKI_API_TIMEOUT = config.get('mediawiki', 'api_timeout')
+MEDIAWIKI_API_TIMEOUT = int(config.get('mediawiki', 'api_timeout'))
 try:
     MEDIAWIKI_DATABOXES = {
         keyval.split(':')[0].strip(): keyval.split(':')[1].strip()
