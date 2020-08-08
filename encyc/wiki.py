@@ -19,7 +19,7 @@ TIMEOUT = float(config.MEDIAWIKI_API_TIMEOUT)
 def status_code():
     """Return HTTP status code from GET-ing the Mediawiki API
     
-    @returns: int
+    @returns: (int, str)
     """
     r = http.get(config.MEDIAWIKI_API)
     return r.status_code,r.reason
@@ -97,6 +97,10 @@ def api_logout():
     r = http.post(url, headers=headers, timeout=TIMEOUT)
 
 def _all_pages(r_text):
+    """
+    @param r_text: str Text of API call
+    @returns: list of dicts
+    """
     pages = []
     response = json.loads(r_text)
     if response and response['query'] and response['query']['pages']:
@@ -110,6 +114,7 @@ def _all_pages(r_text):
 @ring.redis(config.CACHE, coder='json')
 def all_pages():
     """Returns a list of all pages, with timestamp of latest revision.
+    @returns: list of dicts
     """
     pages = []
     cookies = api_login()
@@ -123,6 +128,12 @@ def all_pages():
     return pages
 
 def _articles_a_z(published_pages, author_pages, nonarticle_titles):
+    """
+    @param published_pages: list of dicts
+    @param author_pages: list of strs
+    @param nonarticle_titles: list of strs
+    @returns: list of dicts
+    """
     author_titles = [page['title'] for page in author_pages]
     pages = []
     for page in published_pages:
@@ -136,6 +147,7 @@ def _articles_a_z(published_pages, author_pages, nonarticle_titles):
 @ring.redis(config.CACHE, coder='json')
 def articles_a_z():
     """Returns a list of published article titles arranged A-Z.
+    @returns: list of dicts
     """
     titles = _articles_a_z(
         category_members('Published', namespace_id=namespaces_reversed()['Default']),
@@ -147,6 +159,7 @@ def articles_a_z():
 @ring.redis(config.CACHE, coder='json')
 def articles_by_category():
     """Returns list of published articles grouped by category.
+    @returns: (list of strs, dict of article dicts per category)
     """
     categories = []
     titles_by_category = {}
@@ -169,6 +182,8 @@ def articles_by_category():
 
 def article_next(title):
     """Returns the title of the next article in the A-Z list.
+    @param title: str
+    @returns: bool
     """
     titles = [page['title'] for page in articles_a_z()]
     try:
@@ -179,6 +194,8 @@ def article_next(title):
     
 def article_prev(title):
     """Returns the title of the previous article in the A-Z list.
+    @param title: str
+    @returns: bool
     """
     titles = [page['title'] for page in articles_a_z()]
     try:
@@ -188,9 +205,17 @@ def article_prev(title):
     return None
 
 def author_articles(title):
+    """
+    @param title: str
+    @returns: list of strs
+    """
     return what_links_here(title)
 
 def _category_members(r_text):
+    """
+    @param r_text: str
+    @returns: list of dicts
+    """
     pages = []
     response = json.loads(r_text)
     if response and response['query'] and response['query']['categorymembers']:
@@ -213,6 +238,10 @@ def category_members(category_name, namespace_id=None):
     a list of _dicts_ containing namespace id, title, and sortkey.
     This is so certain views (e.g. Contents A-Z can grab the first letter
     of the title (or sortkey) to use for grouping purposes.
+    
+    @param category_name: str
+    @param namespace_id: str
+    @returns: list of dicts
     """
     cookies = api_login()
     LIMIT = 5000
@@ -226,29 +255,49 @@ def category_members(category_name, namespace_id=None):
     return pages
 
 def category_article_types():
-    """Returns list of subcategories underneath 'Article'."""
+    """Returns list of subcategories underneath 'Article'.
+    @returns: list of dicts
+    """
     titles = [page for page in category_members('Articles')]
     return titles
 def category_authors():
+    """
+    @returns: list of dicts
+    """
     titles = [page for page in category_members('Authors')]
     return titles
 def category_supplemental():
+    """
+    @returns: list of dicts
+    """
     titles = [page for page in category_members('Supplemental_Materials')]
     return titles
 
 def is_article(title):
+    """
+    @param title: str
+    @returns: bool
+    """
     titles = [page['title'] for page in published_pages()]
     if title in titles:
         return True
     return False
 
 def is_author(title):
+    """
+    @param title: str
+    @returns: bool
+    """
     for page in category_authors():
         if title == page['title']:
             return True
     return False
 
 def _namespaces(r_text):
+    """
+    @param r_text: str
+    @returns: dict
+    """
     namespaces = {}
     response = json.loads(r_text)
     if response and response['query'] and response['query']['namespaces']:
@@ -267,6 +316,7 @@ def _namespaces(r_text):
 @ring.redis(config.CACHE, coder='json')
 def namespaces():
     """Returns dict of namespaces and their codes.
+    @returns: dict
     """
     url = '%s?action=query&meta=siteinfo&siprop=namespaces|namespacealiases&format=json' % (config.MEDIAWIKI_API)
     r = http.get(url, headers={'content-type':'application/json'}, timeout=TIMEOUT)
@@ -276,6 +326,7 @@ def namespaces():
 
 def namespaces_reversed():
     """Returns dict of namespaces and their codes, organized by name.
+    @returns: dict
     """
     nspaces = {}
     namespaces_codes = namespaces()
@@ -284,6 +335,11 @@ def namespaces_reversed():
     return nspaces
 
 def _page_categories(whitelist, r_text):
+    """
+    @param whitelist: list of dicts
+    @param r_text: str
+    @returns: list of strs
+    """
     categories = []
     article_categories = [c['title'] for c in whitelist]
     response = json.loads(r_text)
@@ -300,6 +356,7 @@ def _page_categories(whitelist, r_text):
 @ring.redis(config.CACHE, coder='json')
 def page_categories(title, whitelist=[]):
     """Returns list of article subcategories the page belongs to.
+    @returns: list of strs
     """
     url = '%s?format=json&action=query&prop=categories&titles=%s' % (config.MEDIAWIKI_API, title)
     r = http.get(url, headers={'content-type':'application/json'}, timeout=TIMEOUT)
@@ -310,6 +367,11 @@ def page_categories(title, whitelist=[]):
     return categories
 
 def _published_pages(allpages, all_published_pages):
+    """
+    @param allpages: list of dicts
+    @param all_published_pages: list of dicts
+    @returns: list of dicts
+    """
     # published_article_ids
     pids = [page['pageid'] for page in all_published_pages]
     pages = []
@@ -326,6 +388,7 @@ def _published_pages(allpages, all_published_pages):
 def published_pages(cached_ok=True):
     """Returns a list of *published* articles (pages), with timestamp of latest revision.
     @param cached_ok: boolean Whether cached results are OK.
+    @returns: list of dicts
     """
     pages = _published_pages(
         all_pages(),
@@ -334,6 +397,11 @@ def published_pages(cached_ok=True):
     return pages
 
 def _published_authors(publishedpages, categoryauthors):
+    """
+    @param publishedpages: list of dicts
+    @param categoryauthors: list of dicts
+    @returns: list of dicts
+    """
     titles = []
     for page in publishedpages:
         if page['title'] not in titles:
@@ -349,6 +417,7 @@ def _published_authors(publishedpages, categoryauthors):
 def published_authors(cached_ok=True):
     """Returns a list of *published* authors (pages), with timestamp of latest revision.
     @param cached_ok: boolean Whether cached results are OK.
+    @returns: list of dicts
     """
     authors = _published_authors(
         published_pages(),
@@ -357,6 +426,11 @@ def published_authors(cached_ok=True):
     return authors
 
 def _whatlinkshere(publishedpages, r_text):
+    """
+    @param publishedpages: list of dicts
+    @param r_text: str
+    @returns: list of strs
+    """
     titles = []
     published = [page['title'] for page in publishedpages]
     response = json.loads(r_text)
@@ -371,6 +445,8 @@ def _whatlinkshere(publishedpages, r_text):
 @ring.redis(config.CACHE, coder='json')
 def what_links_here(title):
     """Returns titles of published pages that link to this one.
+    @param title: str
+    @returns: list of strs
     """
     url = '%s?format=json&action=query&list=backlinks&bltitle=%s&bllimit=5000' % (config.MEDIAWIKI_API, title)
     r = http.get(url, headers={'content-type':'application/json'}, timeout=TIMEOUT)
