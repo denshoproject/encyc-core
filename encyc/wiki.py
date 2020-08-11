@@ -16,6 +16,7 @@ NON_ARTICLE_PAGES = ['about', 'categories', 'contact', 'contents', 'search',]
 TIMEOUT = float(config.MEDIAWIKI_API_TIMEOUT)
 
 
+# TODO encyc.cli
 def status_code():
     """Return HTTP status code from GET-ing the Mediawiki API
     
@@ -144,6 +145,7 @@ def _articles_a_z(published_pages, author_pages, nonarticle_titles):
             pages.append(page)
     return pages
     
+# TODO encyc.models.legacy
 @ring.redis(config.CACHE, coder='json')
 def articles_a_z():
     """Returns a list of published article titles arranged A-Z.
@@ -156,6 +158,7 @@ def articles_a_z():
     )
     return titles
 
+# TODO encyc.models.legacy
 @ring.redis(config.CACHE, coder='json')
 def articles_by_category():
     """Returns list of published articles grouped by category.
@@ -180,6 +183,7 @@ def articles_by_category():
             titles_by_category[category] = titles
     return categories,titles_by_category
 
+# TODO encyc.models.legacy
 def article_next(title):
     """Returns the title of the next article in the A-Z list.
     @param title: str
@@ -192,6 +196,7 @@ def article_next(title):
         pass
     return None
     
+# TODO encyc.models.legacy
 def article_prev(title):
     """Returns the title of the previous article in the A-Z list.
     @param title: str
@@ -204,6 +209,7 @@ def article_prev(title):
         pass
     return None
 
+# TODO encyc.models.legacy
 def author_articles(title):
     """
     @param title: str
@@ -230,6 +236,7 @@ def _category_members(r_text):
         pages = sorted(pages, key=itemgetter('sortkey'))
     return pages
 
+# TODO encyc.models.legacy
 @ring.redis(config.CACHE, coder='json')
 def category_members(category_name, namespace_id=None):
     """Returns titles of pages with specified Category: tag.
@@ -273,6 +280,7 @@ def category_supplemental():
     titles = [page for page in category_members('Supplemental_Materials')]
     return titles
 
+# TODO encyc.models.legacy
 def is_article(title):
     """
     @param title: str
@@ -283,6 +291,7 @@ def is_article(title):
         return True
     return False
 
+# TODO encyc.models.legacy
 def is_author(title):
     """
     @param title: str
@@ -384,6 +393,7 @@ def _published_pages(allpages, all_published_pages):
             pages.append(page)
     return pages
     
+# TODO encyc.models.legacy
 @ring.redis(config.CACHE, coder='json')
 def published_pages(cached_ok=True):
     """Returns a list of *published* articles (pages), with timestamp of latest revision.
@@ -413,6 +423,7 @@ def _published_authors(publishedpages, categoryauthors):
     ]
     return authors
 
+# TODO encyc.models.legacy
 @ring.redis(config.CACHE, coder='json')
 def published_authors(cached_ok=True):
     """Returns a list of *published* authors (pages), with timestamp of latest revision.
