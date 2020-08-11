@@ -244,25 +244,16 @@ class Proxy(object):
     """
 
     @staticmethod
-    def articles_by_category():
-        articles_by_category = []
-        categories,titles_by_category = wiki.articles_by_category()
-        for category in categories:
-            titles = [page['title'] for page in titles_by_category[category]]
-            articles_by_category.append( (category,titles) )
-        return articles_by_category
-
-    @staticmethod
     def articles():
         articles = [
-            {'first_letter':page['sortkey'][0].upper(), 'title':page['title']}
-            for page in wiki.articles_a_z()
+            {'first_letter':page['sortkey'][0].upper(), 'title':page.name}
+            for page in wiki.published_pages()
         ]
         return articles
 
     @staticmethod
     def authors(cached_ok=True, columnize=False):
-        authors = [page['title'] for page in wiki.published_authors(cached_ok=cached_ok)]
+        authors = [page.name for page in wiki.published_authors(cached_ok=cached_ok)]
         if columnize:
             return helpers.columnizer(authors, 4)
         return authors
@@ -273,10 +264,10 @@ class Proxy(object):
         """
         pages = [
             {
-                'title': p['title'],
-                'lastmod': datetime.strptime(p['timestamp'], config.MEDIAWIKI_DATETIME_FORMAT_TZ)
+                'title': page.name,
+                'lastmod': datetime.strptime(page.timestamp, config.MEDIAWIKI_DATETIME_FORMAT_TZ)
             }
-            for p in wiki.published_pages(cached_ok=False)
+            for page in wiki.published_pages(cached_ok=False)
         ]
         return pages
 
@@ -393,7 +384,7 @@ class Proxy(object):
                 
                 # only include categories from Category:Articles
                 categories_whitelist = [
-                    category['title'].split(':')[1]
+                    category.name.split(':')[1]
                     for category in wiki.category_article_types()
                 ]
                 page.categories = [
