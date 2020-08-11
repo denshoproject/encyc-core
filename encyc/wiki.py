@@ -3,6 +3,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 from operator import itemgetter
+import re
 from typing import List, Set, Dict, Tuple, Optional, Any
 from urllib.parse import urlparse
 
@@ -26,6 +27,85 @@ def status_code() -> Tuple[int,str]:
     """
     r = http.get(config.MEDIAWIKI_API)
     return r.status_code,r.reason
+
+
+SORTKEY_PROG = re.compile(r'DEFAULTSORT:(\w+)')
+
+class Page(mwclient.page.Page):
+
+    def __init__(self, page):
+        for key,val in page.__dict__.items():
+            setattr(self, key, val)
+
+    def __repr__(self):
+        return '<%s.%s "%s">' % (
+            self.__module__,
+            self.__class__.__name__,
+            self.name
+        )
+
+    def sortkey(self):
+        """Contents of DEFAULTSORT tag or the title
+        """
+        match = re.search(pattern, page.text())
+        if match:
+            return match.groups()[0]
+        return page.name
+
+
+class Author(Page):
+
+    def __init__(self, page):
+        for key,val in page.__dict__.items():
+            setattr(self, key, val)
+
+    def __repr__(self):
+        return '<%s.%s "%s">' % (
+            self.__module__,
+            self.__class__.__name__,
+            self.name
+        )
+
+
+class MediaWiki():
+
+    def __init__(self):
+        self.mw = MediaWiki._login()
+
+    @staticmethod
+    def _login():
+        """Get an initialconnection to the wiki.
+        """
+        logging.debug('initializing')
+        if config.MEDIAWIKI_HTTP_USERNAME and config.MEDIAWIKI_HTTP_PASSWORD:
+            logging.debug('http passwd')
+            wiki = mwclient.Site(
+                host=config.MEDIAWIKI_HOST,
+                scheme=config.MEDIAWIKI_SCHEME,
+                path='/',
+                httpauth=(
+                    config.MEDIAWIKI_HTTP_USERNAME,
+                    config.MEDIAWIKI_HTTP_PASSWORD
+                ),
+                retry_timeout=5, max_retries=3,
+            )
+        else:
+            logging.debug('no http passwd')
+            wiki = mwclient.Site(
+                host=config.MEDIAWIKI_HOST,
+                scheme=config.MEDIAWIKI_SCHEME,
+                path='/',
+                retry_timeout=5, max_retries=3,
+            )
+        logging.debug(wiki)
+        logging.debug('logging in')
+        wiki.login(
+            username=config.MEDIAWIKI_USERNAME,
+            password=config.MEDIAWIKI_PASSWORD
+        )
+        logging.debug(wiki)
+        logging.debug('done')
+        return wiki
 
 def api_login_round1(lgname, lgpassword):
     url = '%s?action=login&format=xml' % (config.MEDIAWIKI_API)
@@ -130,64 +210,38 @@ def all_pages():
     api_logout()
     return pages
     
-# TODO encyc.models.legacy
 @ring.redis(config.CACHE, coder='json')
 def articles_a_z() -> List[str]:
     """Returns a list of published article titles arranged A-Z.
-    @returns: list of dicts
+    @returns: list of encyc.wiki.Page
     """
     w = MediaWiki()
-    authors = [author.name for author in w.mw.categories['Authors']]
+    authors = [page.name for page in w.mw.categories['Authors']]
     return sorted([
         page.name for page in published_pages()
         if page.name not in authors
     ])
 
-# TODO encyc.models.legacy
-@ring.redis(config.CACHE, coder='json')
-def articles_by_category() -> Tuple[List[str], Dict[str, List[Any]]]:
-    """Returns list of published articles grouped by category.
-    @returns: (list of strs, dict of article dicts per category)
-    """
-    categories = []
-    titles_by_category = {}
-    published = [page['title'] for page in published_pages()]
-    cat_titles = [page['title'] for page in category_article_types()]
-    for category in cat_titles:
-        category = category.replace('Category:','')
-        # TODO fix this, this is bad
-        titles = [
-            page
-            for page in category_members(
-                    category, namespace_id=namespaces_reversed()['Default']
-            )
-            if page['title'] in published
-        ]
-        if titles:
-            categories.append(category)
-            titles_by_category[category] = titles
-    return categories,titles_by_category
-
-# TODO encyc.models.legacy
+# DONE encyc.models.legacy
 def article_next(title: str) -> List[str]:
     """Returns the title of the next article in the A-Z list.
     @param title: str
     @returns: bool
     """
-    titles = [page['title'] for page in articles_a_z()]
+    titles = articles_a_z()
     try:
         return titles[titles.index(title) + 1]
     except:
         pass
     return []
     
-# TODO encyc.models.legacy
+# DONE encyc.models.legacy
 def article_prev(title: str) -> List[str]:
     """Returns the title of the previous article in the A-Z list.
     @param title: str
     @returns: bool
     """
-    titles = [page['title'] for page in articles_a_z()]
+    titles = articles_a_z()
     try:
         return titles[titles.index(title) - 1]
     except:
@@ -195,6 +249,7 @@ def article_prev(title: str) -> List[str]:
     return []
 
 # DONE encyc.models.legacy
+@ring.redis(config.CACHE, coder='json')
 def author_articles(title: str) -> List[str]:
     """
     @param title: str
@@ -214,29 +269,29 @@ def category_members(category_name: str, namespace_id: str=None) -> List[Dict[st
     
     @param category_name: str
     @param namespace_id: str
-    @returns: list of dicts
+    @returns: list of encyc.wiki.Page
     """
-    return [page for page in w.mw.categories[category_name]]
+    return [Page(page) for page in w.mw.categories[category_name]]
 
-# TODO encyc.models.legacy
+# DONE encyc.models.legacy
 def category_article_types():
     """Returns list of subcategories underneath 'Article'.
-    @returns: list of dicts
+    @returns: list of encyc.wiki.Page
     """
-    titles = [page for page in category_members('Articles')]
-    return titles
+    w = MediaWiki()
+    return [Page(page) for page in w.mw.categories['Articles']]
 def category_authors():
     """
     @returns: list of dicts
     """
-    titles = [page for page in category_members('Authors')]
-    return titles
+    w = MediaWiki()
+    return list(w.mw.categories['Authors'])
 def category_supplemental():
     """
     @returns: list of dicts
     """
-    titles = [page for page in category_members('Supplemental_Materials')]
-    return titles
+    w = MediaWiki()
+    return list(w.mw.categories['Supplemental_Materials'])
 
 # DONE encyc.models.legacy
 def is_article(title: str) -> bool:
@@ -334,12 +389,14 @@ def page_categories(title, whitelist=[]):
 def published_pages(cached_ok: bool=True) -> List[Dict[str,str]]:
     """Returns a list of *published* articles (pages), with timestamp of latest revision.
     @param cached_ok: boolean Whether cached results are OK.
-    @returns: list of mwclient.page.Page
+    @returns: list of encyc.wiki.Page
     """
     w = MediaWiki()
+    authors = [page.name for page in w.mw.categories['Authors']]
     return [
-        page for page in w.mw.categories['Published']
+        Page(page) for page in w.mw.categories['Published']
         if not isinstance(page, mwclient.listing.Category)
+        and not page.name in authors
     ]
 
 # DONE encyc.models.legacy
@@ -347,12 +404,15 @@ def published_pages(cached_ok: bool=True) -> List[Dict[str,str]]:
 def published_authors(cached_ok: bool=True) -> List[Dict[str,str]]:
     """Returns a list of *published* authors (pages), with timestamp of latest revision.
     @param cached_ok: boolean Whether cached results are OK.
-    @returns: list of mwclient.page.Page
+    @returns: list of encyc.wiki.Page
     """
     w = MediaWiki()
-    authors = [
-        author for author in w.mw.categories['Authors']
-        # TODO optimize: this causes another network call for each author
-        if 'Category:Published' in list(c.name for c in author.categories())
+    published = [
+        page.name for page in w.mw.categories['Published']
+        if isinstance(page, mwclient.page.Page)
     ]
+    authors = []
+    for page in [Author(page) for page in w.mw.categories['Authors']]:
+        if page.name in published:
+            authors.append(page)
     return authors
