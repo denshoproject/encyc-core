@@ -7,6 +7,7 @@ from typing import List, Set, Dict, Tuple, Optional, Any
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
+import mwclient
 import ring
 
 from encyc import config
@@ -128,23 +129,6 @@ def all_pages():
         pages = _all_pages(r.text)
     api_logout()
     return pages
-
-def _articles_a_z(published_pages, author_pages, nonarticle_titles):
-    """
-    @param published_pages: list of dicts
-    @param author_pages: list of strs
-    @param nonarticle_titles: list of strs
-    @returns: list of dicts
-    """
-    author_titles = [page['title'] for page in author_pages]
-    pages = []
-    for page in published_pages:
-        if ('Category' not in page['title']) \
-        and (page['title'] not in author_titles) \
-        and (page['title'] not in nonarticle_titles) \
-        and (page['title'] not in pages):
-            pages.append(page)
-    return pages
     
 # TODO encyc.models.legacy
 @ring.redis(config.CACHE, coder='json')
@@ -152,12 +136,12 @@ def articles_a_z() -> List[str]:
     """Returns a list of published article titles arranged A-Z.
     @returns: list of dicts
     """
-    titles = _articles_a_z(
-        category_members('Published', namespace_id=namespaces_reversed()['Default']),
-        published_authors(),
-        NON_ARTICLE_PAGES
-    )
-    return titles
+    w = MediaWiki()
+    authors = [author.name for author in w.mw.categories['Authors']]
+    return sorted([
+        page.name for page in published_pages()
+        if page.name not in authors
+    ])
 
 # TODO encyc.models.legacy
 @ring.redis(config.CACHE, coder='json')
@@ -210,34 +194,15 @@ def article_prev(title: str) -> List[str]:
         pass
     return []
 
-# TODO encyc.models.legacy
+# DONE encyc.models.legacy
 def author_articles(title: str) -> List[str]:
     """
     @param title: str
     @returns: list of strs
     """
-    return what_links_here(title)
+    w = MediaWiki()
+    return [page.name for page in w.mw.Pages.get(title).backlinks()]
 
-def _category_members(r_text):
-    """
-    @param r_text: str
-    @returns: list of dicts
-    """
-    pages = []
-    response = json.loads(r_text)
-    if response and response['query'] and response['query']['categorymembers']:
-        for page in response['query']['categorymembers']:
-            page['sortkey'] = page['sortkeyprefix']
-            page.pop('sortkeyprefix')
-            if page['title'] and not page['sortkey']:
-                page['sortkey'] = page['title']
-            if page['sortkey']:
-                page['sortkey'] = page['sortkey'].lower()
-            pages.append(page)
-        pages = sorted(pages, key=itemgetter('sortkey'))
-    return pages
-
-# TODO encyc.models.legacy
 @ring.redis(config.CACHE, coder='json')
 def category_members(category_name: str, namespace_id: str=None) -> List[Dict[str,str]]:
     """Returns titles of pages with specified Category: tag.
@@ -251,17 +216,9 @@ def category_members(category_name: str, namespace_id: str=None) -> List[Dict[st
     @param namespace_id: str
     @returns: list of dicts
     """
-    cookies = api_login()
-    LIMIT = 5000
-    url = '%s?format=json&action=query&list=categorymembers&cmsort=sortkey&cmprop=ids|sortkeyprefix|title&cmtitle=Category:%s&cmlimit=5000' % (config.MEDIAWIKI_API, category_name)
-    if namespace_id != None:
-        url = '%s&gcmnamespace=%s' % (url, namespace_id)
-    r = http.get(url, headers={'content-type':'application/json'}, cookies=cookies, timeout=TIMEOUT)
-    if r.status_code == 200:
-        pages = _category_members(r.text)
-    api_logout()
-    return pages
+    return [page for page in w.mw.categories[category_name]]
 
+# TODO encyc.models.legacy
 def category_article_types():
     """Returns list of subcategories underneath 'Article'.
     @returns: list of dicts
@@ -281,27 +238,23 @@ def category_supplemental():
     titles = [page for page in category_members('Supplemental_Materials')]
     return titles
 
-# TODO encyc.models.legacy
+# DONE encyc.models.legacy
 def is_article(title: str) -> bool:
     """
     @param title: str
     @returns: bool
     """
-    titles = [page['title'] for page in published_pages()]
-    if title in titles:
-        return True
-    return False
+    return title in [page.name for page in published_pages()]
 
-# TODO encyc.models.legacy
+# DONE encyc.models.legacy
 def is_author(title: str) -> bool:
     """
     @param title: str
     @returns: bool
     """
-    for page in category_authors():
-        if title == page['title']:
-            return True
-    return False
+    w = MediaWiki()
+    page = w.mw.pages[title]
+    return 'Category:Authors' in [cat.name for cat in page.categories()]
 
 def _namespaces(r_text):
     """
@@ -375,93 +328,31 @@ def page_categories(title, whitelist=[]):
             whitelist = category_article_types()
         categories = _page_categories(whitelist, r.text)
     return categories
-
-def _published_pages(allpages, all_published_pages):
-    """
-    @param allpages: list of dicts
-    @param all_published_pages: list of dicts
-    @returns: list of dicts
-    """
-    # published_article_ids
-    pids = [page['pageid'] for page in all_published_pages]
-    pages = []
-    for page in allpages:
-        if page['pageid'] in pids:
-            if page.get('revisions') \
-            and page['revisions'][0].get('timestamp') \
-            and not page.get('timestamp'):
-                page['timestamp'] = page['revisions'][0]['timestamp']
-            pages.append(page)
-    return pages
     
-# TODO encyc.models.legacy
-@ring.redis(config.CACHE, coder='json')
+# DONE encyc.models.legacy
+#@ring.redis(config.CACHE, coder='json')
 def published_pages(cached_ok: bool=True) -> List[Dict[str,str]]:
     """Returns a list of *published* articles (pages), with timestamp of latest revision.
     @param cached_ok: boolean Whether cached results are OK.
-    @returns: list of dicts
+    @returns: list of mwclient.page.Page
     """
-    pages = _published_pages(
-        all_pages(),
-        category_members('Published', namespace_id=namespaces_reversed()['Default'])
-    )
-    return pages
-
-def _published_authors(publishedpages, categoryauthors):
-    """
-    @param publishedpages: list of dicts
-    @param categoryauthors: list of dicts
-    @returns: list of dicts
-    """
-    titles = []
-    for page in publishedpages:
-        if page['title'] not in titles:
-            titles.append(page['title'])
-    authors = [
-        page
-        for page in categoryauthors
-        if page['title'] in titles
+    w = MediaWiki()
+    return [
+        page for page in w.mw.categories['Published']
+        if not isinstance(page, mwclient.listing.Category)
     ]
-    return authors
 
-# TODO encyc.models.legacy
-@ring.redis(config.CACHE, coder='json')
+# DONE encyc.models.legacy
+#@ring.redis(config.CACHE, coder='json')
 def published_authors(cached_ok: bool=True) -> List[Dict[str,str]]:
     """Returns a list of *published* authors (pages), with timestamp of latest revision.
     @param cached_ok: boolean Whether cached results are OK.
-    @returns: list of dicts
+    @returns: list of mwclient.page.Page
     """
-    authors = _published_authors(
-        published_pages(),
-        category_authors()
-    )
+    w = MediaWiki()
+    authors = [
+        author for author in w.mw.categories['Authors']
+        # TODO optimize: this causes another network call for each author
+        if 'Category:Published' in list(c.name for c in author.categories())
+    ]
     return authors
-
-def _whatlinkshere(publishedpages, r_text):
-    """
-    @param publishedpages: list of dicts
-    @param r_text: str
-    @returns: list of strs
-    """
-    titles = []
-    published = [page['title'] for page in publishedpages]
-    response = json.loads(r_text)
-    if response and response['query'] and response['query']['backlinks']:
-        titles = [
-            backlink['title']
-            for backlink in response['query']['backlinks']
-            if backlink['title'] in published
-        ]
-    return titles
-    
-@ring.redis(config.CACHE, coder='json')
-def what_links_here(title):
-    """Returns titles of published pages that link to this one.
-    @param title: str
-    @returns: list of strs
-    """
-    url = '%s?format=json&action=query&list=backlinks&bltitle=%s&bllimit=5000' % (config.MEDIAWIKI_API, title)
-    r = http.get(url, headers={'content-type':'application/json'}, timeout=TIMEOUT)
-    if r.status_code == 200:
-        titles = _whatlinkshere(published_pages(), r.text)
-    return titles
