@@ -54,6 +54,12 @@ MEDIAWIKI_SHOW_UNPUBLISHED = config.getboolean('mediawiki', 'show_unpublished')
 MEDIAWIKI_DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 MEDIAWIKI_DATETIME_FORMAT_TZ = '%Y-%m-%dT%H:%M:%SZ'
 
+MEDIAWIKI_SCHEME = config.get('mediawiki', 'scheme')
+MEDIAWIKI_HOST = config.get('mediawiki', 'host')
+MEDIAWIKI_USERNAME = config.get('mediawiki', 'username')
+MEDIAWIKI_PASSWORD = config.get('mediawiki', 'password')
+MEDIAWIKI_HTTP_USERNAME = config.get('mediawiki', 'http_username')
+MEDIAWIKI_HTTP_PASSWORD = config.get('mediawiki', 'http_password')
 
 # citations
 AUTHORS_DEFAULT = 'Densho Encyclopedia contributors.'
