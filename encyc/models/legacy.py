@@ -51,7 +51,11 @@ class Author(object):
     author_articles = List[str]
     
     def __repr__(self):
-        return "<Author '%s'>" % self.title
+        return '<%s.%s "%s">' % (
+            self.__module__,
+            self.__class__.__name__,
+            self.title
+        )
     
     def __str__(self):
         return self.title
@@ -89,7 +93,11 @@ class Page(object):
     databoxes = Dict[str,str]
     
     def __repr__(self):
-        return "<Page '%s'>" % self.url_title
+        return '<%s.%s "%s">' % (
+            self.__module__,
+            self.__class__.__name__,
+            self.url_title
+        )
     
     def __str__(self):
         return self.url_title
@@ -125,7 +133,11 @@ class Source(object):
             setattr(self, field, '')
     
     def __repr__(self):
-        return "<legacy.Source '%s'>" % self.encyclopedia_id
+        return '<%s.%s "%s">' % (
+            self.__module__,
+            self.__class__.__name__,
+            self.encyclopedia_id
+        )
     
     def absolute_url(self):
         return urls.reverse('wikiprox-source', args=([self.encyclopedia_id]))

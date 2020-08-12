@@ -88,6 +88,13 @@ def none_strip(text):
 
 class Author(repo_models.Author):
 
+    def __repr__(self):
+        return '<%s.%s "%s">' % (
+            self.__module__,
+            self.__class__.__name__,
+            self.title
+        )
+
     @staticmethod
     def get(title):
         ds = docstore.Docstore()
@@ -181,6 +188,13 @@ class Author(repo_models.Author):
 
 
 class Page(repo_models.Page):
+
+    def __repr__(self):
+        return '<%s.%s "%s">' % (
+            self.__module__,
+            self.__class__.__name__,
+            self.title
+        )
 
     @staticmethod
     def get(title):
@@ -401,6 +415,13 @@ class Page(repo_models.Page):
 
 
 class Source(repo_models.Source):
+
+    def __repr__(self):
+        return '<%s.%s "%s">' % (
+            self.__module__,
+            self.__class__.__name__,
+            self.title
+        )
 
     @staticmethod
     def get(title):
