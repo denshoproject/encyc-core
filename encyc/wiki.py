@@ -271,6 +271,7 @@ def category_members(category_name: str, namespace_id: str=None) -> List[Dict[st
     @param namespace_id: str
     @returns: list of encyc.wiki.Page
     """
+    w = MediaWiki()
     return [Page(page) for page in w.mw.categories[category_name]]
 
 # DONE encyc.models.legacy
@@ -386,7 +387,7 @@ def page_categories(title, whitelist=[]):
     
 # DONE encyc.models.legacy
 #@ring.redis(config.CACHE, coder='json')
-def published_pages(cached_ok: bool=True) -> List[Dict[str,str]]:
+def published_pages(cached_ok: bool=True) -> List[Page]:
     """Returns a list of *published* articles (pages), with timestamp of latest revision.
     @param cached_ok: boolean Whether cached results are OK.
     @returns: list of encyc.wiki.Page
@@ -401,7 +402,7 @@ def published_pages(cached_ok: bool=True) -> List[Dict[str,str]]:
 
 # DONE encyc.models.legacy
 #@ring.redis(config.CACHE, coder='json')
-def published_authors(cached_ok: bool=True) -> List[Dict[str,str]]:
+def published_authors(cached_ok: bool=True) -> List[Author]:
     """Returns a list of *published* authors (pages), with timestamp of latest revision.
     @param cached_ok: boolean Whether cached results are OK.
     @returns: list of encyc.wiki.Page
