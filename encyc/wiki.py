@@ -3,6 +3,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 from operator import itemgetter
+from typing import List, Set, Dict, Tuple, Optional, Any
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
@@ -17,7 +18,7 @@ TIMEOUT = float(config.MEDIAWIKI_API_TIMEOUT)
 
 
 # TODO encyc.cli
-def status_code():
+def status_code() -> Tuple[int,str]:
     """Return HTTP status code from GET-ing the Mediawiki API
     
     @returns: (int, str)
@@ -147,7 +148,7 @@ def _articles_a_z(published_pages, author_pages, nonarticle_titles):
     
 # TODO encyc.models.legacy
 @ring.redis(config.CACHE, coder='json')
-def articles_a_z():
+def articles_a_z() -> List[str]:
     """Returns a list of published article titles arranged A-Z.
     @returns: list of dicts
     """
@@ -160,7 +161,7 @@ def articles_a_z():
 
 # TODO encyc.models.legacy
 @ring.redis(config.CACHE, coder='json')
-def articles_by_category():
+def articles_by_category() -> Tuple[List[str], Dict[str, List[Any]]]:
     """Returns list of published articles grouped by category.
     @returns: (list of strs, dict of article dicts per category)
     """
@@ -184,7 +185,7 @@ def articles_by_category():
     return categories,titles_by_category
 
 # TODO encyc.models.legacy
-def article_next(title):
+def article_next(title: str) -> List[str]:
     """Returns the title of the next article in the A-Z list.
     @param title: str
     @returns: bool
@@ -194,10 +195,10 @@ def article_next(title):
         return titles[titles.index(title) + 1]
     except:
         pass
-    return None
+    return []
     
 # TODO encyc.models.legacy
-def article_prev(title):
+def article_prev(title: str) -> List[str]:
     """Returns the title of the previous article in the A-Z list.
     @param title: str
     @returns: bool
@@ -207,10 +208,10 @@ def article_prev(title):
         return titles[titles.index(title) - 1]
     except:
         pass
-    return None
+    return []
 
 # TODO encyc.models.legacy
-def author_articles(title):
+def author_articles(title: str) -> List[str]:
     """
     @param title: str
     @returns: list of strs
@@ -238,7 +239,7 @@ def _category_members(r_text):
 
 # TODO encyc.models.legacy
 @ring.redis(config.CACHE, coder='json')
-def category_members(category_name, namespace_id=None):
+def category_members(category_name: str, namespace_id: str=None) -> List[Dict[str,str]]:
     """Returns titles of pages with specified Category: tag.
     
     NOTE: Rather than just returning a list of title strings, this returns
@@ -281,7 +282,7 @@ def category_supplemental():
     return titles
 
 # TODO encyc.models.legacy
-def is_article(title):
+def is_article(title: str) -> bool:
     """
     @param title: str
     @returns: bool
@@ -292,7 +293,7 @@ def is_article(title):
     return False
 
 # TODO encyc.models.legacy
-def is_author(title):
+def is_author(title: str) -> bool:
     """
     @param title: str
     @returns: bool
@@ -395,7 +396,7 @@ def _published_pages(allpages, all_published_pages):
     
 # TODO encyc.models.legacy
 @ring.redis(config.CACHE, coder='json')
-def published_pages(cached_ok=True):
+def published_pages(cached_ok: bool=True) -> List[Dict[str,str]]:
     """Returns a list of *published* articles (pages), with timestamp of latest revision.
     @param cached_ok: boolean Whether cached results are OK.
     @returns: list of dicts
@@ -425,7 +426,7 @@ def _published_authors(publishedpages, categoryauthors):
 
 # TODO encyc.models.legacy
 @ring.redis(config.CACHE, coder='json')
-def published_authors(cached_ok=True):
+def published_authors(cached_ok: bool=True) -> List[Dict[str,str]]:
     """Returns a list of *published* authors (pages), with timestamp of latest revision.
     @param cached_ok: boolean Whether cached results are OK.
     @returns: list of dicts
