@@ -5,6 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 import re
+from time import mktime
 from typing import List, Set, Dict, Tuple, Optional
 
 from dateutil import parser
@@ -277,7 +278,7 @@ class Proxy(object):
         pages = [
             {
                 'title': page.name,
-                'lastmod': datetime.strptime(page.timestamp, config.MEDIAWIKI_DATETIME_FORMAT_TZ)
+                'lastmod': datetime.fromtimestamp(mktime(page.touched))
             }
             for page in wiki.published_pages(cached_ok=False)
         ]
