@@ -9,8 +9,8 @@ mwclient==0.10.1
 python-dateutil
 redis
 requests
-ring==0.7.3
 unicodecsv
+walrus
 
 # suggested for development environment
 #coverage

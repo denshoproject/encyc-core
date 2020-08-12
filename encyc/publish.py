@@ -17,6 +17,7 @@ from encyc.models.elastic import Elasticsearch
 from encyc.models.elastic import Author, Page, Source
 from encyc.models.elastic import Facet, FacetTerm
 from encyc import rsync
+from encyc import wiki
 
 
 def stopwatch(fn):
@@ -96,8 +97,9 @@ def print_configs():
 
 @stopwatch
 def status(hosts):
-    mw_author_titles = Proxy.authors(cached_ok=False)
-    mw_articles = Proxy.articles_lastmod()
+    mw = wiki.MediaWiki()
+    mw_author_titles = Proxy.authors(mw, cached_ok=False)
+    mw_articles = Proxy.articles_lastmod(mw)
     num_mw_authors = len(mw_author_titles)
     num_mw_articles = len(mw_articles)
     num_es_authors = Author.authors().total
@@ -136,11 +138,12 @@ def mappings(hosts):
 
 @stopwatch
 def authors(hosts, report=False, dryrun=False, force=False, title=None):
+    mw = wiki.MediaWiki()
     ds = docstore.Docstore()
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'getting mw_authors...')
-    mw_author_titles = Proxy.authors(cached_ok=False)
-    mw_articles = Proxy.articles_lastmod()
+    mw_author_titles = Proxy.authors(mw, cached_ok=False)
+    mw_articles = Proxy.articles_lastmod(mw)
     logprint('debug', 'mediawiki authors: %s' % len(mw_author_titles))
     logprint('debug', 'getting es_authors...')
     es_authors = Author.authors()
@@ -178,7 +181,7 @@ def authors(hosts, report=False, dryrun=False, force=False, title=None):
         logprint('debug', '--------------------')
         logprint('debug', '%s/%s %s' % (n, len(authors_new), title))
         logprint('debug', 'getting from mediawiki')
-        mwauthor = Proxy.page(title)
+        mwauthor = Proxy.page(mw, title)
         try:
             existing_author = Author.get(title)
             logprint('debug', 'exists in elasticsearch')
@@ -203,10 +206,11 @@ def authors(hosts, report=False, dryrun=False, force=False, title=None):
 @stopwatch
 def articles(hosts, report=False, dryrun=False, force=False, title=None):
     logprint('debug', '------------------------------------------------------------------------')
+    mw = wiki.MediaWiki()
     # authors need to be refreshed
     logprint('debug', 'getting mw_authors,articles...')
-    mw_author_titles = Proxy.authors(cached_ok=False)
-    mw_articles = Proxy.articles_lastmod()
+    mw_author_titles = Proxy.authors(mw, cached_ok=False)
+    mw_articles = Proxy.articles_lastmod(mw)
     logprint('debug', 'getting es_articles...')
     es_articles = Page.pages()
     logprint('debug', 'mediawiki articles: %s' % len(mw_articles))
@@ -246,7 +250,7 @@ def articles(hosts, report=False, dryrun=False, force=False, title=None):
         logprint('debug', '--------------------')
         logprint('debug', '%s/%s %s' % (n+1, len(articles_update), title))
         logprint('debug', 'getting from mediawiki')
-        mwpage = Proxy.page(title, rg_titles=rg_titles)
+        mwpage = Proxy.page(mw, title, rg_titles=rg_titles)
         try:
             existing_page = Page.get(title)
             logprint('debug', 'exists in elasticsearch')
@@ -538,8 +542,9 @@ def parse(path, title):
     @param title: str
     @param path: str
     """
+    mw = wiki.MediaWiki()
     #path_html = os.path.splitext(path)[0] + '.html'
     text = read_text(path)
-    mwpage = Proxy._mkpage(title, 200, text)
+    mwpage = Proxy._mkpage(mw, title, 200, text)
     #write_text(mwpage.body, path_html)
     return mwpage.body

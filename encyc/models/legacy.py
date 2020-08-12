@@ -5,7 +5,6 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 import re
-from time import mktime
 from typing import List, Set, Dict, Tuple, Optional
 
 from dateutil import parser
@@ -258,34 +257,35 @@ class Proxy(object):
 
     @staticmethod
     def articles():
+        mw = wiki.MediaWiki()
         articles = [
             {'first_letter':page['sortkey'][0].upper(), 'title':page.name}
-            for page in wiki.published_pages()
+            for page in mw.published_pages()
         ]
         return articles
 
     @staticmethod
-    def authors(cached_ok=True, columnize=False):
-        authors = [page.name for page in wiki.published_authors(cached_ok=cached_ok)]
+    def authors(mw, cached_ok=True, columnize=False):
+        authors = [author['title'] for author in mw.published_authors()]
         if columnize:
             return helpers.columnizer(authors, 4)
         return authors
 
     @staticmethod
-    def articles_lastmod():
+    def articles_lastmod(mw):
         """List of titles and timestamps for all published pages.
         """
         pages = [
             {
-                'title': page.name,
-                'lastmod': datetime.fromtimestamp(mktime(page.touched))
+                'title': page['title'],
+                'lastmod': page['timestamp'],
             }
-            for page in wiki.published_pages(cached_ok=False)
+            for page in mw.published_pages(cached_ok=False)
         ]
         return pages
 
     @staticmethod
-    def page(url_title, request=None, rg_titles=[]):
+    def page(mw, url_title, request=None, rg_titles=[]):
         """
         @param url_title str: Canonical page URL title
         @param request HttpRequest: [optional] Django request object
@@ -295,6 +295,7 @@ class Proxy(object):
         logger.debug(url)
         status_code,text = Proxy._mw_page_text(url)
         return Proxy._mkpage(
+            mw,
             url_title,
             status_code,
             text,
@@ -319,7 +320,7 @@ class Proxy(object):
         return r.status_code,str(r.text)
     
     @staticmethod
-    def _mkpage(url_title, http_status, rawtext, request=None, rg_titles=[]):
+    def _mkpage(mw, url_title, http_status, rawtext, request=None, rg_titles=[]):
         """
         TODO rename me
         @param url_title str: Canonical page URL title
@@ -391,14 +392,14 @@ class Proxy(object):
             if hasattr(config, 'STAGE') and config.STAGE and request:
                 page.sources = sources.replace_source_urls(page.sources, request)
             
-            page.is_article = wiki.is_article(page.title)
+            page.is_article = mw.is_article(page.title)
             if page.is_article:
                 page.description = wikipage.extract_description(page.body)
                 
                 # only include categories from Category:Articles
                 categories_whitelist = [
-                    category.name.split(':')[1]
-                    for category in wiki.category_article_types()
+                    category.split(':')[1]
+                    for category in mw.category_article_types()
                 ]
                 page.categories = [
                     c['*']
@@ -406,14 +407,14 @@ class Proxy(object):
                     if c['*'] in categories_whitelist
                 ]
                 
-                page.prev_page = wiki.article_prev(page.title)
-                page.next_page = wiki.article_next(page.title)
+                page.prev_page = mw.article_prev(page.title)
+                page.next_page = mw.article_next(page.title)
                 page.coordinates = helpers.find_databoxcamps_coordinates(pagedata['parse']['text']['*'])
                 page.authors = helpers.find_author_info(pagedata['parse']['text']['*'])
             
-            page.is_author = wiki.is_author(page.title)
+            page.is_author = mw.is_author(page.title)
             if page.is_author:
-                page.author_articles = wiki.author_articles(page.title)
+                page.author_articles = mw.author_articles(page.title)
             
         return page
     

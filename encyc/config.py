@@ -110,8 +110,11 @@ ENCYCRG_API_BASE = config.get('encycrg', 'api_base')
 ENCYCRG_ARTICLE_BASE = config.get('encycrg', 'article_base')
 ENCYCRG_API = '%s://%s%s' % (ENCYCRG_PROTOCOL, ENCYCRG_DOMAIN, ENCYCRG_API_BASE)
 
-import redis
-CACHE = redis.StrictRedis()
+#import redis
+#CACHE = redis.StrictRedis()
+from walrus import Database
+db = Database()
+CACHE = db.cache()
 
 # Sample core.cfg:
 #

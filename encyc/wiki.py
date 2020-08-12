@@ -4,16 +4,17 @@ import logging
 logger = logging.getLogger(__name__)
 from operator import itemgetter
 import re
+from time import mktime
 from typing import List, Set, Dict, Tuple, Optional, Any
 from urllib.parse import urlparse
 
 from bs4 import BeautifulSoup
 import mwclient
-import ring
 
 from encyc import config
 from encyc import http
 
+cache = config.CACHE
 
 NON_ARTICLE_PAGES = ['about', 'categories', 'contact', 'contents', 'search',]
 TIMEOUT = float(config.MEDIAWIKI_API_TIMEOUT)
@@ -54,7 +55,7 @@ class Page(mwclient.page.Page):
 
 
 class Author(Page):
-
+    
     def __init__(self, page):
         for key,val in page.__dict__.items():
             setattr(self, key, val)
@@ -107,109 +108,130 @@ class MediaWiki():
         logging.debug('done')
         return wiki
 
-@ring.redis(config.CACHE, coder='json')
-def articles_a_z() -> List[str]:
-    """Returns a list of published article titles arranged A-Z.
-    @returns: list of encyc.wiki.Page
-    """
-    w = MediaWiki()
-    authors = [page.name for page in w.mw.categories['Authors']]
-    return sorted([
-        page.name for page in published_pages()
-        if page.name not in authors
-    ])
+    def articles_a_z(self) -> List[str]:
+        """Returns a list of published article titles arranged A-Z.
+        @returns: list of encyc.wiki.Page
+        """
+        key = 'wiki.articles-a-z'
+        data = cache.get(key)
+        if not data:
+            authors = [page.name for page in self.mw.categories['Authors']]
+            data = sorted([
+                page['title'] for page in self.published_pages()
+                if page['title'] not in authors
+            ])
+            cache.set(key, data)
+        return data
 
-# DONE encyc.models.legacy
-def article_next(title: str) -> List[str]:
-    """Returns the title of the next article in the A-Z list.
-    @param title: str
-    @returns: bool
-    """
-    titles = articles_a_z()
-    try:
-        return titles[titles.index(title) + 1]
-    except:
-        pass
-    return []
-    
-# DONE encyc.models.legacy
-def article_prev(title: str) -> List[str]:
-    """Returns the title of the previous article in the A-Z list.
-    @param title: str
-    @returns: bool
-    """
-    titles = articles_a_z()
-    try:
-        return titles[titles.index(title) - 1]
-    except:
-        pass
-    return []
+    # DONE encyc.models.legacy
+    def article_next(self, title: str) -> List[str]:
+        """Returns the title of the next article in the A-Z list.
+        @param title: str
+        @returns: bool
+        """
+        titles = self.articles_a_z()
+        try:
+            return titles[titles.index(title) + 1]
+        except:
+            pass
+        return []
 
-# DONE encyc.models.legacy
-@ring.redis(config.CACHE, coder='json')
-def author_articles(title: str) -> List[str]:
-    """
-    @param title: str
-    @returns: list of strs
-    """
-    w = MediaWiki()
-    return [page.name for page in w.mw.Pages.get(title).backlinks()]
+    # DONE encyc.models.legacy
+    def article_prev(self, title: str) -> List[str]:
+        """Returns the title of the previous article in the A-Z list.
+        @param title: str
+        @returns: bool
+        """
+        titles = self.articles_a_z()
+        try:
+            return titles[titles.index(title) - 1]
+        except:
+            pass
+        return []
 
-# DONE encyc.models.legacy
-def category_article_types():
-    """Returns list of subcategories underneath 'Article'.
-    @returns: list of encyc.wiki.Page
-    """
-    w = MediaWiki()
-    return [Page(page) for page in w.mw.categories['Articles']]
+    # DONE encyc.models.legacy
+    def author_articles(self, title: str) -> List[str]:
+        """
+        @param title: str
+        @returns: list of strs
+        """
+        key = f'wiki.author-articles:{title}'
+        data = cache.get(key)
+        if not data:
+            data = [page.name for page in self.mw.Pages.get(title).backlinks()]
+            cache.set(key, data)
+        return data
 
-# DONE encyc.models.legacy
-def is_article(title: str) -> bool:
-    """
-    @param title: str
-    @returns: bool
-    """
-    return title in [page.name for page in published_pages()]
+    # DONE encyc.models.legacy
+    def category_article_types(self):
+        """Returns list of subcategories underneath 'Article'.
+        @returns: list of encyc.wiki.Page
+        """
+        key = f'wiki.category_article_types'
+        data = cache.get(key)
+        if not data:
+            data = [category.name for category in self.mw.categories['Articles']]
+            cache.set(key, data)
+        return data
 
-# DONE encyc.models.legacy
-def is_author(title: str) -> bool:
-    """
-    @param title: str
-    @returns: bool
-    """
-    w = MediaWiki()
-    page = w.mw.pages[title]
-    return 'Category:Authors' in [cat.name for cat in page.categories()]
-    
-# DONE encyc.models.legacy
-#@ring.redis(config.CACHE, coder='json')
-def published_pages(cached_ok: bool=True) -> List[Page]:
-    """Returns a list of *published* articles (pages), with timestamp of latest revision.
-    @param cached_ok: boolean Whether cached results are OK.
-    @returns: list of encyc.wiki.Page
-    """
-    w = MediaWiki()
-    authors = [page.name for page in w.mw.categories['Authors']]
-    return [
-        Page(page) for page in w.mw.categories['Published']
-        if not isinstance(page, mwclient.listing.Category)
-        and not page.name in authors
-    ]
+    # DONE encyc.models.legacy
+    def is_article(self, title: str) -> bool:
+        """
+        @param title: str
+        @returns: bool
+        """
+        return title in [page['title'] for page in self.published_pages()]
 
-# DONE encyc.models.legacy
-#@ring.redis(config.CACHE, coder='json')
-def published_authors(cached_ok: bool=True) -> List[Author]:
-    """Returns a list of *published* authors (pages), with timestamp of latest revision.
-    @param cached_ok: boolean Whether cached results are OK.
-    @returns: list of encyc.wiki.Page
-    """
-    w = MediaWiki()
-    published = [
-        page.name for page in w.mw.categories['Published']
-        if isinstance(page, mwclient.page.Page)
-    ]
-    authors = []
-    for page in [Author(page) for page in w.mw.categories['Authors']]:
-        if page.name in published:
-            authors.append(page)
-    return authors
+    # DONE encyc.models.legacy
+    def is_author(self, title: str) -> bool:
+        """
+        @param title: str
+        @returns: bool
+        """
+        page = self.mw.pages[title]
+        return 'Category:Authors' in [cat.name for cat in page.categories()]
+
+    # DONE encyc.models.legacy
+    def published_pages(self, cached_ok: bool=True) -> List[Dict[str,str]]:
+        """Returns a list of *published* articles (pages), with timestamp of latest revision.
+        @param cached_ok: boolean Whether cached results are OK.
+        @returns: list of encyc.wiki.Page
+        """
+        key = 'wiki.published_pages'
+        data = cache.get(key)
+        if not data:
+            authors = [page.name for page in self.mw.categories['Authors']]
+            data = [
+                {
+                    'title': page.name,
+                    'timestamp': datetime.fromtimestamp(mktime(page.touched)),
+                }
+                for page in self.mw.categories['Published']
+                if not isinstance(page, mwclient.listing.Category)
+                and not page.name in authors
+            ]
+            cache.set(key, data)
+        return data
+
+    # DONE encyc.models.legacy
+    def published_authors(self, cached_ok: bool=True) -> List[Dict[str,str]]:
+        """Returns a list of *published* authors (pages), with timestamp of latest revision.
+        @param cached_ok: boolean Whether cached results are OK.
+        @returns: list of encyc.wiki.Page
+        """
+        key = 'wiki.published_authors'
+        data = cache.get(key)
+        if not data:
+            published = [
+                page.name for page in self.mw.categories['Published']
+                if isinstance(page, mwclient.page.Page)
+            ]
+            data = [
+                {
+                    'title': page.name,
+                }
+                for page in self.mw.categories['Authors']
+                if page.name in published
+            ]
+            cache.set(key, data)
+        return data
