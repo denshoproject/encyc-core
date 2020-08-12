@@ -19,6 +19,7 @@ unicodecsv
 
 bpython
 coverage
+mypy
 pytest
 pytest-cov
 #pytest-testmon

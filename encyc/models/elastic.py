@@ -29,6 +29,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
+from typing import List, Set, Dict, Tuple, Optional
 from urllib.parse import unquote, urlparse
 
 from dateutil import parser
@@ -603,7 +604,7 @@ class Citation(object):
     title = None
     lastmod = None
     retrieved = None
-    authors = []
+    authors = List[str]
     authors_apa = ''
     authors_bibtex = ''
     authors_chicago = ''

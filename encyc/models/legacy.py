@@ -5,6 +5,7 @@ import logging
 logger = logging.getLogger(__name__)
 import os
 import re
+from typing import List, Set, Dict, Tuple, Optional
 
 from dateutil import parser
 from elasticsearch_dsl import Search
@@ -47,7 +48,7 @@ class Author(object):
     title_sort = None
     body = None
     lastmod = None
-    author_articles = []
+    author_articles = List[str]
     
     def __repr__(self):
         return "<Author '%s'>" % self.title
@@ -79,13 +80,13 @@ class Page(object):
     title = None
     description = None
     body = None
-    sources = []
-    categories = []
-    author_articles = []
+    sources = List[str]
+    categories = List[str]
+    author_articles = List[str]
     coordinates = ()
     prev_page = None
     next_page = None
-    databoxes = {}
+    databoxes = Dict[str,str]
     
     def __repr__(self):
         return "<Page '%s'>" % self.url_title
@@ -205,7 +206,7 @@ class Citation(object):
     title = None
     lastmod = None
     retrieved = None
-    authors = []
+    authors = List[str]
     authors_apa = ''
     authors_bibtex = ''
     authors_chicago = ''

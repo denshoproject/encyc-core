@@ -4,13 +4,13 @@ from datetime import datetime
 import click
 from elasticsearch.exceptions import NotFoundError
 
-from encyc import config
+from encyc import config as settings
 from encyc import docstore
 from encyc import publish
 from encyc import wiki
 
-DOCSTORE_HOST = config.DOCSTORE_HOST
-MEDIAWIKI_API = config.MEDIAWIKI_API
+DOCSTORE_HOST = settings.DOCSTORE_HOST
+MEDIAWIKI_API = settings.MEDIAWIKI_API
 
 
 @click.group()
