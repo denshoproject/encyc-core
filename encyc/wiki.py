@@ -200,7 +200,6 @@ class MediaWiki():
         key = 'wiki.published_pages'
         data = cache.get(key)
         if not data:
-            authors = [page.name for page in self.mw.categories['Authors']]
             data = [
                 {
                     'title': page.name,
@@ -208,7 +207,6 @@ class MediaWiki():
                 }
                 for page in self.mw.categories['Published']
                 if not isinstance(page, mwclient.listing.Category)
-                and not page.name in authors
             ]
             cache.set(key, data)
         return data
