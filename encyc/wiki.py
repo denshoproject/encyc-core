@@ -124,7 +124,7 @@ class MediaWiki():
         return data
 
     # DONE encyc.models.legacy
-    def article_next(self, title: str) -> List[str]:
+    def article_next(self, title: str) -> str:
         """Returns the title of the next article in the A-Z list.
         @param title: str
         @returns: bool
@@ -134,10 +134,10 @@ class MediaWiki():
             return titles[titles.index(title) + 1]
         except:
             pass
-        return []
+        return ''
 
     # DONE encyc.models.legacy
-    def article_prev(self, title: str) -> List[str]:
+    def article_prev(self, title: str) -> str:
         """Returns the title of the previous article in the A-Z list.
         @param title: str
         @returns: bool
@@ -147,7 +147,7 @@ class MediaWiki():
             return titles[titles.index(title) - 1]
         except:
             pass
-        return []
+        return ''
 
     # DONE encyc.models.legacy
     def author_articles(self, title: str) -> List[str]:
