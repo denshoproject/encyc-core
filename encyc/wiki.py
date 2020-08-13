@@ -34,10 +34,6 @@ SORTKEY_PROG = re.compile(r'DEFAULTSORT:(\w+)')
 
 class Page(mwclient.page.Page):
 
-    def __init__(self, page):
-        for key,val in page.__dict__.items():
-            setattr(self, key, val)
-
     def __repr__(self):
         return '<%s.%s "%s">' % (
             self.__module__,
