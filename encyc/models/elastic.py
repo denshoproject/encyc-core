@@ -420,7 +420,7 @@ class Source(repo_models.Source):
         return '<%s.%s "%s">' % (
             self.__module__,
             self.__class__.__name__,
-            self.title
+            self.encyclopedia_id
         )
 
     @staticmethod
