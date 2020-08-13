@@ -120,7 +120,7 @@ class MediaWiki():
                 page['title'] for page in self.published_pages()
                 if page['title'] not in authors
             ])
-            cache.set(key, data)
+            cache.set(key, data, config.CACHE_TIMEOUT)
         return data
 
     # DONE encyc.models.legacy
@@ -159,7 +159,7 @@ class MediaWiki():
         data = cache.get(key)
         if not data:
             data = [page.name for page in self.mw.Pages.get(title).backlinks()]
-            cache.set(key, data)
+            cache.set(key, data, config.CACHE_TIMEOUT)
         return data
 
     # DONE encyc.models.legacy
@@ -171,7 +171,7 @@ class MediaWiki():
         data = cache.get(key)
         if not data:
             data = [category.name for category in self.mw.categories['Articles']]
-            cache.set(key, data)
+            cache.set(key, data, config.CACHE_TIMEOUT)
         return data
 
     # DONE encyc.models.legacy
@@ -208,7 +208,7 @@ class MediaWiki():
                 for page in self.mw.categories['Published']
                 if not isinstance(page, mwclient.listing.Category)
             ]
-            cache.set(key, data)
+            cache.set(key, data, config.CACHE_TIMEOUT)
         return data
 
     # DONE encyc.models.legacy
@@ -231,5 +231,5 @@ class MediaWiki():
                 for page in self.mw.categories['Authors']
                 if page.name in published
             ]
-            cache.set(key, data)
+            cache.set(key, data, config.CACHE_TIMEOUT)
         return data

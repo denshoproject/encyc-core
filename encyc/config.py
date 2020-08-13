@@ -115,6 +115,7 @@ ENCYCRG_API = '%s://%s%s' % (ENCYCRG_PROTOCOL, ENCYCRG_DOMAIN, ENCYCRG_API_BASE)
 from walrus import Database
 db = Database()
 CACHE = db.cache()
+CACHE_TIMEOUT = 60*15
 
 # Sample core.cfg:
 #
