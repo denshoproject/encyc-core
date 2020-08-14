@@ -71,8 +71,7 @@ class MediaWiki():
         return wiki
 
     def articles_a_z(self) -> List[str]:
-        """Returns a list of published article titles arranged A-Z.
-        @returns: list of encyc.wiki.Page
+        """List of published article titles arranged A-Z.
         """
         key = 'wiki.articles-a-z'
         data = cache.get(key)
@@ -87,9 +86,7 @@ class MediaWiki():
 
     # DONE encyc.models.legacy
     def article_next(self, title: str) -> str:
-        """Returns the title of the next article in the A-Z list.
-        @param title: str
-        @returns: bool
+        """Title of the next article in the A-Z list.
         """
         titles = self.articles_a_z()
         try:
@@ -100,9 +97,7 @@ class MediaWiki():
 
     # DONE encyc.models.legacy
     def article_prev(self, title: str) -> str:
-        """Returns the title of the previous article in the A-Z list.
-        @param title: str
-        @returns: bool
+        """Title of the previous article in the A-Z list.
         """
         titles = self.articles_a_z()
         try:
@@ -113,9 +108,7 @@ class MediaWiki():
 
     # DONE encyc.models.legacy
     def author_articles(self, title: str) -> List[str]:
-        """
-        @param title: str
-        @returns: list of strs
+        """List of titles by the author
         """
         key = f'wiki.author-articles:{title}'
         data = cache.get(key)
@@ -126,8 +119,7 @@ class MediaWiki():
 
     # DONE encyc.models.legacy
     def category_article_types(self):
-        """Returns list of subcategories underneath 'Article'.
-        @returns: list of encyc.wiki.Page
+        """List of subcategories underneath 'Article'.
         """
         key = f'wiki.category_article_types'
         data = cache.get(key)
@@ -138,26 +130,16 @@ class MediaWiki():
 
     # DONE encyc.models.legacy
     def is_article(self, title: str) -> bool:
-        """
-        @param title: str
-        @returns: bool
-        """
         return title in [page['title'] for page in self.published_pages()]
 
     # DONE encyc.models.legacy
     def is_author(self, title: str) -> bool:
-        """
-        @param title: str
-        @returns: bool
-        """
         page = self.mw.pages[title]
         return 'Category:Authors' in [cat.name for cat in page.categories()]
 
     # DONE encyc.models.legacy
     def published_pages(self, cached_ok: bool=True) -> List[Dict[str,str]]:
-        """Returns a list of *published* articles (pages), with timestamp of latest revision.
-        @param cached_ok: boolean Whether cached results are OK.
-        @returns: list of encyc.wiki.Page
+        """List of *published* articles (pages), with timestamp of latest revision.
         """
         key = 'wiki.published_pages'
         data = cache.get(key)
@@ -175,9 +157,7 @@ class MediaWiki():
 
     # DONE encyc.models.legacy
     def published_authors(self, cached_ok: bool=True) -> List[Dict[str,str]]:
-        """Returns a list of *published* authors (pages), with timestamp of latest revision.
-        @param cached_ok: boolean Whether cached results are OK.
-        @returns: list of encyc.wiki.Page
+        """List of *published* authors (pages), with timestamp of latest revision.
         """
         key = 'wiki.published_authors'
         data = cache.get(key)
