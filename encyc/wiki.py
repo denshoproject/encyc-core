@@ -28,41 +28,7 @@ def status_code() -> Tuple[int,str]:
     """
     r = http.get(config.MEDIAWIKI_API)
     return r.status_code,r.reason
-
-
-SORTKEY_PROG = re.compile(r'DEFAULTSORT:(\w+)')
-
-class Page(mwclient.page.Page):
-
-    def __repr__(self):
-        return '<%s.%s "%s">' % (
-            self.__module__,
-            self.__class__.__name__,
-            self.name
-        )
-
-    def sortkey(self):
-        """Contents of DEFAULTSORT tag or the title
-        """
-        match = re.search(pattern, page.text())
-        if match:
-            return match.groups()[0]
-        return page.name
-
-
-class Author(Page):
-    
-    def __init__(self, page):
-        for key,val in page.__dict__.items():
-            setattr(self, key, val)
-
-    def __repr__(self):
-        return '<%s.%s "%s">' % (
-            self.__module__,
-            self.__class__.__name__,
-            self.name
-        )
-
+        
 
 class MediaWiki():
 
