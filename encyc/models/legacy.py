@@ -105,6 +105,114 @@ class Page(object):
     def absolute_url(self):
         return urls.reverse('wikiprox-page', args=([self.title]))
     
+    @staticmethod
+    def pagedata(mw: wiki.MediaWiki, url_title: str) -> str:
+        url = helpers.page_data_url(config.MEDIAWIKI_API, url_title)
+        r = http.get(url)
+        return str(r.text)
+    
+    @staticmethod
+    def get(mw: wiki.MediaWiki,
+            url_title: str,
+            rawtext: str='',
+            rg_titles: List[str]=[]
+    ):
+        """Get page data from API and return Page object.
+        """
+        logger.debug(url_title)
+        page = Page()
+        page.url_title = url_title
+        page.uri = urls.reverse('wikiprox-page', args=[url_title])
+        if rawtext:
+            pagedata = json.loads(rawtext)
+        else:
+            pagedata = json.loads(Page.pagedata(mw, url_title))
+        if pagedata.get('error') and pagedata['error']['code'] == 'missingtitle':
+            page.status_code = 404
+            page.error = pagedata['error']['code']
+        else:
+            page.status_code = 200
+            page.error = None
+        if (page.status_code == 200) and not page.error:
+            
+            page.public = False
+            ## hide unpublished pages on public systems
+            #page.public = request.META.get('HTTP_X_FORWARDED_FOR',False)
+            # note: header is added by Nginx, should not appear when connected directly
+            # to the app server.
+            page.published = helpers.page_is_published(pagedata)
+            page.lastmod = helpers.page_lastmod(config.MEDIAWIKI_API, page.url_title)
+            
+            # basic page context
+            page.title = pagedata['parse']['displaytitle']
+            
+            title_sort = ''
+            for prop in pagedata['parse']['properties']:
+                if prop.get('name',None) and prop['name'] \
+                and (prop['name'].lower() == 'defaultsort'):
+                    title_sort = prop['*']
+            page.title_sort = make_titlesort(title_sort, page.title)
+            
+            page.sources = helpers.find_primary_sources(
+                config.SOURCES_API,
+                pagedata['parse']['images']
+            )
+            page.databoxes = wikipage.extract_databoxes(
+                pagedata['parse']['text']['*'],
+                config.MEDIAWIKI_DATABOXES
+            )
+            
+            page.published_encyc = True
+            if wikipage.not_published_encyc(pagedata['parse']['text']['*']):
+                # Must be called before marker divs are removed
+                # in wikipage._remove_nonrg_divs
+                page.published_encyc = False
+            
+            page.published_rg = False
+            if hasattr(page, 'databoxes') and page.databoxes \
+            and page.databoxes.get('rgdatabox-Core',{}).get('rgmediatype'):
+                page.published_rg = True
+            
+            page.body = wikipage.parse_mediawiki_text(
+                title=url_title,
+                html=pagedata['parse']['text']['*'],
+                primary_sources=page.sources,
+                public=page.public,
+                printed=False,
+                rg_titles=rg_titles,
+            )
+            
+            # rewrite media URLs on stage
+            # (external URLs not visible to Chrome on Android when connecting through SonicWall)
+            if hasattr(config, 'STAGE') and config.STAGE and request:
+                page.sources = sources.replace_source_urls(page.sources, request)
+            
+            page.is_article = mw.is_article(page.title)
+            if page.is_article:
+                page.description = wikipage.extract_description(page.body)
+                
+                # only include categories from Category:Articles
+                categories_whitelist = [
+                    category.split(':')[1]
+                    for category in mw.category_article_types()
+                ]
+                page.categories = [
+                    c['*']
+                    for c in pagedata['parse']['categories']
+                    if c['*'] in categories_whitelist
+                ]
+                
+                page.prev_page = mw.article_prev(page.title)
+                page.next_page = mw.article_next(page.title)
+                page.coordinates = helpers.find_databoxcamps_coordinates(pagedata['parse']['text']['*'])
+                page.authors = helpers.find_author_info(pagedata['parse']['text']['*'])
+            
+            page.is_author = mw.is_author(page.title)
+            if page.is_author:
+                page.author_articles = mw.author_articles(page.title)
+            
+        return page
+    
     def topics(self):
         terms = Elasticsearch().topics_by_url().get(self.absolute_url(), [])
         for term in terms:
@@ -283,140 +391,6 @@ class Proxy(object):
             for page in mw.published_pages(cached_ok=False)
         ]
         return pages
-
-    @staticmethod
-    def page(mw, url_title, request=None, rg_titles=[]):
-        """
-        @param url_title str: Canonical page URL title
-        @param request HttpRequest: [optional] Django request object
-        @param rg_titles list: Resource Guide url_titles (used to mark links)
-        """
-        url = helpers.page_data_url(config.MEDIAWIKI_API, url_title)
-        logger.debug(url)
-        status_code,text = Proxy._mw_page_text(url)
-        return Proxy._mkpage(
-            mw,
-            url_title,
-            status_code,
-            text,
-            request,
-            rg_titles,
-        )
-    
-    @staticmethod
-    def _mw_page_text(url_title):
-        """
-        @param page: Page title from URL.
-        """
-        logger.debug(url_title)
-        url_title = url_title
-        page = Page()
-        page.url_title = url_title
-        page.uri = urls.reverse('wikiprox-page', args=[url_title])
-        page.url = helpers.page_data_url(config.MEDIAWIKI_API, page.url_title)
-        logger.debug(page.url)
-        r = http.get(page.url)
-        logger.debug(r.status_code)
-        return r.status_code,str(r.text)
-    
-    @staticmethod
-    def _mkpage(mw, url_title, http_status, rawtext, request=None, rg_titles=[]):
-        """
-        TODO rename me
-        @param url_title str: Canonical page URL title
-        @param http_status int: 
-        @param rawtext str: Body of HTTP request
-        @param request HttpRequest: [optional] Django request object
-        @param rg_titles list: Resource Guide url_titles (used to mark links)
-        """
-        logger.debug(url_title)
-        url_title = url_title
-        page = Page()
-        page.url_title = url_title
-        page.uri = urls.reverse('wikiprox-page', args=[url_title])
-        page.url = helpers.page_data_url(config.MEDIAWIKI_API, page.url_title)
-        page.status_code = http_status
-        pagedata = json.loads(rawtext)
-        page.error = pagedata.get('error', None)
-        if (page.status_code == 200) and not page.error:
-            
-            page.public = False
-            ## hide unpublished pages on public systems
-            #page.public = request.META.get('HTTP_X_FORWARDED_FOR',False)
-            # note: header is added by Nginx, should not appear when connected directly
-            # to the app server.
-            page.published = helpers.page_is_published(pagedata)
-            page.lastmod = helpers.page_lastmod(config.MEDIAWIKI_API, page.url_title)
-            
-            # basic page context
-            page.title = pagedata['parse']['displaytitle']
-            
-            title_sort = ''
-            for prop in pagedata['parse']['properties']:
-                if prop.get('name',None) and prop['name'] \
-                and (prop['name'].lower() == 'defaultsort'):
-                    title_sort = prop['*']
-            page.title_sort = make_titlesort(title_sort, page.title)
-            
-            page.sources = helpers.find_primary_sources(
-                config.SOURCES_API,
-                pagedata['parse']['images']
-            )
-            page.databoxes = wikipage.extract_databoxes(
-                pagedata['parse']['text']['*'],
-                config.MEDIAWIKI_DATABOXES
-            )
-            
-            page.published_encyc = True
-            if wikipage.not_published_encyc(pagedata['parse']['text']['*']):
-                # Must be called before marker divs are removed
-                # in wikipage._remove_nonrg_divs
-                page.published_encyc = False
-            
-            page.published_rg = False
-            if hasattr(page, 'databoxes') and page.databoxes \
-            and page.databoxes.get('rgdatabox-Core',{}).get('rgmediatype'):
-                page.published_rg = True
-            
-            page.body = wikipage.parse_mediawiki_text(
-                title=url_title,
-                html=pagedata['parse']['text']['*'],
-                primary_sources=page.sources,
-                public=page.public,
-                printed=False,
-                rg_titles=rg_titles,
-            )
-            
-            # rewrite media URLs on stage
-            # (external URLs not visible to Chrome on Android when connecting through SonicWall)
-            if hasattr(config, 'STAGE') and config.STAGE and request:
-                page.sources = sources.replace_source_urls(page.sources, request)
-            
-            page.is_article = mw.is_article(page.title)
-            if page.is_article:
-                page.description = wikipage.extract_description(page.body)
-                
-                # only include categories from Category:Articles
-                categories_whitelist = [
-                    category.split(':')[1]
-                    for category in mw.category_article_types()
-                ]
-                page.categories = [
-                    c['*']
-                    for c in pagedata['parse']['categories']
-                    if c['*'] in categories_whitelist
-                ]
-                
-                page.prev_page = mw.article_prev(page.title)
-                page.next_page = mw.article_next(page.title)
-                page.coordinates = helpers.find_databoxcamps_coordinates(pagedata['parse']['text']['*'])
-                page.authors = helpers.find_author_info(pagedata['parse']['text']['*'])
-            
-            page.is_author = mw.is_author(page.title)
-            if page.is_author:
-                page.author_articles = mw.author_articles(page.title)
-            
-        return page
     
     @staticmethod
     def sources_all():

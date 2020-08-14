@@ -12,7 +12,7 @@ from elasticsearch.exceptions import TransportError, NotFoundError, Serializatio
 #from DDR import docstore
 from encyc import config
 from encyc import docstore
-from encyc.models.legacy import Proxy
+from encyc.models.legacy import Page as LegacyPage, Proxy
 from encyc.models.elastic import Elasticsearch
 from encyc.models.elastic import Author, Page, Source
 from encyc.models.elastic import Facet, FacetTerm
@@ -181,7 +181,7 @@ def authors(hosts, report=False, dryrun=False, force=False, title=None):
         logprint('debug', '--------------------')
         logprint('debug', '%s/%s %s' % (n, len(authors_new), title))
         logprint('debug', 'getting from mediawiki')
-        mwauthor = Proxy.page(mw, title)
+        mwauthor = LegacyPage.get(mw, title)
         try:
             existing_author = Author.get(title)
             logprint('debug', 'exists in elasticsearch')
@@ -250,7 +250,7 @@ def articles(hosts, report=False, dryrun=False, force=False, title=None):
         logprint('debug', '--------------------')
         logprint('debug', '%s/%s %s' % (n+1, len(articles_update), title))
         logprint('debug', 'getting from mediawiki')
-        mwpage = Proxy.page(mw, title, rg_titles=rg_titles)
+        mwpage = LegacyPage.get(mw, title, rg_titles=rg_titles)
         try:
             existing_page = Page.get(title)
             logprint('debug', 'exists in elasticsearch')
@@ -520,14 +520,13 @@ def _print_dict(d):
             d[key]
         ))
 
-
 def _dumpjson(title, path):
     """Gets page text from MediaWiki and dumps to file.
     
     @param title: str
     @param path: str
     """
-    text = Proxy._mw_page_text(title)
+    text = LegacyPage.pagedata(title)
     data = json.loads(text)
     pretty = format_json(data)
     write_text(pretty, path)
@@ -545,6 +544,6 @@ def parse(path, title):
     mw = wiki.MediaWiki()
     #path_html = os.path.splitext(path)[0] + '.html'
     text = read_text(path)
-    mwpage = Proxy._mkpage(mw, title, 200, text)
+    mwpage = LegacyPage.get(mw, title)
     #write_text(mwpage.body, path_html)
     return mwpage.body
