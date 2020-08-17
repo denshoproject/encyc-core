@@ -5,11 +5,12 @@ beautifulsoup4
 deepdiff
 elasticsearch>=7.0.0,<8.0.0
 elasticsearch-dsl>=7.0.0,<8.0.0
+mwclient==0.10.1
 python-dateutil
 redis
 requests
-ring
 unicodecsv
+walrus
 
 # suggested for development environment
 #coverage
@@ -19,6 +20,7 @@ unicodecsv
 
 bpython
 coverage
+mypy
 pytest
 pytest-cov
 #pytest-testmon

@@ -171,6 +171,12 @@ coverage-encyc-core:
 	cd $(INSTALLDIR)/; \
 	pytest --disable-warnings --rootdir=$(INSTALLDIR) --cov-config=.coveragerc --cov-report=html --cov=encyc encyc/tests/
 
+mypy-encyc-core:
+	@echo ""
+	@echo "mypy-encyc-core --------------------------------------------------------"
+	source $(VIRTUALENV)/bin/activate; \
+	cd $(INSTALLDIR)/; mypy encyc/
+
 uninstall-encyc-core:
 	@echo ""
 	@echo "uninstall encyc-core ------------------------------------------------------"
