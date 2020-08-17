@@ -52,8 +52,8 @@ def htuser_htpass(url):
     """
     username = None; password = None
     if urlparse(url).netloc == urlparse(config.MEDIAWIKI_API).netloc:
-        username = config.MEDIAWIKI_API_HTUSER
-        password = config.MEDIAWIKI_API_HTPASS
+        username = config.MEDIAWIKI_USERNAME
+        password = config.MEDIAWIKI_PASSWORD
     elif urlparse(url).netloc == urlparse(config.SOURCES_API).netloc:
         username = config.SOURCES_API_HTUSER
         password = config.SOURCES_API_HTPASS

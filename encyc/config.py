@@ -30,17 +30,13 @@ DOCSTORE_HOST = config.get('elasticsearch','docstore_host')
 DOCSTORE_TIMEOUT = int(config.get('elasticsearch','docstore_timeout'))
 
 # mediawiki
-MEDIAWIKI_API = config.get('mediawiki', 'api_url')
-MEDIAWIKI_API_USERNAME = config.get('mediawiki', 'api_username')
-MEDIAWIKI_API_PASSWORD = config.get('mediawiki', 'api_password')
-try:
-    MEDIAWIKI_API_HTUSER = config.get('mediawiki', 'api_htuser')
-except:
-    MEDIAWIKI_API_HTUSER = None
-try:
-    MEDIAWIKI_API_HTPASS = config.get('mediawiki', 'api_htpass')
-except:
-    MEDIAWIKI_API_HTPASS = None
+MEDIAWIKI_SCHEME = config.get('mediawiki', 'scheme')
+MEDIAWIKI_HOST = config.get('mediawiki', 'host')
+MEDIAWIKI_USERNAME = config.get('mediawiki', 'username')
+MEDIAWIKI_PASSWORD = config.get('mediawiki', 'password')
+MEDIAWIKI_HTTP_USERNAME = config.get('mediawiki', 'http_username')
+MEDIAWIKI_HTTP_PASSWORD = config.get('mediawiki', 'http_password')
+MEDIAWIKI_API = f'{MEDIAWIKI_SCHEME}://{MEDIAWIKI_HOST}/api.php'
 MEDIAWIKI_API_TIMEOUT = int(config.get('mediawiki', 'api_timeout'))
 try:
     MEDIAWIKI_DATABOXES = {
@@ -54,12 +50,6 @@ MEDIAWIKI_SHOW_UNPUBLISHED = config.getboolean('mediawiki', 'show_unpublished')
 MEDIAWIKI_DATETIME_FORMAT = '%Y-%m-%d %H:%M:%S'
 MEDIAWIKI_DATETIME_FORMAT_TZ = '%Y-%m-%dT%H:%M:%SZ'
 
-MEDIAWIKI_SCHEME = config.get('mediawiki', 'scheme')
-MEDIAWIKI_HOST = config.get('mediawiki', 'host')
-MEDIAWIKI_USERNAME = config.get('mediawiki', 'username')
-MEDIAWIKI_PASSWORD = config.get('mediawiki', 'password')
-MEDIAWIKI_HTTP_USERNAME = config.get('mediawiki', 'http_username')
-MEDIAWIKI_HTTP_PASSWORD = config.get('mediawiki', 'http_password')
 
 # citations
 AUTHORS_DEFAULT = 'Densho Encyclopedia contributors.'
