@@ -84,6 +84,7 @@ class Page(object):
     title = None
     description = None
     body = None
+    authors = List[str]
     sources = List[str]
     categories = List[str]
     author_articles = List[str]
@@ -182,10 +183,10 @@ class Page(object):
                 rg_titles=rg_titles,
             )
             
-            # rewrite media URLs on stage
-            # (external URLs not visible to Chrome on Android when connecting through SonicWall)
-            if hasattr(config, 'STAGE') and config.STAGE and request:
-                page.sources = sources.replace_source_urls(page.sources, request)
+            ## rewrite media URLs on stage
+            ## (external URLs not visible to Chrome on Android when connecting through SonicWall)
+            #if hasattr(config, 'STAGE') and config.STAGE and request:
+            #    page.sources = sources.replace_source_urls(page.sources, request)
             
             page.is_article = mw.is_article(page.title)
             if page.is_article:
