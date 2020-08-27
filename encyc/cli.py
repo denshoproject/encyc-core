@@ -53,11 +53,12 @@ def status(hosts):
     """
     try:
         check_es_status()
-        click.echo('Elasticsearch: OK')
+        click.echo('Elasticsearch ({}): OK'.format(DOCSTORE_HOST))
         es = 1
     except:
         click.echo('Elasticsearch ({}): ERROR'.format(DOCSTORE_HOST))
         es = 0
+    click.echo('MediaWiki ({})'.format(MEDIAWIKI_API))
     if es:
         try:
             click.echo(publish.status(hosts))
@@ -65,10 +66,10 @@ def status(hosts):
             click.echo(err)
     try:
         check_mediawiki_status()
-        click.echo('MediaWiki: OK')
+        click.echo('ok')
         mw = 1
     except:
-        click.echo('ERROR: Mediawiki ({})'.format(MEDIAWIKI_API))
+        click.echo('ERROR')
         mw = 0
 
 @encyc.command()
@@ -76,6 +77,7 @@ def status(hosts):
 def create(hosts):
     """Create new indices.
     """
+    click.echo(f'Elasticsearch ({DOCSTORE_HOST})')
     check_es_status()
     check_mediawiki_status()
     publish.create_indices(hosts)
@@ -88,6 +90,7 @@ def create(hosts):
 def destroy(hosts, confirm):
     """Delete indices (requires --confirm).
     """
+    click.echo(f'Elasticsearch ({DOCSTORE_HOST})')
     check_es_status()
     check_mediawiki_status()
     if confirm:

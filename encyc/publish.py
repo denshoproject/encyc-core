@@ -97,6 +97,7 @@ def print_configs():
 
 @stopwatch
 def status(hosts):
+    logprint('debug', f'MediaWiki login ({config.MEDIAWIKI_SCHEME}://{config.MEDIAWIKI_HOST})')
     mw = wiki.MediaWiki()
     mw_author_titles = Proxy.authors(mw, cached_ok=False)
     mw_articles = Proxy.articles_lastmod(mw)
@@ -138,14 +139,15 @@ def mappings(hosts):
 
 @stopwatch
 def authors(hosts, report=False, dryrun=False, force=False, title=None):
+    logprint('debug', f'MediaWiki login ({config.MEDIAWIKI_SCHEME}://{config.MEDIAWIKI_HOST})')
     mw = wiki.MediaWiki()
     ds = docstore.Docstore()
     logprint('debug', '------------------------------------------------------------------------')
-    logprint('debug', 'getting mw_authors...')
+    logprint('debug', f'getting mw_authors ({config.MEDIAWIKI_API})')
     mw_author_titles = Proxy.authors(mw, cached_ok=False)
     mw_articles = Proxy.articles_lastmod(mw)
     logprint('debug', 'mediawiki authors: %s' % len(mw_author_titles))
-    logprint('debug', 'getting es_authors...')
+    logprint('debug', f'getting es_authors ({config.DOCSTORE_HOST})')
     es_authors = Author.authors()
     logprint('debug', 'elasticsearch authors: %s' % es_authors.total)
     
@@ -206,12 +208,13 @@ def authors(hosts, report=False, dryrun=False, force=False, title=None):
 @stopwatch
 def articles(hosts, report=False, dryrun=False, force=False, title=None):
     logprint('debug', '------------------------------------------------------------------------')
+    logprint('debug', f'MediaWiki login ({config.MEDIAWIKI_SCHEME}://{config.MEDIAWIKI_HOST})')
     mw = wiki.MediaWiki()
     # authors need to be refreshed
-    logprint('debug', 'getting mw_authors,articles...')
+    logprint('debug', f'getting mw_authors,articles ({config.MEDIAWIKI_API})')
     mw_author_titles = Proxy.authors(mw, cached_ok=False)
     mw_articles = Proxy.articles_lastmod(mw)
-    logprint('debug', 'getting es_articles...')
+    logprint('debug', f'getting es_articles ({config.DOCSTORE_HOST})')
     es_articles = Page.pages()
     logprint('debug', 'mediawiki articles: %s' % len(mw_articles))
     logprint('debug', 'elasticsearch articles: %s' % es_articles.total)
@@ -304,14 +307,14 @@ def sources(hosts, report=False, dryrun=False, force=False, psms_id=None):
         'debug',
         '------------------------------------------------------------------------')
     
-    logprint('debug', 'getting sources from PSMS...')
+    logprint('debug', f'getting sources from PSMS ({config.SOURCES_API})')
     ps_sources = Proxy.sources_all()
     if ps_sources and isinstance(ps_sources, list):
         logprint('debug', 'psms sources: %s' % len(ps_sources))
     else:
         logprint('error', ps_sources)
     
-    logprint('debug', 'getting sources from Elasticsearch...')
+    logprint('debug', f'getting sources from Elasticsearch ({config.DOCSTORE_HOST})')
     es_sources = Source.sources()
     if es_sources and isinstance(es_sources, list):
         logprint('debug', 'es_sources: %s' % len(es_sources))
@@ -541,6 +544,7 @@ def parse(path, title):
     @param title: str
     @param path: str
     """
+    logprint('debug', f'MediaWiki login ({config.MEDIAWIKI_SCHEME}://{config.MEDIAWIKI_HOST})')
     mw = wiki.MediaWiki()
     #path_html = os.path.splitext(path)[0] + '.html'
     text = read_text(path)
