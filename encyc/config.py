@@ -69,6 +69,7 @@ except:
 SOURCES_BASE = config.get('sources', 'local_base')
 SOURCES_URL = config.get('sources', 'source_url')
 SOURCES_DEST = config.get('sources', 'remote_dest')
+RSYNC_TIMEOUT = config.get('sources', 'rsync_timeout')
 SOURCES_MEDIA_URL = config.get('sources', 'media_url')
 SOURCES_MEDIA_URL_LOCAL = config.get('sources', 'media_url_local')
 SOURCES_MEDIA_BUCKET = config.get('sources', 'media_bucket')

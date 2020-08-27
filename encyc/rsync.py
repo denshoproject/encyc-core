@@ -1,7 +1,9 @@
 import subprocess
 
+from encyc import config
 
-def push(local_paths, remote_dest, timeout=10):
+
+def push(local_paths, remote_dest, timeout=config.RSYNC_TIMEOUT):
     """Sync a list of local files to a remote dir
     
     @param local_paths: list Absolute paths for local files to transfer

@@ -20,7 +20,7 @@ def _term_documents(term_id, size):
     r = http.get(
         url,
         headers={'content-type':'application/json'},
-        timeout=3)
+        timeout=config.DDR_TIMEOUT)
     if (r.status_code not in [200]):
         raise requests.exceptions.ConnectionError(
             'Error %s' % (r.status_code))
