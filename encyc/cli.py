@@ -1,5 +1,6 @@
 import sys
 from datetime import datetime
+import time
 
 import click
 from elasticsearch.exceptions import NotFoundError
@@ -94,6 +95,7 @@ def destroy(hosts, confirm):
     check_es_status()
     check_mediawiki_status()
     if confirm:
+        time.sleep(3)
         publish.delete_indices(hosts)
     else:
         click.echo("Add '--confirm' if you're sure you want to do this.")
