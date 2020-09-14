@@ -59,12 +59,12 @@ def status(hosts):
     except:
         click.echo('Elasticsearch ({}): ERROR'.format(DOCSTORE_HOST))
         es = 0
-    click.echo('MediaWiki ({})'.format(MEDIAWIKI_API))
     if es:
         try:
             click.echo(publish.status(hosts))
         except NotFoundError as err:
             click.echo(err)
+    click.echo('MediaWiki ({})'.format(MEDIAWIKI_API))
     try:
         check_mediawiki_status()
         click.echo('ok')
