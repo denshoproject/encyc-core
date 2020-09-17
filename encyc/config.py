@@ -22,7 +22,7 @@ def read_configs(paths):
 
 config = read_configs(CONFIG_FILES)
 
-DEBUG = config.get('debug', 'debug')
+DEBUG = config.getboolean('debug', 'debug')
 STAGE = False
 
 #elasticsearch
@@ -30,18 +30,14 @@ DOCSTORE_HOST = config.get('elasticsearch','docstore_host')
 DOCSTORE_TIMEOUT = int(config.get('elasticsearch','docstore_timeout'))
 
 # mediawiki
-MEDIAWIKI_API = config.get('mediawiki', 'api_url')
-MEDIAWIKI_API_USERNAME = config.get('mediawiki', 'api_username')
-MEDIAWIKI_API_PASSWORD = config.get('mediawiki', 'api_password')
-try:
-    MEDIAWIKI_API_HTUSER = config.get('mediawiki', 'api_htuser')
-except:
-    MEDIAWIKI_API_HTUSER = None
-try:
-    MEDIAWIKI_API_HTPASS = config.get('mediawiki', 'api_htpass')
-except:
-    MEDIAWIKI_API_HTPASS = None
-MEDIAWIKI_API_TIMEOUT = config.get('mediawiki', 'api_timeout')
+MEDIAWIKI_SCHEME = config.get('mediawiki', 'scheme')
+MEDIAWIKI_HOST = config.get('mediawiki', 'host')
+MEDIAWIKI_USERNAME = config.get('mediawiki', 'username')
+MEDIAWIKI_PASSWORD = config.get('mediawiki', 'password')
+MEDIAWIKI_HTTP_USERNAME = config.get('mediawiki', 'http_username')
+MEDIAWIKI_HTTP_PASSWORD = config.get('mediawiki', 'http_password')
+MEDIAWIKI_API = f'{MEDIAWIKI_SCHEME}://{MEDIAWIKI_HOST}/api.php'
+MEDIAWIKI_API_TIMEOUT = int(config.get('mediawiki', 'api_timeout'))
 try:
     MEDIAWIKI_DATABOXES = {
         keyval.split(':')[0].strip(): keyval.split(':')[1].strip()
@@ -73,6 +69,7 @@ except:
 SOURCES_BASE = config.get('sources', 'local_base')
 SOURCES_URL = config.get('sources', 'source_url')
 SOURCES_DEST = config.get('sources', 'remote_dest')
+RSYNC_TIMEOUT = config.get('sources', 'rsync_timeout')
 SOURCES_MEDIA_URL = config.get('sources', 'media_url')
 SOURCES_MEDIA_URL_LOCAL = config.get('sources', 'media_url_local')
 SOURCES_MEDIA_BUCKET = config.get('sources', 'media_bucket')
@@ -104,8 +101,12 @@ ENCYCRG_API_BASE = config.get('encycrg', 'api_base')
 ENCYCRG_ARTICLE_BASE = config.get('encycrg', 'article_base')
 ENCYCRG_API = '%s://%s%s' % (ENCYCRG_PROTOCOL, ENCYCRG_DOMAIN, ENCYCRG_API_BASE)
 
-import redis
-CACHE = redis.StrictRedis()
+#import redis
+#CACHE = redis.StrictRedis()
+from walrus import Database
+db = Database()
+CACHE = db.cache()
+CACHE_TIMEOUT = 60*15
 
 # Sample core.cfg:
 #

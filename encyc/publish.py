@@ -12,11 +12,12 @@ from elasticsearch.exceptions import TransportError, NotFoundError, Serializatio
 #from DDR import docstore
 from encyc import config
 from encyc import docstore
-from encyc.models.legacy import Proxy
+from encyc.models.legacy import Page as LegacyPage, Proxy
 from encyc.models.elastic import Elasticsearch
 from encyc.models.elastic import Author, Page, Source
 from encyc.models.elastic import Facet, FacetTerm
 from encyc import rsync
+from encyc import wiki
 
 
 def stopwatch(fn):
@@ -80,24 +81,26 @@ def format_json(data):
 
 def print_configs():
     print('manage.py encyc commands will use the following settings:')
-    print('CONFIG_FILES:           %s' % config.CONFIG_FILES)
+    print('CONFIG_FILES:            %s' % config.CONFIG_FILES)
     print('')
-    print('DOCSTORE_HOST:          %s' % config.DOCSTORE_HOST)
-    print('MEDIAWIKI_API:          %s' % config.MEDIAWIKI_API)
-    print('MEDIAWIKI_API_USERNAME: %s' % config.MEDIAWIKI_API_USERNAME)
-    print('MEDIAWIKI_API_PASSWORD: %s' % config.MEDIAWIKI_API_PASSWORD)
-    print('MEDIAWIKI_API_HTUSER:   %s' % config.MEDIAWIKI_API_HTUSER)
-    print('MEDIAWIKI_API_HTPASS:   %s' % config.MEDIAWIKI_API_HTPASS)
-    print('MEDIAWIKI_API_TIMEOUT:  %s' % config.MEDIAWIKI_API_TIMEOUT)
-    print('SOURCES_API:            %s' % config.SOURCES_API)
-    print('MEDIAWIKI_DATABOXES:    %s' % config.MEDIAWIKI_DATABOXES)
-    print('HIDDEN_TAGS:            %s' % config.HIDDEN_TAGS)
+    print('DOCSTORE_HOST:           %s' % config.DOCSTORE_HOST)
+    print('MEDIAWIKI_API:           %s' % config.MEDIAWIKI_API)
+    print('MEDIAWIKI_USERNAME:      %s' % config.MEDIAWIKI_USERNAME)
+    print('MEDIAWIKI_PASSWORD:      %s' % config.MEDIAWIKI_PASSWORD)
+    print('MEDIAWIKI_HTTP_USERNAME: %s' % config.MEDIAWIKI_HTTP_USERNAME)
+    print('MEDIAWIKI_HTTP_PASSWORD: %s' % config.MEDIAWIKI_HTTP_PASSWORD)
+    print('MEDIAWIKI_API_TIMEOUT:   %s' % config.MEDIAWIKI_API_TIMEOUT)
+    print('SOURCES_API:             %s' % config.SOURCES_API)
+    print('MEDIAWIKI_DATABOXES:     %s' % config.MEDIAWIKI_DATABOXES)
+    print('HIDDEN_TAGS:             %s' % config.HIDDEN_TAGS)
     print('')
 
 @stopwatch
 def status(hosts):
-    mw_author_titles = Proxy.authors(cached_ok=False)
-    mw_articles = Proxy.articles_lastmod()
+    logprint('debug', f'MediaWiki login ({config.MEDIAWIKI_SCHEME}://{config.MEDIAWIKI_HOST})')
+    mw = wiki.MediaWiki()
+    mw_author_titles = Proxy.authors(mw, cached_ok=False)
+    mw_articles = Proxy.articles_lastmod(mw)
     num_mw_authors = len(mw_author_titles)
     num_mw_articles = len(mw_articles)
     num_es_authors = Author.authors().total
@@ -136,13 +139,15 @@ def mappings(hosts):
 
 @stopwatch
 def authors(hosts, report=False, dryrun=False, force=False, title=None):
+    logprint('debug', f'MediaWiki login ({config.MEDIAWIKI_SCHEME}://{config.MEDIAWIKI_HOST})')
+    mw = wiki.MediaWiki()
     ds = docstore.Docstore()
     logprint('debug', '------------------------------------------------------------------------')
-    logprint('debug', 'getting mw_authors...')
-    mw_author_titles = Proxy.authors(cached_ok=False)
-    mw_articles = Proxy.articles_lastmod()
+    logprint('debug', f'getting mw_authors ({config.MEDIAWIKI_API})')
+    mw_author_titles = Proxy.authors(mw, cached_ok=False)
+    mw_articles = Proxy.articles_lastmod(mw)
     logprint('debug', 'mediawiki authors: %s' % len(mw_author_titles))
-    logprint('debug', 'getting es_authors...')
+    logprint('debug', f'getting es_authors ({config.DOCSTORE_HOST})')
     es_authors = Author.authors()
     logprint('debug', 'elasticsearch authors: %s' % es_authors.total)
     
@@ -178,7 +183,7 @@ def authors(hosts, report=False, dryrun=False, force=False, title=None):
         logprint('debug', '--------------------')
         logprint('debug', '%s/%s %s' % (n, len(authors_new), title))
         logprint('debug', 'getting from mediawiki')
-        mwauthor = Proxy.page(title)
+        mwauthor = LegacyPage.get(mw, title)
         try:
             existing_author = Author.get(title)
             logprint('debug', 'exists in elasticsearch')
@@ -203,11 +208,13 @@ def authors(hosts, report=False, dryrun=False, force=False, title=None):
 @stopwatch
 def articles(hosts, report=False, dryrun=False, force=False, title=None):
     logprint('debug', '------------------------------------------------------------------------')
+    logprint('debug', f'MediaWiki login ({config.MEDIAWIKI_SCHEME}://{config.MEDIAWIKI_HOST})')
+    mw = wiki.MediaWiki()
     # authors need to be refreshed
-    logprint('debug', 'getting mw_authors,articles...')
-    mw_author_titles = Proxy.authors(cached_ok=False)
-    mw_articles = Proxy.articles_lastmod()
-    logprint('debug', 'getting es_articles...')
+    logprint('debug', f'getting mw_authors,articles ({config.MEDIAWIKI_API})')
+    mw_author_titles = Proxy.authors(mw, cached_ok=False)
+    mw_articles = Proxy.articles_lastmod(mw)
+    logprint('debug', f'getting es_articles ({config.DOCSTORE_HOST})')
     es_articles = Page.pages()
     logprint('debug', 'mediawiki articles: %s' % len(mw_articles))
     logprint('debug', 'elasticsearch articles: %s' % es_articles.total)
@@ -246,7 +253,7 @@ def articles(hosts, report=False, dryrun=False, force=False, title=None):
         logprint('debug', '--------------------')
         logprint('debug', '%s/%s %s' % (n+1, len(articles_update), title))
         logprint('debug', 'getting from mediawiki')
-        mwpage = Proxy.page(title, rg_titles=rg_titles)
+        mwpage = LegacyPage.get(mw, title, rg_titles=rg_titles)
         try:
             existing_page = Page.get(title)
             logprint('debug', 'exists in elasticsearch')
@@ -300,14 +307,14 @@ def sources(hosts, report=False, dryrun=False, force=False, psms_id=None):
         'debug',
         '------------------------------------------------------------------------')
     
-    logprint('debug', 'getting sources from PSMS...')
+    logprint('debug', f'getting sources from PSMS ({config.SOURCES_API})')
     ps_sources = Proxy.sources_all()
     if ps_sources and isinstance(ps_sources, list):
         logprint('debug', 'psms sources: %s' % len(ps_sources))
     else:
         logprint('error', ps_sources)
     
-    logprint('debug', 'getting sources from Elasticsearch...')
+    logprint('debug', f'getting sources from Elasticsearch ({config.DOCSTORE_HOST})')
     es_sources = Source.sources()
     if es_sources and isinstance(es_sources, list):
         logprint('debug', 'es_sources: %s' % len(es_sources))
@@ -516,14 +523,13 @@ def _print_dict(d):
             d[key]
         ))
 
-
 def _dumpjson(title, path):
     """Gets page text from MediaWiki and dumps to file.
     
     @param title: str
     @param path: str
     """
-    text = Proxy._mw_page_text(title)
+    text = LegacyPage.pagedata(title)
     data = json.loads(text)
     pretty = format_json(data)
     write_text(pretty, path)
@@ -538,8 +544,10 @@ def parse(path, title):
     @param title: str
     @param path: str
     """
+    logprint('debug', f'MediaWiki login ({config.MEDIAWIKI_SCHEME}://{config.MEDIAWIKI_HOST})')
+    mw = wiki.MediaWiki()
     #path_html = os.path.splitext(path)[0] + '.html'
     text = read_text(path)
-    mwpage = Proxy._mkpage(title, 200, text)
+    mwpage = LegacyPage.get(mw, title)
     #write_text(mwpage.body, path_html)
     return mwpage.body

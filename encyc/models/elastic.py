@@ -29,6 +29,7 @@ import json
 import logging
 logger = logging.getLogger(__name__)
 import os
+from typing import List, Set, Dict, Tuple, Optional
 from urllib.parse import unquote, urlparse
 
 from dateutil import parser
@@ -86,6 +87,13 @@ def none_strip(text):
 
 
 class Author(repo_models.Author):
+
+    def __repr__(self):
+        return '<%s.%s "%s">' % (
+            self.__module__,
+            self.__class__.__name__,
+            self.title
+        )
 
     @staticmethod
     def get(title):
@@ -180,6 +188,13 @@ class Author(repo_models.Author):
 
 
 class Page(repo_models.Page):
+
+    def __repr__(self):
+        return '<%s.%s "%s">' % (
+            self.__module__,
+            self.__class__.__name__,
+            self.title
+        )
 
     @staticmethod
     def get(title):
@@ -401,6 +416,13 @@ class Page(repo_models.Page):
 
 class Source(repo_models.Source):
 
+    def __repr__(self):
+        return '<%s.%s "%s">' % (
+            self.__module__,
+            self.__class__.__name__,
+            self.encyclopedia_id
+        )
+
     @staticmethod
     def get(title):
         ds = docstore.Docstore()
@@ -603,7 +625,7 @@ class Citation(object):
     title = None
     lastmod = None
     retrieved = None
-    authors = []
+    authors = List[str]
     authors_apa = ''
     authors_bibtex = ''
     authors_chicago = ''

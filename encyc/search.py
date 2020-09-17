@@ -431,12 +431,13 @@ def sanitize_input(text):
     http://lucene.apache.org/core/old_versioned_docs/versions/2_9_1/queryparsersyntax.html
     TODO Maybe elasticsearch-dsl or elasticsearch-py do this already
     """
+    # Escape special characters
+    # http://lucene.apache.org/core/old_versioned_docs/versions/2_9_1/queryparsersyntax.html
     text = re.sub(
-        '([{}])'.format(re.escape('\\+\-&|!(){}\[\]^~*?:\/')),
+        '([{}])'.format(re.escape(r'&|!(){}[]^~*?:\/')),
         r"\\\1",
         text
     )
-    
     # AND, OR, and NOT are used by lucene as logical operators.
     ## We need to escape these.
     # ...actually, we don't. We want these to be available.
@@ -447,7 +448,6 @@ def sanitize_input(text):
     #        r" {} ".format(escaped_word),
     #        text
     #    )
-    
     # Escape odd quotes
     quote_count = text.count('"')
     if quote_count % 2 == 1:

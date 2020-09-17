@@ -1,16 +1,17 @@
 import sys
 from datetime import datetime
+import time
 
 import click
 from elasticsearch.exceptions import NotFoundError
 
-from encyc import config
+from encyc import config as settings
 from encyc import docstore
 from encyc import publish
 from encyc import wiki
 
-DOCSTORE_HOST = config.DOCSTORE_HOST
-MEDIAWIKI_API = config.MEDIAWIKI_API
+DOCSTORE_HOST = settings.DOCSTORE_HOST
+MEDIAWIKI_API = settings.MEDIAWIKI_API
 
 
 @click.group()
@@ -53,7 +54,7 @@ def status(hosts):
     """
     try:
         check_es_status()
-        click.echo('Elasticsearch: OK')
+        click.echo('Elasticsearch ({}): OK'.format(DOCSTORE_HOST))
         es = 1
     except:
         click.echo('Elasticsearch ({}): ERROR'.format(DOCSTORE_HOST))
@@ -63,12 +64,13 @@ def status(hosts):
             click.echo(publish.status(hosts))
         except NotFoundError as err:
             click.echo(err)
+    click.echo('MediaWiki ({})'.format(MEDIAWIKI_API))
     try:
         check_mediawiki_status()
-        click.echo('MediaWiki: OK')
+        click.echo('ok')
         mw = 1
     except:
-        click.echo('ERROR: Mediawiki ({})'.format(MEDIAWIKI_API))
+        click.echo('ERROR')
         mw = 0
 
 @encyc.command()
@@ -76,6 +78,7 @@ def status(hosts):
 def create(hosts):
     """Create new indices.
     """
+    click.echo(f'Elasticsearch ({DOCSTORE_HOST})')
     check_es_status()
     check_mediawiki_status()
     publish.create_indices(hosts)
@@ -88,9 +91,11 @@ def create(hosts):
 def destroy(hosts, confirm):
     """Delete indices (requires --confirm).
     """
+    click.echo(f'Elasticsearch ({DOCSTORE_HOST})')
     check_es_status()
     check_mediawiki_status()
     if confirm:
+        time.sleep(3)
         publish.delete_indices(hosts)
     else:
         click.echo("Add '--confirm' if you're sure you want to do this.")
