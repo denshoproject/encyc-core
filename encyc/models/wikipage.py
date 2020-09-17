@@ -310,8 +310,6 @@ def _remove_SpecialUpload_links(soup):
     <a class="new" href="/index.php?title=Special:Upload&amp;wpDestFile=ddr-testing-135-15.png" title="File:ddr-testing-135-15.png">200px</a>
     """
     for a in soup.find_all('a', attrs={'class':'new'}):
-        print(a)
-        print(a.contents[0])
         a.decompose()
     return soup
 
