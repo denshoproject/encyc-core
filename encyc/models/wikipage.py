@@ -47,6 +47,7 @@ def parse_mediawiki_text(title, html, primary_sources, public=False, printed=Fal
     )
     soup = _remove_nonrg_divs(soup)
     soup = _remove_primary_sources(soup, primary_sources)
+    soup = _remove_SpecialUpload_links(soup)
     html = soup.prettify()
     html = _rewrite_mediawiki_urls(html)
     html = _rm_tags(html)
@@ -300,6 +301,18 @@ def _remove_primary_sources(soup, sources):
         href = None
         if encyclopedia_id and (encyclopedia_id in sources_keys):
             a.decompose()
+    return soup
+
+def _remove_SpecialUpload_links(soup):
+    """Remove stray Special:Upload links for Sources.
+    
+    Remove these:
+    <a class="new" href="/index.php?title=Special:Upload&amp;wpDestFile=ddr-testing-135-15.png" title="File:ddr-testing-135-15.png">200px</a>
+    """
+    for a in soup.find_all('a', attrs={'class':'new'}):
+        print(a)
+        print(a.contents[0])
+        a.decompose()
     return soup
 
 def _remove_divs(soup, selectors=[], comments=True, separator="="):
