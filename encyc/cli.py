@@ -7,10 +7,12 @@ from elasticsearch.exceptions import NotFoundError
 
 from encyc import config as settings
 from encyc import docstore
+from encyc import http
 from encyc import publish
 from encyc import wiki
 
 DOCSTORE_HOST = settings.DOCSTORE_HOST
+SOURCES_API = settings.SOURCES_API
 MEDIAWIKI_API = settings.MEDIAWIKI_API
 
 
@@ -64,6 +66,14 @@ def status(hosts):
             click.echo(publish.status(hosts))
         except NotFoundError as err:
             click.echo(err)
+    click.echo('PSMS ({})'.format(SOURCES_API))
+    try:
+        check_psms_status()
+        click.echo('ok')
+        psms = 1
+    except:
+        click.echo('ERROR')
+        psms = 0
     click.echo('MediaWiki ({})'.format(MEDIAWIKI_API))
     try:
         check_mediawiki_status()
@@ -164,6 +174,7 @@ def articles(hosts, report, dryrun, force, title):
     """
     check_es_status()
     check_es_index('article')
+    check_psms_status()
     check_mediawiki_status()
     publish.articles(
         hosts=hosts, report=report, dryrun=dryrun, force=force, title=title
@@ -184,6 +195,7 @@ def sources(hosts, report, dryrun, force, sourceid):
     """
     check_es_status()
     check_es_index('source')
+    check_psms_status()
     check_mediawiki_status()
     publish.sources(
         hosts=hosts, report=report, dryrun=dryrun, force=force, psms_id=sourceid
@@ -325,6 +337,7 @@ def test(hosts):
     check_es_index('article')
     check_es_index('source')
     check_es_index('author')
+    check_psms_status()
     check_mediawiki_status()
     
     publish.articles(hosts=hosts, force=1, title="Ansel Adams")
@@ -344,6 +357,14 @@ def check_mediawiki_status():
     status_code,reason = wiki.status_code()
     if status_code != 200:
         click.echo('ERROR: Mediawiki {} {}'.format(str(status_code), reason))
+        sys.exit(1)
+
+def check_psms_status():
+    # yes events is not sources but if sources are 502 events will be too
+    url = f'{SOURCES_API}/events/'
+    r = http.get(url, headers={'content-type':'application/json'})
+    if r.status_code != 200:
+        click.echo('ERROR: PSMS {} {}'.format(str(r.status_code), r.reason))
         sys.exit(1)
 
 def check_es_status():
