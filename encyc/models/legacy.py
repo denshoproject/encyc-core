@@ -400,7 +400,7 @@ class Proxy(object):
         URL = config.SOURCES_API + '/sources/'
         r = http.get(URL, headers={'content-type':'application/json'})
         if r.status_code != 200:
-            return []
+            raise ConnectionError(f'{r.status_code} {r.reason}')
         return [Source.source(data) for data in json.loads(r.text)]
 
     @staticmethod

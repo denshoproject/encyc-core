@@ -308,7 +308,11 @@ def sources(hosts, report=False, dryrun=False, force=False, psms_id=None):
         '------------------------------------------------------------------------')
     
     logprint('debug', f'getting sources from PSMS ({config.SOURCES_API})')
-    ps_sources = Proxy.sources_all()
+    try:
+        ps_sources = Proxy.sources_all()
+    except ConnectionError as err:
+        print(f'{err} from {config.SOURCES_API}')
+        sys.exit(1)
     if ps_sources and isinstance(ps_sources, list):
         logprint('debug', 'psms sources: %s' % len(ps_sources))
     else:
