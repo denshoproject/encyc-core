@@ -30,16 +30,24 @@ PIP_CACHE_DIR=$(INSTALL_BASE)/pip-cache
 
 VIRTUALENV=$(INSTALLDIR)/venv/encyccore
 
+TGZ_BRANCH := $(shell python3 bin/package-branch.py)
+TGZ_FILE=$(APP)_$(APP_VERSION)
+TGZ_DIR=$(INSTALLDIR)/$(TGZ_FILE)
+TGZ_CORE=$(TGZ_DIR)/encyc-core
+
 DEB_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
 DEB_ARCH=amd64
 DEB_NAME_STRETCH=$(APP)-$(DEB_BRANCH)
 DEB_NAME_BUSTER=$(APP)-$(DEB_BRANCH)
+DEB_NAME_BULLSEYE=$(APP)-$(DEB_BRANCH)
 # Application version, separator (~), Debian release tag e.g. deb8
 # Release tag used because sortable and follows Debian project usage.
 DEB_VERSION_STRETCH=$(APP_VERSION)~deb9
 DEB_VERSION_BUSTER=$(APP_VERSION)~deb10
+DEB_VERSION_BULLSEYE=$(APP_VERSION)~deb11
 DEB_FILE_STRETCH=$(DEB_NAME_STRETCH)_$(DEB_VERSION_STRETCH)_$(DEB_ARCH).deb
 DEB_FILE_BUSTER=$(DEB_NAME_BUSTER)_$(DEB_VERSION_BUSTER)_$(DEB_ARCH).deb
+DEB_FILE_BULLSEYE=$(DEB_NAME_BULLSEYE)_$(DEB_VERSION_BULLSEYE)_$(DEB_ARCH).deb
 DEB_VENDOR=Densho.org
 DEB_MAINTAINER=<geoffrey.jost@densho.org>
 DEB_DESCRIPTION=Encyclopedia publishing tools
@@ -218,6 +226,21 @@ install-configs:
 uninstall-configs:
 
 
+tgz-local:
+	rm -Rf $(TGZ_DIR)
+	git clone $(INSTALLDIR) $(TGZ_CORE)
+	cd $(TGZ_CORE); git checkout develop; git checkout master
+	tar czf $(TGZ_FILE).tgz $(TGZ_FILE)
+	rm -Rf $(TGZ_DIR)
+
+tgz:
+	rm -Rf $(TGZ_DIR)
+	git clone $(GIT_SOURCE_URL) $(TGZ_CORE)
+	cd $(TGZ_CORE); git checkout develop; git checkout master
+	tar czf $(TGZ_FILE).tgz $(TGZ_FILE)
+	rm -Rf $(TGZ_DIR)
+
+
 # http://fpm.readthedocs.io/en/latest/
 install-fpm:
 	@echo "install-fpm ------------------------------------------------------------"
@@ -228,7 +251,7 @@ install-fpm:
 # http://fpm.readthedocs.io/en/latest/
 # https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
 # https://brejoc.com/tag/fpm/
-deb: deb-stretch
+deb: deb-bullseye
 
 deb-stretch:
 	@echo ""
@@ -278,6 +301,41 @@ deb-buster:
 	--name $(DEB_NAME_BUSTER)   \
 	--version $(DEB_VERSION_BUSTER)   \
 	--package $(DEB_FILE_BUSTER)   \
+	--url "$(GIT_SOURCE_URL)"   \
+	--vendor "$(DEB_VENDOR)"   \
+	--maintainer "$(DEB_MAINTAINER)"   \
+	--description "$(DEB_DESCRIPTION)"   \
+	--chdir $(INSTALLDIR)   \
+	--depends "python3"   \
+	--depends "rsync"   \
+	.git=$(DEB_BASE)   \
+	.gitignore=$(DEB_BASE)   \
+	bin=$(DEB_BASE)   \
+	conf=$(DEB_BASE)   \
+	COPYRIGHT=$(DEB_BASE)   \
+	encyc=$(DEB_BASE)   \
+	INSTALL=$(DEB_BASE)   \
+	LICENSE=$(DEB_BASE)   \
+	Makefile=$(DEB_BASE)   \
+	README.rst=$(DEB_BASE)   \
+	requirements.txt=$(DEB_BASE)  \
+	setup.py=$(DEB_BASE)  \
+	setup.sh=$(DEB_BASE)  \
+	VERSION=$(DEB_BASE)  \
+	venv=$(DEB_BASE)   \
+	conf/core.cfg=$(CONF_BASE)/core.cfg
+
+deb-bullseye:
+	@echo ""
+	@echo "FPM packaging (bullseye) -----------------------------------------------"
+	-rm -Rf $(DEB_FILE_BULLSEYE)
+	fpm   \
+	--verbose   \
+	--input-type dir   \
+	--output-type deb   \
+	--name $(DEB_NAME_BULLSEYE)   \
+	--version $(DEB_VERSION_BULLSEYE)   \
+	--package $(DEB_FILE_BULLSEYE)   \
 	--url "$(GIT_SOURCE_URL)"   \
 	--vendor "$(DEB_VENDOR)"   \
 	--maintainer "$(DEB_MAINTAINER)"   \
