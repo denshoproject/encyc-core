@@ -1,4 +1,5 @@
 import configparser
+import logging
 import os
 import sys
 
@@ -24,6 +25,13 @@ config = read_configs(CONFIG_FILES)
 
 DEBUG = config.getboolean('debug', 'debug')
 STAGE = False
+LOG_LEVEL = config.get('debug', 'log_level')
+
+logging.basicConfig(
+    level=LOG_LEVEL,
+    format='%(asctime)s %(levelname)-8s %(message)s',
+    stream=sys.stdout,
+)
 
 #elasticsearch
 DOCSTORE_HOST = config.get('elasticsearch','docstore_host')
