@@ -90,7 +90,6 @@ def create(hosts):
     """
     click.echo(f'Elasticsearch ({DOCSTORE_HOST})')
     check_es_status()
-    check_mediawiki_status()
     publish.create_indices(hosts)
 
 
@@ -103,7 +102,6 @@ def destroy(hosts, confirm):
     """
     click.echo(f'Elasticsearch ({DOCSTORE_HOST})')
     check_es_status()
-    check_mediawiki_status()
     if confirm:
         time.sleep(3)
         publish.delete_indices(hosts)
@@ -136,7 +134,6 @@ def vocabs(hosts, report, dryrun, force):
     """TODO Index DDR vocabulary facets and terms.
     """
     check_es_status()
-    check_mediawiki_status()
     publish.vocabs(hosts=hosts, report=report, dryrun=dryrun, force=force)
 
 
@@ -304,7 +301,6 @@ def delete(confirm, doctype, object_id):
     """
     check_es_status()
     check_es_index(doctype)
-    check_mediawiki_status()
     try:
         result = publish.delete(doctype, object_id, confirm)
         click.echo(result)
