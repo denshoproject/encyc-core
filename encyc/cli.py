@@ -371,10 +371,10 @@ def check_es_status():
     #except docstore.TransportError as err:
     #    click.echo(f'ERROR: Elasticsearch cluster unavailable. ({DOCSTORE_HOST})')
     #    sys.exit(1)
-    url = f'http://{DOCSTORE_HOST}'
-    r = http.get(url, headers={'content-type':'application/json'})
-    if r.status_code != 200:
-        click.echo('ERROR: Elasticsearch {} {}'.format(str(r.status_code), r.reason))
+    try:
+        health = docstore.Docstore().health()
+    except Exception as err:
+        click.echo('ERROR: Elasticsearch {err}')
         sys.exit(1)
 
 def check_es_index(doctype):
