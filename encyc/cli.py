@@ -5,11 +5,11 @@ import time
 import click
 from elasticsearch.exceptions import NotFoundError
 
-from elastictools import docstore
 from encyc import config as settings
 from encyc import http
 from encyc import publish
 from encyc import wiki
+from encyc.models import DOCSTORE, INDEX_PREFIX
 
 DOCSTORE_HOST = settings.DOCSTORE_HOST
 SOURCES_API = settings.SOURCES_API
@@ -116,9 +116,9 @@ def mappings(hosts, indices):
     """Display mappings for the specified index/indices.
     """
     check_es_status()
-    data = docstore.Docstore(hosts).get_mappings()
+    data = DOCSTORE.get_mappings()
     for key,val in data.items():
-        if docstore.INDEX_PREFIX in key:
+        if INDEX_PREFIX in key:
             click.echo('{}: {}'.format(key, val))
 
 
@@ -367,20 +367,20 @@ def check_es_status():
     """Quit with message if cannot access Elasticssearch
     """
     #try:
-    #    docstore.Docstore().start_test()
+    #    DOCSTORE.start_test()
     #except docstore.TransportError as err:
     #    click.echo(f'ERROR: Elasticsearch cluster unavailable. ({DOCSTORE_HOST})')
     #    sys.exit(1)
     try:
-        health = docstore.Docstore().health()
+        health = DOCSTORE.health()
     except Exception as err:
-        click.echo('ERROR: Elasticsearch {err}')
+        click.echo(f'ERROR: Elasticsearch {err}')
         sys.exit(1)
 
 def check_es_index(doctype):
     """Quit with message if Elasticssearch index not present
     """
-    ds = docstore.Docstore()
+    ds = DOCSTORE
     if doctype:
         index_name = ds.index_name(doctype)
         if not ds.index_exists(index_name):
