@@ -34,17 +34,16 @@ from urllib.parse import unquote, urlparse
 
 from dateutil import parser
 
-from elasticsearch.exceptions import NotFoundError
-import elasticsearch_dsl as dsl
-
+from elastictools.docstore import NotFoundError
+from elastictools.docstore import elasticsearch_dsl as dsl
+from elastictools import docstore
+from elastictools import search
 from encyc import config
 from encyc import ddr
-from encyc import docstore
 from encyc import http
 from encyc.models import citations
 from encyc.models.legacy import Proxy
 from encyc import repo_models
-from encyc import search
 from encyc import urls
 
 if not config.DEBUG:

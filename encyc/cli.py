@@ -5,8 +5,8 @@ import time
 import click
 from elasticsearch.exceptions import NotFoundError
 
+from elastictools import docstore
 from encyc import config as settings
-from encyc import docstore
 from encyc import http
 from encyc import publish
 from encyc import wiki

@@ -7,11 +7,9 @@ logger = logging.getLogger(__name__)
 import os
 import sys
 
-from elasticsearch.exceptions import TransportError, NotFoundError, SerializationError
-
-#from DDR import docstore
+from elastictools import docstore
+from elastictools.docstore import TransportError, NotFoundError, SerializationError
 from encyc import config
-from encyc import docstore
 from encyc.models.legacy import Page as LegacyPage, Proxy
 from encyc.models.elastic import Elasticsearch
 from encyc.models.elastic import Author, Page, Source
