@@ -34,17 +34,16 @@ from urllib.parse import unquote, urlparse
 
 from dateutil import parser
 
-from elasticsearch.exceptions import NotFoundError
-import elasticsearch_dsl as dsl
-
+from elastictools.docstore import NotFoundError
+from elastictools.docstore import elasticsearch_dsl as dsl
+from elastictools import search
 from encyc import config
 from encyc import ddr
-from encyc import docstore
 from encyc import http
+from encyc.models import DOCSTORE
 from encyc.models import citations
 from encyc.models.legacy import Proxy
 from encyc import repo_models
-from encyc import search
 from encyc import urls
 
 if not config.DEBUG:
@@ -52,6 +51,61 @@ if not config.DEBUG:
     from encyc.models.wikipage import remove_status_markers
 
 MAX_SIZE = 10000
+
+SEARCH_PARAM_WHITELIST = [
+    'published_encyc',
+    'published_rg',
+    'fulltext',
+    'sort',
+    'categories',
+    'topics',
+    'facility',
+    'model',
+    'models',
+    'parent',
+    'status',
+    'public',
+    'topics',
+    'facility',
+    'contributor',
+    'creators',
+    'format',
+    'genre',
+    'geography',
+    'language',
+    'location',
+    'mimetype',
+    'persons',
+    'rights',
+    'facet_id',
+]
+
+# fields searched by query
+SEARCH_INCLUDE_FIELDS = [
+    'id',
+    'model',
+    'links_html',
+    'links_json',
+    'links_img',
+    'links_thumb',
+    'links_children',
+    'url_title',
+    'public',
+    'published',
+    'modified',
+    'mw_api_url',
+    'title_sort',
+    'title',
+    'description',
+    'body',
+    'prev_page',
+    'next_page',
+    'categories',
+    'coordinates',
+    'source_ids',
+    'authors_data',
+    'encyclopedia_id',
+]
 
 
 def _columnizer(things, cols):
@@ -97,18 +151,19 @@ class Author(repo_models.Author):
 
     @staticmethod
     def get(title):
-        ds = docstore.Docstore()
         return super(Author, Author).get(
-            title, index=ds.index_name('author'), using=ds.es
+            title, index=DOCSTORE.index_name('author'), using=DOCSTORE.es
     )
     
     def save(self):
-        ds = docstore.Docstore()
-        return super(Author, self).save(index=ds.index_name('author'), using=ds.es)
+        return super(Author, self).save(
+            index=DOCSTORE.index_name('author'), using=DOCSTORE.es
+        )
     
     def delete(self):
-        ds = docstore.Docstore()
-        return super(Author, self).delete(index=ds.index_name('author'), using=ds.es)
+        return super(Author, self).delete(
+            index=DOCSTORE.index_name('author'), using=DOCSTORE.es
+        )
 
     def absolute_url(self):
         return urls.reverse('wikiprox-author', args=([self.title,]))
@@ -130,14 +185,17 @@ class Author(repo_models.Author):
         
         @returns: list
         """
-        searcher = search.Searcher()
+        searcher = search.Searcher(DOCSTORE)
         searcher.prepare(
             params={},
-            search_models=[docstore.Docstore().index_name('author')],
+            params_whitelist=SEARCH_PARAM_WHITELIST,
+            search_models=[DOCSTORE.index_name('author')],
+            sort=[],
+            fields=SEARCH_INCLUDE_FIELDS,
             fields_nested=[],
             fields_agg={},
         )
-        return searcher.execute(docstore.MAX_SIZE, 0)
+        return searcher.execute(MAX_SIZE, 0)
 
     def scrub(self):
         """Removes internal editorial markers.
@@ -198,18 +256,19 @@ class Page(repo_models.Page):
 
     @staticmethod
     def get(title):
-        ds = docstore.Docstore()
         return super(Page, Page).get(
-            id=title, index=ds.index_name('article'), using=ds.es
+            id=title, index=DOCSTORE.index_name('article'), using=DOCSTORE.es
         )
     
     def save(self):
-        ds = docstore.Docstore()
-        return super(Page, self).save(index=ds.index_name('article'), using=ds.es)
+        return super(Page, self).save(
+            index=DOCSTORE.index_name('article'), using=DOCSTORE.es
+        )
     
     def delete(self):
-        ds = docstore.Docstore()
-        return super(Page, self).delete(index=ds.index_name('article'), using=ds.es)
+        return super(Page, self).delete(
+            index=DOCSTORE.index_name('article'), using=DOCSTORE.es
+        )
     
     def absolute_url(self):
         return urls.reverse('wikiprox-page', args=([self.title]))
@@ -237,14 +296,17 @@ class Page(repo_models.Page):
         
         @returns: list
         """
-        searcher = search.Searcher()
+        searcher = search.Searcher(DOCSTORE)
         searcher.prepare(
             params={},
-            search_models=[docstore.Docstore().index_name('article')],
+            params_whitelist=SEARCH_PARAM_WHITELIST,
+            search_models=[DOCSTORE.index_name('article')],
+            sort=[],
+            fields=SEARCH_INCLUDE_FIELDS,
             fields_nested=[],
             fields_agg={},
         )
-        return searcher.execute(docstore.MAX_SIZE, 0)
+        return searcher.execute(MAX_SIZE, 0)
     
     @staticmethod
     def pages_by_category():
@@ -425,18 +487,19 @@ class Source(repo_models.Source):
 
     @staticmethod
     def get(title):
-        ds = docstore.Docstore()
         return super(Source, Source).get(
-            title, index=ds.index_name('source'), using=ds.es
+            title, index=DOCSTORE.index_name('source'), using=DOCSTORE.es
         )
     
     def save(self):
-        ds = docstore.Docstore()
-        return super(Source, self).save(index=ds.index_name('source'), using=ds.es)
+        return super(Source, self).save(
+            index=DOCSTORE.index_name('source'), using=DOCSTORE.es
+        )
     
     def delete(self):
-        ds = docstore.Docstore()
-        return super(Source, self).delete(index=ds.index_name('source'), using=ds.es)
+        return super(Source, self).delete(
+            index=DOCSTORE.index_name('source'), using=DOCSTORE.es
+        )
     
     def absolute_url(self):
         return urls.reverse('wikiprox-source', args=([self.encyclopedia_id]))
@@ -487,14 +550,17 @@ class Source(repo_models.Source):
         
         @returns: list
         """
-        searcher = search.Searcher()
+        searcher = search.Searcher(DOCSTORE)
         searcher.prepare(
             params={},
-            search_models=[docstore.Docstore().index_name('source')],
+            params_whitelist=SEARCH_PARAM_WHITELIST,
+            search_models=[DOCSTORE.index_name('source')],
+            sort=[],
+            fields=SEARCH_INCLUDE_FIELDS,
             fields_nested=[],
             fields_agg={},
         )
-        return searcher.execute(docstore.MAX_SIZE, 0)
+        return searcher.execute(MAX_SIZE, 0)
 
     @staticmethod
     def from_psms(ps_source):
@@ -662,20 +728,19 @@ class FacetTerm(repo_models.FacetTerm):
 
     @staticmethod
     def get(title):
-        ds = docstore.Docstore()
         return repo_models.FacetTerm.get(
-            title, index=ds.index_name('facetterm'), using=ds.es
+            title, index=DOCSTORE.index_name('facetterm'), using=DOCSTORE.es
         )
     
     def save(self):
-        ds = docstore.Docstore()
         return super(FacetTerm, self).save(
-            index=ds.index_name('facetterm'), using=ds.es)
+            index=DOCSTORE.index_name('facetterm'), using=DOCSTORE.es
+        )
     
     def delete(self):
-        ds = docstore.Docstore()
         return super(FacetTerm, self).delete(
-            index=ds.index_name('facetterm'), using=ds.es)
+            index=DOCSTORE.index_name('facetterm'), using=DOCSTORE.es
+        )
     
     @staticmethod
     def from_dict(facet_id, data):
@@ -759,18 +824,19 @@ class Facet(repo_models.Facet):
 
     @staticmethod
     def get(title):
-        ds = docstore.Docstore()
         return repo_models.Facet.get(
-            title, index=ds.index_name('facet'), using=ds.es
+            title, index=DOCSTORE.index_name('facet'), using=DOCSTORE.es
         )
     
     def save(self):
-        ds = docstore.Docstore()
-        return super(Facet, self).save(index=ds.index_name('facet'), using=ds.es)
+        return super(Facet, self).save(
+            index=DOCSTORE.index_name('facet'), using=DOCSTORE.es
+        )
     
     def delete(self):
-        ds = docstore.Docstore()
-        return super(Facet, self).delete(index=ds.index_name('facet'), using=ds.es)
+        return super(Facet, self).delete(
+            index=DOCSTORE.index_name('facet'), using=DOCSTORE.es
+        )
 
     @staticmethod
     def facets():
@@ -899,7 +965,7 @@ class Elasticsearch(object):
             if r.status_code == 200:
                 json_text = r.text
                 logging.debug('ok')
-        docstore.Docstore().post_json('vocab', 'topics', json_text)
+        DOCSTORE.post_json('vocab', 'topics', json_text)
 
     @staticmethod
     def _new_update_deleted(mw_pages, es_objects):

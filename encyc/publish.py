@@ -7,11 +7,9 @@ logger = logging.getLogger(__name__)
 import os
 import sys
 
-from elasticsearch.exceptions import TransportError, NotFoundError, SerializationError
-
-#from DDR import docstore
+from elastictools.docstore import TransportError, NotFoundError, SerializationError
 from encyc import config
-from encyc import docstore
+from encyc.models import DOCSTORE
 from encyc.models.legacy import Page as LegacyPage, Proxy
 from encyc.models.elastic import Elasticsearch
 from encyc.models.elastic import Author, Page, Source
@@ -122,7 +120,7 @@ def status(hosts):
 @stopwatch
 def delete_indices(hosts):
     try:
-        statuses = docstore.Docstore(hosts).delete_indices()
+        statuses = DOCSTORE.delete_indices()
         for status in statuses:
             logprint('debug', status)
     except Exception as err:
@@ -131,7 +129,7 @@ def delete_indices(hosts):
 @stopwatch
 def create_indices(hosts):
     try:
-        statuses = docstore.Docstore(hosts).create_indices()
+        statuses = DOCSTORE.create_indices()
         for status in statuses:
             logprint('debug', status)
     except Exception as err:
@@ -144,7 +142,7 @@ def mappings(hosts):
 def authors(hosts, report=False, dryrun=False, force=False, title=None):
     logprint('debug', f'MediaWiki login ({config.MEDIAWIKI_SCHEME}://{config.MEDIAWIKI_HOST})')
     mw = wiki.MediaWiki()
-    ds = docstore.Docstore()
+    ds = DOCSTORE
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', f'getting mw_authors ({config.MEDIAWIKI_API})')
     mw_author_titles = Proxy.authors(mw, cached_ok=False)

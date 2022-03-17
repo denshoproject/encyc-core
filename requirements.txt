@@ -3,14 +3,14 @@
 click
 beautifulsoup4
 deepdiff
-elasticsearch>=7.0.0,<8.0.0     # Apache  y
-elasticsearch-dsl>=7.0.0,<8.0.0 # Apache  y
 mwclient==0.10.1
 python-dateutil
 redis
 requests
 unicodecsv
 walrus
+
+git+https://github.com/denshoproject/densho-elastictools.git
 
 # suggested for development environment
 #coverage
