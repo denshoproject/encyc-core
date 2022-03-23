@@ -8,12 +8,11 @@ import re
 from typing import List, Set, Dict, Tuple, Optional
 
 from dateutil import parser
-from elasticsearch_dsl import Search
 
+from elastictools import docstore
 from encyc import config
 from encyc import csvfile
 from encyc import ddr
-from encyc import docstore
 from encyc import http
 from encyc import urls
 from encyc import wiki
