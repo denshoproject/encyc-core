@@ -7,4 +7,4 @@ INDEX_PREFIX = 'encyc'
 docstore.Docstore(INDEX_PREFIX, settings.DOCSTORE_HOST, settings).start_test()
 
 # set default hosts and index
-DOCSTORE = docstore.Docstore(INDEX_PREFIX, settings.DOCSTORE_HOST, settings)
+DOCSTORE = docstore.DocstoreManager(INDEX_PREFIX, settings.DOCSTORE_HOST, settings)

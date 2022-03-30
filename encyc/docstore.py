@@ -44,101 +44,20 @@ def load_json(path):
 
 class Docstore(docstore.Docstore):
 
-    def create_indices(self):
-        """Create indices for each model defined in encyc/models/elastic.py
-        """
-        statuses = []
-        for i in ELASTICSEARCH_CLASSES['all']:
-            status = self.create_index(
-                self.index_name(i['doctype']),
-                i['class']
-            )
-            statuses.append(status)
-        return statuses
+    def __init__(self, index_prefix, host, settings):
+        super(Docstore,self).__init__(index_prefix, host, settings)
 
-    def create_index(self, indexname, dsl_class):
-        """Creates the specified index if it does not already exist.
-        
-        Uses elasticsearch-dsl classes defined in ddr-defs/repo_models/elastic.py
-        
-        @param indexname: str
-        @param dsl_class: elasticsearch_dsl.Document class
-        @returns: JSON dict with status codes and responses
-        """
-        logger.debug('creating index {}'.format(indexname))
-        if self.index_exists(indexname):
-            status = '{"status":400, "message":"Index exists"}'
-            logger.debug('Index exists')
-            #print('Index exists')
-        else:
-            index = elasticsearch_dsl.Index(indexname)
-            #print('index {}'.format(index))
-            index.aliases(default={})
-            #print('registering')
-            out = index.document(dsl_class).init(index=indexname, using=self.es)
-            if out:
-                status = out
-            elif self.index_exists(indexname):
-                status = {
-                    "name": indexname,
-                    "present": True,
-                }
-            #print(status)
-            #print('creating index')
-        return status
-    
+
+class DocstoreManager(docstore.DocstoreManager):
+
+    def __init__(self, index_prefix, host, settings):
+        super(DocstoreManager, self).__init__(index_prefix, host, settings)
+
+    def create_indices(self):
+        return super(DocstoreManager,self).create_indices(ELASTICSEARCH_CLASSES['all'])
+
     def delete_indices(self):
-        """Delete indices for each model defined in ddr-defs/repo_models/elastic.py
-        """
-        statuses = []
-        for i in ELASTICSEARCH_CLASSES['all']:
-            status = self.delete_index(
-                self.index_name(i['doctype'])
-            )
-            statuses.append(status)
-        return statuses
-    
-    def delete_index(self, indexname):
-        """Delete the specified index.
-        
-        @returns: JSON dict with status code and response
-        """
-        logger.debug('deleting index: %s' % indexname)
-        if self.index_exists(indexname):
-            status = self.es.indices.delete(index=indexname)
-        else:
-            status = {
-                "name": indexname,
-                "status": 500,
-                "message": "Index does not exist",
-            }
-        logger.debug(status)
-        return status
-    
-    def model_fields_lists(self):
-        pass
-    
-    def get_mappings(self):
-        """Get mappings for ESObjects
-        
-        @returns: str JSON
-        """
-        return self.es.indices.get_mapping()
-    
-    def post_json(self, indexname, document_id, json_text):
-        """POST the specified JSON document as-is.
-        
-        @param indexname: str
-        @param document_id: str
-        @param json_text: str JSON-formatted string
-        @returns: dict Status info.
-        """
-        logger.debug('post_json(%s, %s)' % (indexname, document_id))
-        return self.es.index(
-            index=self.index_name(indexname),
-            id=document_id,
-            body=json_text
-        )
+        return super(DocstoreManager,self).delete_indices(ELASTICSEARCH_CLASSES['all'])
 
     def post(self, document, public_fields=[], additional_fields={}, force=False):
         """Add a new document to an index or update an existing one.
@@ -189,9 +108,6 @@ class Docstore(docstore.Docstore):
         )
         logger.debug(str(results))
         return results
-
-    def delete(self, document_id):
-        pass
 
 
 def make_index_name(text):
