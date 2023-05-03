@@ -10,7 +10,7 @@ requests
 unicodecsv
 walrus
 
-git+https://github.com/denshoproject/densho-elastictools.git
+git+https://github.com/denshoproject/densho-elastictools.git@v1.0.2
 
 # suggested for development environment
 #coverage
