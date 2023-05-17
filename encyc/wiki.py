@@ -147,7 +147,11 @@ class MediaWiki():
             data = [
                 {
                     'title': page.name,
-                    'timestamp': datetime.fromtimestamp(mktime(page.touched)),
+                    'timestamp': datetime.fromtimestamp(mktime(
+                        [r for r in page.revisions()][0]['timestamp'],
+                    ))
+                    # see encyc.models.helpers.page_lastmod which is used by
+                    # encyc.models.legacy.Page.get.
                 }
                 for page in self.mw.categories['Published']
                 if not isinstance(page, mwclient.listing.Category)
