@@ -194,6 +194,7 @@ class Author(repo_models.Author):
             fields=SEARCH_INCLUDE_FIELDS,
             fields_nested=[],
             fields_agg={},
+            wildcards=False,
         )
         return searcher.execute(MAX_SIZE, 0)
 
@@ -305,6 +306,7 @@ class Page(repo_models.Page):
             fields=SEARCH_INCLUDE_FIELDS,
             fields_nested=[],
             fields_agg={},
+            wildcards=False,
         )
         return searcher.execute(MAX_SIZE, 0)
     
@@ -559,6 +561,7 @@ class Source(repo_models.Source):
             fields=SEARCH_INCLUDE_FIELDS,
             fields_nested=[],
             fields_agg={},
+            wildcards=False,
         )
         return searcher.execute(MAX_SIZE, 0)
 
