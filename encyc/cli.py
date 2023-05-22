@@ -5,15 +5,38 @@ import time
 import click
 from elasticsearch.exceptions import NotFoundError
 
+from elastictools.docstore import cluster as docstore_cluster
+
 from encyc import config as settings
+from encyc import docstore
 from encyc import http
 from encyc import publish
 from encyc import wiki
 from encyc.models import DOCSTORE, INDEX_PREFIX
+from encyc.repo_models import ELASTICSEARCH_CLASSES
 
 DOCSTORE_HOST = settings.DOCSTORE_HOST
 SOURCES_API = settings.SOURCES_API
 MEDIAWIKI_API = settings.MEDIAWIKI_API
+
+
+class FakeSettings():
+    def __init__(self, host):
+        self.DOCSTORE_HOST = host
+        self.DOCSTORE_SSL_CERTFILE = config.DOCSTORE_SSL_CERTFILE
+        self.DOCSTORE_USERNAME = config.DOCSTORE_USERNAME
+        self.DOCSTORE_PASSWORD = config.DOCSTORE_PASSWORD
+
+def get_docstore(host=config.DOCSTORE_HOST):
+    ds = docstore.DocstoreManager(
+        docstore.INDEX_PREFIX, host, FakeSettings(host)
+    )
+    #try:
+    #    ds.es.info()
+    #except Exception as err:
+    #    print(err)
+    #    sys.exit(1)
+    return ds
 
 
 @click.group()
@@ -94,19 +117,41 @@ def create(hosts):
 
 
 @encyc.command()
-@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
-@click.option('--confirm', is_flag=True,
-              help='Yes I really want to delete this index.')
-def destroy(hosts, confirm):
+@click.option('--confirm', is_flag=True, help='Yes I really want to destroy this database.')
+@click.argument('host')
+def destroy(confirm, host):
     """Delete indices (requires --confirm).
+    
+    \b
+    It's meant to sound serious. Also to not clash with 'delete', which
+    is for individual documents.
     """
-    click.echo(f'Elasticsearch ({DOCSTORE_HOST})')
-    check_es_status()
+    ds = get_docstore(host)
+    cluster = docstore_cluster(config.DOCSTORE_CLUSTERS, ds.host)
     if confirm:
-        time.sleep(3)
-        publish.delete_indices(hosts)
+        click.echo(
+            f"The {cluster} cluster ({ds.host}) with the following indices "
+            + "will be DESTROYED!"
+        )
+        for index in ELASTICSEARCH_CLASSES['all']:
+            click.echo(f"- {index['doc_type']}")
     else:
-        click.echo("Add '--confirm' if you're sure you want to do this.")
+        click.echo(
+            f"Add '--confirm' to destroy the {cluster} cluster ({ds.host})."
+        )
+        sys.exit(0)
+    response = click.prompt(
+        'Do you want to continue? [yes/no]', default='no', show_default=False
+    )
+    if response == 'yes':
+        click.echo(f"Deleting indices from {ds.host} ({cluster}).")
+        time.sleep(3)
+        try:
+            publish.delete_indices(ds)
+        except Exception as err:
+            logprint('error', err)
+    else:
+        click.echo("Cancelled.")
 
 
 @encyc.command()

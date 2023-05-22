@@ -118,9 +118,9 @@ def status(hosts):
     logprint('debug', ' sources: %s' % num_es_sources)
 
 @stopwatch
-def delete_indices(hosts):
+def delete_indices(ds):
     try:
-        statuses = DOCSTORE.delete_indices()
+        statuses = ds.delete_indices()
         for status in statuses:
             logprint('debug', status)
     except Exception as err:
