@@ -3,6 +3,8 @@ import logging
 import os
 import sys
 
+from elastictools import docstore
+
 CONFIG_FILES = [
     '/etc/encyc/core.cfg',
     '/etc/encyc/core-local.cfg'
@@ -35,6 +37,8 @@ logging.basicConfig(
 
 #elasticsearch
 DOCSTORE_HOST = config.get('elasticsearch','docstore_host')
+_docstore_clusters = config.get('elasticsearch', 'docstore_clusters')
+DOCSTORE_CLUSTER = docstore.cluster(_docstore_clusters, DOCSTORE_HOST)
 DOCSTORE_SSL_CERTFILE = config.get('elasticsearch', 'docstore_ssl_certfile')
 DOCSTORE_USERNAME = 'elastic'
 DOCSTORE_PASSWORD = config.get('elasticsearch', 'docstore_password')
