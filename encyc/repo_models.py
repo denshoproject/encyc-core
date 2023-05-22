@@ -243,11 +243,11 @@ class FacetTerm(dsl.Document):
 
 ELASTICSEARCH_CLASSES = {
     'all': [
-        {'doctype': 'author', 'class': Author},
-        {'doctype': 'article', 'class': Page},
-        {'doctype': 'source', 'class': Source},
-        {'doctype': 'facet', 'class': Facet},
-        {'doctype': 'facetterm', 'class': FacetTerm},
+        {'doctype': 'author', 'class': Author, 'doc_type': 'encycauthor'},
+        {'doctype': 'article', 'class': Page, 'doc_type': 'encycarticle'},
+        {'doctype': 'source', 'class': Source, 'doc_type': 'encycsource'},
+        {'doctype': 'facet', 'class': Facet, 'doc_type': 'encycfacet'},
+        {'doctype': 'facetterm', 'class': FacetTerm, 'doc_type': 'encycfacetterm'},
     ],
 }
 
