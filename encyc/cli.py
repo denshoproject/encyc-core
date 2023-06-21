@@ -7,17 +7,15 @@ from elasticsearch.exceptions import NotFoundError
 
 from elastictools.docstore import cluster as docstore_cluster
 
-from encyc import config as settings
+from encyc import config
 from encyc import docstore
 from encyc import http
 from encyc import publish
 from encyc import wiki
-from encyc.models import DOCSTORE, INDEX_PREFIX
 from encyc.repo_models import ELASTICSEARCH_CLASSES
 
-DOCSTORE_HOST = settings.DOCSTORE_HOST
-SOURCES_API = settings.SOURCES_API
-MEDIAWIKI_API = settings.MEDIAWIKI_API
+SOURCES_API = config.SOURCES_API
+MEDIAWIKI_API = config.MEDIAWIKI_API
 
 
 class FakeSettings():
@@ -62,31 +60,37 @@ def encyc(debug):
 
 
 @encyc.command()
-def config():
-    """Print configuration settings.
+@click.option('--hosts','-h',
+              default=config.DOCSTORE_HOST, envvar='DOCSTORE_HOST',
+              help='Elasticsearch hosts.')
+def conf(hosts):
+    """Print configuration config.
     
     More detail since you asked.
     """
-    publish.print_configs()
+    ds = get_docstore(hosts)
+    publish.print_configs(ds)
 
 
 @encyc.command()
-@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
+@click.option('--hosts', default=config.DOCSTORE_HOST, help='Elasticsearch hosts.')
 def status(hosts):
     """Print status info.
     
     More detail since you asked.
     """
+    ds = get_docstore(hosts)
+    cluster = docstore_cluster(config.DOCSTORE_CLUSTERS, ds.host)
     try:
-        check_es_status()
-        click.echo('Elasticsearch ({}): OK'.format(DOCSTORE_HOST))
+        check_es_status(ds)
+        click.echo(f'Elasticsearch {ds.host} ({cluster}): OK')
         es = 1
     except:
-        click.echo('Elasticsearch ({}): ERROR'.format(DOCSTORE_HOST))
+        click.echo(f'Elasticsearch {ds.host} ({cluster}): ERROR')
         es = 0
     if es:
         try:
-            click.echo(publish.status(hosts))
+            click.echo(publish.status(ds))
         except NotFoundError as err:
             click.echo(err)
     click.echo('PSMS ({})'.format(SOURCES_API))
@@ -107,13 +111,15 @@ def status(hosts):
         mw = 0
 
 @encyc.command()
-@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
+@click.option('--hosts', default=config.DOCSTORE_HOST, help='Elasticsearch hosts.')
 def create(hosts):
     """Create new indices.
     """
-    click.echo(f'Elasticsearch ({DOCSTORE_HOST})')
-    check_es_status()
-    publish.create_indices(hosts)
+    ds = get_docstore(hosts)
+    cluster = docstore_cluster(config.DOCSTORE_CLUSTERS, ds.host)
+    click.echo(f'Creating indices in {ds.host} ({cluster})')
+    #check_es_status(ds)
+    publish.create_indices(ds)
 
 
 @encyc.command()
@@ -155,12 +161,13 @@ def destroy(confirm, host):
 
 
 @encyc.command()
-@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
+@click.option('--hosts', default=config.DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.option('--indices','-i', help='Comma-separated list of indices to display.')
 def mappings(hosts, indices):
     """Display mappings for the specified index/indices.
     """
-    check_es_status()
+    ds = get_docstore(hosts)
+    check_es_status(ds)
     data = DOCSTORE.get_mappings()
     for key,val in data.items():
         if INDEX_PREFIX in key:
@@ -168,7 +175,7 @@ def mappings(hosts, indices):
 
 
 @encyc.command()
-@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
+@click.option('--hosts', default=config.DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.option('--report', is_flag=True,
               help='Report number of records existing, to be indexed/updated.')
 @click.option('--dryrun', is_flag=True,
@@ -178,12 +185,13 @@ def mappings(hosts, indices):
 def vocabs(hosts, report, dryrun, force):
     """TODO Index DDR vocabulary facets and terms.
     """
-    check_es_status()
-    publish.vocabs(hosts=hosts, report=report, dryrun=dryrun, force=force)
+    ds = get_docstore(hosts)
+    check_es_status(ds)
+    publish.vocabs(ds, report=report, dryrun=dryrun, force=force)
 
 
 @encyc.command()
-@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
+@click.option('--hosts', default=config.DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.option('--report', is_flag=True,
               help='Report number of records existing, to be indexed/updated.')
 @click.option('--dryrun', is_flag=True,
@@ -194,16 +202,17 @@ def vocabs(hosts, report, dryrun, force):
 def authors(hosts, report, dryrun, force, title):
     """Index authors.
     """
-    check_es_status()
-    check_es_index('author')
+    ds = get_docstore(hosts)
+    check_es_status(ds)
+    check_es_index(ds, 'author')
     check_mediawiki_status()
     publish.authors(
-        hosts=hosts, report=report, dryrun=dryrun, force=force, title=title
+        ds, report=report, dryrun=dryrun, force=force, title=title
     )
 
 
 @encyc.command()
-@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
+@click.option('--hosts', default=config.DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.option('--report', is_flag=True,
               help='Report number of records existing, to be indexed/updated.')
 @click.option('--dryrun', is_flag=True,
@@ -214,17 +223,18 @@ def authors(hosts, report, dryrun, force, title):
 def articles(hosts, report, dryrun, force, title):
     """Index articles.
     """
-    check_es_status()
-    check_es_index('article')
+    ds = get_docstore(hosts)
+    check_es_status(ds)
+    check_es_index(ds, 'article')
     check_psms_status()
     check_mediawiki_status()
     publish.articles(
-        hosts=hosts, report=report, dryrun=dryrun, force=force, title=title
+        ds, report=report, dryrun=dryrun, force=force, title=title
     )
 
 
 @encyc.command()
-@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
+@click.option('--hosts', default=config.DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.option('--report', is_flag=True,
               help='Report number of records existing, to be indexed/updated.')
 @click.option('--dryrun', is_flag=True,
@@ -235,30 +245,32 @@ def articles(hosts, report, dryrun, force, title):
 def sources(hosts, report, dryrun, force, sourceid):
     """Index sources.
     """
-    check_es_status()
-    check_es_index('source')
+    ds = get_docstore(hosts)
+    check_es_status(ds)
+    check_es_index(ds, 'source')
     check_psms_status()
     check_mediawiki_status()
     publish.sources(
-        hosts=hosts, report=report, dryrun=dryrun, force=force, psms_id=sourceid
+        ds, report=report, dryrun=dryrun, force=force, psms_id=sourceid
     )
 
 
 @encyc.command()
-@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
+@click.option('--hosts', default=config.DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.argument('doctype')
 def list(hosts, doctype):
     """List titles for all instances of specified doctype.
     """
-    check_es_status()
+    ds = get_docstore(hosts)
+    check_es_status(ds)
     check_es_index(doctype)
-    publish.listdocs(hosts, doctype)
+    publish.listdocs(ds, doctype)
 
 
 @encyc.command()
 @click.argument('doctype')
 @click.argument('object_id')
-@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
+@click.option('--hosts', default=config.DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.option('--mediawiki', '-m', is_flag=True, default=False, help='Get from MediaWiki.')
 @click.option('--raw', '-r', is_flag=True, default=False, help='Emit raw output.')
 @click.option('--json', '-j', is_flag=True, default=False, help='Return ES record as JSON.')
@@ -266,6 +278,7 @@ def list(hosts, doctype):
 def get(hosts, mediawiki, raw, json, body, doctype, object_id):
     """Get a single record
     """
+    ds = get_docstore(hosts)
     js = json
     import json  # this is kinda stupid
     data = {}
@@ -289,13 +302,13 @@ def get(hosts, mediawiki, raw, json, body, doctype, object_id):
         for key,val in data['parse'].items():
             click.echo('{}: {}'.format(key, val))
     else:
-        check_es_status()
-        check_es_index(doctype)
+        check_es_status(ds)
+        check_es_index(ds, doctype)
         if raw:
             click.echo('Raw Elasticsearch output not yet implemented. Use wget?')
             return
         try:
-            data = publish.get(doctype, object_id, body)
+            data = publish.get(ds, doctype, object_id, body)
         except NotFoundError as err:
             click.echo('ERROR: 404 Not Found - {} "{}"'.format(
                 doctype, object_id
@@ -337,17 +350,19 @@ def get(hosts, mediawiki, raw, json, body, doctype, object_id):
             
 
 @encyc.command()
+@click.option('--hosts', default=config.DOCSTORE_HOST, help='Elasticsearch hosts.')
 @click.option('--confirm', '-C', is_flag=True,
               help='Yes I really want to delete this index.')
 @click.argument('doctype')
 @click.argument('object_id')
-def delete(confirm, doctype, object_id):
+def delete(hosts, confirm, doctype, object_id):
     """Delete a single record from Elasticsearch
     """
-    check_es_status()
-    check_es_index(doctype)
+    ds = get_docstore(hosts)
+    check_es_status(ds)
+    check_es_index(ds, doctype)
     try:
-        result = publish.delete(doctype, object_id, confirm)
+        result = publish.delete(ds, doctype, object_id, confirm)
         click.echo(result)
     except NotFoundError as err:
         click.echo('ERROR: 404 Not Found - {} "{}"'.format(
@@ -370,26 +385,27 @@ def parse(title, path):
 
 
 @encyc.command()
-@click.option('--hosts', default=DOCSTORE_HOST, help='Elasticsearch hosts.')
+@click.option('--hosts', default=config.DOCSTORE_HOST, help='Elasticsearch hosts.')
 def test(hosts):
     """Load test data for encyc-front, encyc-rg
     """
-    check_es_status()
-    check_es_index('article')
-    check_es_index('source')
-    check_es_index('author')
+    ds = get_docstore(hosts)
+    check_es_status(ds)
+    check_es_index(ds, 'article')
+    check_es_index(ds, 'source')
+    check_es_index(ds, 'author')
     check_psms_status()
     check_mediawiki_status()
     
-    publish.articles(hosts=hosts, force=1, title="Ansel Adams")
-    publish.articles(hosts=hosts, force=1, title="Aiko Herzig-Yoshinaga")
-    publish.articles(hosts=hosts, force=1, title="A.L. Wirin")
-    publish.articles(hosts=hosts, force=1, title="Amache (Granada)")
-    publish.articles(hosts=hosts, force=1, title="December 7, 1941")
-    publish.articles(hosts=hosts, force=1, title="Hawai'i")
-    publish.articles(hosts=hosts, force=1, title="Informants / \"inu\"")
-    publish.authors(hosts=hosts, force=1, title="Brian Niiya")
-    publish.sources(hosts=hosts, force=1, psms_id="en-littletokyousa-1")
+    publish.articles(ds, force=1, title="Ansel Adams")
+    publish.articles(ds, force=1, title="Aiko Herzig-Yoshinaga")
+    publish.articles(ds, force=1, title="A.L. Wirin")
+    publish.articles(ds, force=1, title="Amache (Granada)")
+    publish.articles(ds, force=1, title="December 7, 1941")
+    publish.articles(ds, force=1, title="Hawai'i")
+    publish.articles(ds, force=1, title="Informants / \"inu\"")
+    publish.authors(ds, force=1, title="Brian Niiya")
+    publish.sources(ds, force=1, psms_id="en-littletokyousa-1")
 
 
 def check_mediawiki_status():
@@ -408,7 +424,7 @@ def check_psms_status():
         click.echo('ERROR: PSMS {} {}'.format(str(r.status_code), r.reason))
         sys.exit(1)
 
-def check_es_status():
+def check_es_status(ds):
     """Quit with message if cannot access Elasticssearch
     """
     #try:
@@ -417,17 +433,15 @@ def check_es_status():
     #    click.echo(f'ERROR: Elasticsearch cluster unavailable. ({DOCSTORE_HOST})')
     #    sys.exit(1)
     try:
-        health = DOCSTORE.health()
+        health = ds.health()
     except Exception as err:
         click.echo(f'ERROR: Elasticsearch {err}')
         sys.exit(1)
 
-def check_es_index(doctype):
+def check_es_index(ds, doctype):
     """Quit with message if Elasticssearch index not present
     """
-    ds = DOCSTORE
-    if doctype:
-        index_name = ds.index_name(doctype)
-        if not ds.index_exists(index_name):
-            click.echo('Elasticsearch: No index "{}".'.format(index_name))
-            sys.exit(1)
+    index_name = ds.index_name(doctype)
+    if not ds.index_exists(index_name):
+        click.echo('Elasticsearch: No index "{}".'.format(index_name))
+        sys.exit(1)

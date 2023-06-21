@@ -33,6 +33,8 @@ from encyc.repo_models import ELASTICSEARCH_CLASSES
 from encyc.repo_models import ELASTICSEARCH_CLASSES_BY_MODEL
 from encyc.repo_models import MODEL_REPO_MODELS
 
+INDEX_PREFIX = 'encyc'
+
 
 def load_json(path):
     try:
