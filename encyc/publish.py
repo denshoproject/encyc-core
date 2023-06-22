@@ -7,9 +7,9 @@ logger = logging.getLogger(__name__)
 import os
 import sys
 
+from elastictools.docstore import cluster as docstore_cluster
 from elastictools.docstore import TransportError, NotFoundError, SerializationError
 from encyc import config
-from encyc.models import DOCSTORE
 from encyc.models.legacy import Page as LegacyPage, Proxy
 from encyc.models.elastic import Elasticsearch
 from encyc.models.elastic import Author, Page, Source
@@ -77,14 +77,15 @@ def format_json(data):
     """
     return json.dumps(data, indent=4, separators=(',', ': '), sort_keys=True)
 
-def print_configs():
+def print_configs(ds):
     print('manage.py encyc commands will use the following settings:')
     print('CONFIG_FILES:            %s' % config.CONFIG_FILES)
     print('')
-    print('DOCSTORE_HOST:           %s' % config.DOCSTORE_HOST)
-    print('DOCSTORE_SSL_CERTFILE:   %s' % config.DOCSTORE_SSL_CERTFILE)
-    print('DOCSTORE_USERNAME:       %s' % config.DOCSTORE_USERNAME)
-    print('DOCSTORE_PASSWORD:       %s' % config.DOCSTORE_PASSWORD)
+    cluster = docstore_cluster(config.DOCSTORE_CLUSTERS, ds.host)
+    print(f'DOCSTORE_HOST:           {ds.host} ({cluster})')
+    print(f'DOCSTORE_SSL_CERTFILE:   {config.DOCSTORE_SSL_CERTFILE}')
+    print(f'DOCSTORE_USERNAME:       {config.DOCSTORE_USERNAME}')
+    print(f'DOCSTORE_PASSWORD:       {config.DOCSTORE_PASSWORD}')
     print('MEDIAWIKI_API:           %s' % config.MEDIAWIKI_API)
     print('MEDIAWIKI_USERNAME:      %s' % config.MEDIAWIKI_USERNAME)
     print('MEDIAWIKI_PASSWORD:      %s' % config.MEDIAWIKI_PASSWORD)
@@ -97,16 +98,16 @@ def print_configs():
     print('')
 
 @stopwatch
-def status(hosts):
+def status(ds):
     logprint('debug', f'MediaWiki login ({config.MEDIAWIKI_SCHEME}://{config.MEDIAWIKI_HOST})')
     mw = wiki.MediaWiki()
     mw_author_titles = Proxy.authors(mw, cached_ok=False)
     mw_articles = Proxy.articles_lastmod(mw)
     num_mw_authors = len(mw_author_titles)
     num_mw_articles = len(mw_articles)
-    num_es_authors = Author.authors().total
-    num_es_articles = Page.pages().total
-    num_es_sources = Source.sources().total
+    num_es_authors = Author.authors(ds).total
+    num_es_articles = Page.pages(ds).total
+    num_es_sources = Source.sources(ds).total
     pc_authors = float(num_es_authors) / num_mw_authors
     pc_articles = float(num_es_articles) / num_mw_articles
     logprint('debug', ' authors: {} of {} ({:.2%})'.format(
@@ -118,38 +119,37 @@ def status(hosts):
     logprint('debug', ' sources: %s' % num_es_sources)
 
 @stopwatch
-def delete_indices(hosts):
+def delete_indices(ds):
     try:
-        statuses = DOCSTORE.delete_indices()
+        statuses = ds.delete_indices()
         for status in statuses:
             logprint('debug', status)
     except Exception as err:
         logprint('error', err)
     
 @stopwatch
-def create_indices(hosts):
+def create_indices(ds):
     try:
-        statuses = DOCSTORE.create_indices()
+        statuses = ds.create_indices()
         for status in statuses:
             logprint('debug', status)
     except Exception as err:
         logprint('error', err)
 
-def mappings(hosts):
+def mappings(ds):
     pass
 
 @stopwatch
-def authors(hosts, report=False, dryrun=False, force=False, title=None):
+def authors(ds, report=False, dryrun=False, force=False, title=None):
     logprint('debug', f'MediaWiki login ({config.MEDIAWIKI_SCHEME}://{config.MEDIAWIKI_HOST})')
     mw = wiki.MediaWiki()
-    ds = DOCSTORE
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', f'getting mw_authors ({config.MEDIAWIKI_API})')
     mw_author_titles = Proxy.authors(mw, cached_ok=False)
     mw_articles = Proxy.articles_lastmod(mw)
     logprint('debug', 'mediawiki authors: %s' % len(mw_author_titles))
-    logprint('debug', f'getting es_authors ({config.DOCSTORE_HOST})')
-    es_authors = Author.authors()
+    logprint('debug', f'getting es_authors ({ds.host})')
+    es_authors = Author.authors(ds)
     logprint('debug', 'elasticsearch authors: %s' % es_authors.total)
     
     if title:
@@ -194,9 +194,9 @@ def authors(hosts, report=False, dryrun=False, force=False, title=None):
         author = Author.from_mw(mwauthor, author=existing_author)
         if not dryrun:
             logprint('debug', 'saving')
-            out = author.save()
+            out = author.save(ds)
             try:
-                a = Author.get(title)
+                a = Author.get(ds, title)
             except NotFoundError:
                 logprint('error', 'ERROR: Author(%s) NOT SAVED!' % title)
                 errors.append(title)
@@ -207,7 +207,7 @@ def authors(hosts, report=False, dryrun=False, force=False, title=None):
     logprint('debug', 'DONE')
 
 @stopwatch
-def articles(hosts, report=False, dryrun=False, force=False, title=None):
+def articles(ds, report=False, dryrun=False, force=False, title=None):
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', f'MediaWiki login ({config.MEDIAWIKI_SCHEME}://{config.MEDIAWIKI_HOST})')
     mw = wiki.MediaWiki()
@@ -216,7 +216,7 @@ def articles(hosts, report=False, dryrun=False, force=False, title=None):
     mw_author_titles = Proxy.authors(mw, cached_ok=False)
     mw_articles = Proxy.articles_lastmod(mw)
     logprint('debug', f'getting es_articles ({config.DOCSTORE_HOST})')
-    es_articles = Page.pages()
+    es_articles = Page.pages(ds)
     logprint('debug', 'mediawiki articles: %s' % len(mw_articles))
     logprint('debug', 'elasticsearch articles: %s' % es_articles.total)
     
@@ -268,11 +268,11 @@ def articles(hosts, report=False, dryrun=False, force=False, title=None):
             if not dryrun:
                 logprint('debug', 'saving %s "%s"' % ('articles', page.url_title))
                 try:
-                    page.save()
+                    page.save(ds)
                 except SerializationError:
                     logprint('error', 'ERROR: Could not serialize to Elasticsearch!')
                 try:
-                    p = Page.get(title)
+                    p = Page.get(ds, title)
                 except NotFoundError:
                     logprint('error', 'ERROR: Page(%s) NOT SAVED!' % title)
                     errors.append(title)
@@ -283,7 +283,7 @@ def articles(hosts, report=False, dryrun=False, force=False, title=None):
             logprint('debug', 'not publishable: %s' % mwpage)
             if existing_page:
                 logprint('debug', 'deleting...')
-                existing_page.delete()
+                existing_page.delete(ds)
                 unpublished.append(mwpage)
     
     if could_not_post:
@@ -303,7 +303,7 @@ def articles(hosts, report=False, dryrun=False, force=False, title=None):
     logprint('debug', 'DONE')
 
 @stopwatch
-def sources(hosts, report=False, dryrun=False, force=False, psms_id=None):
+def sources(ds, report=False, dryrun=False, force=False, psms_id=None):
     logprint(
         'debug',
         '------------------------------------------------------------------------')
@@ -320,7 +320,7 @@ def sources(hosts, report=False, dryrun=False, force=False, psms_id=None):
         logprint('error', ps_sources)
     
     logprint('debug', f'getting sources from Elasticsearch ({config.DOCSTORE_HOST})')
-    es_sources = Source.sources()
+    es_sources = Source.sources(ds)
     if es_sources and isinstance(es_sources, list):
         logprint('debug', 'es_sources: %s' % len(es_sources))
     else:
@@ -387,11 +387,11 @@ def sources(hosts, report=False, dryrun=False, force=False, psms_id=None):
             if not dryrun:
                 logprint('debug', 'saving')
                 try:
-                    es_source.save()
+                    es_source.save(ds)
                 except SerializationError:
                     logprint('error', 'ERROR: Could not serialize to Elasticsearch!')
                 try:
-                    s = Source.get(sid)
+                    s = Source.get(ds, sid)
                 except NotFoundError:
                     logprint('error', 'ERROR: Source(%s) NOT SAVED!' % sid)
                     errors.append(sid)
@@ -456,7 +456,7 @@ def sources(hosts, report=False, dryrun=False, force=False, psms_id=None):
     logprint('debug', 'DONE')
 
 @stopwatch
-def vocabs(hosts, report=False, dryrun=False, force=False):
+def vocabs(ds, report=False, dryrun=False, force=False):
     logprint('debug', '------------------------------------------------------------------------')
     logprint('debug', 'indexing facet terms...')
     facets = {}
@@ -466,14 +466,14 @@ def vocabs(hosts, report=False, dryrun=False, force=False):
         logprint('debug', facet)
         terms = facet.terms
         delattr(facet, 'terms')
-        facet.save()
+        facet.save(ds)
         for term in terms:
             logprint('debug', '- %s' % term)
-            term.save()
+            term.save(ds)
         
     logprint('debug', 'DONE')
 
-def listdocs(hosts, doctype):
+def listdocs(ds, doctype):
     if   doctype == 'article': results = Page.pages()
     elif doctype == 'author': results = Author.authors()
     elif doctype == 'source': results = Source.sources()
@@ -487,32 +487,32 @@ def listdocs(hosts, doctype):
         else:
             print('%s/%s| %s' % (n, total, r.title))
 
-def get(doctype, object_id, body=False):
+def get(ds, doctype, object_id, body=False):
     """
     @param doctype
     @param object_id
     @param body: bool Include body text
     """
     if   doctype == 'article':
-        return Page.get(object_id).to_dict()
+        return Page.get(ds, object_id).to_dict()
     elif doctype == 'author':
-        return Author.get(object_id).to_dict()
+        return Author.get(ds, object_id).to_dict()
     elif doctype == 'source':
-        return Source.get(object_id).to_dict()
+        return Source.get(ds, object_id).to_dict()
     return {'error': 'Unknown doctype: "{}"'.format(doctype)}
 
-def delete(doctype, object_id, confirm=False):
+def delete(ds, doctype, object_id, confirm=False):
     if not confirm:
         return {'error': 'Confirmation required.'}
     if   doctype == 'article':
-        o = Page.get(object_id)
-        return o.delete()
+        o = Page.get(ds, object_id)
+        return o.delete(ds)
     elif doctype == 'author':
-        o = Author.get(object_id)
-        return o.delete()
+        o = Author.get(ds, object_id)
+        return o.delete(ds)
     elif doctype == 'source':
-        o = Source.get(object_id)
-        return o.delete()
+        o = Source.get(ds, object_id)
+        return o.delete(ds)
     return {'error': '"{}" is not a recognized doc_type!'.format(doctype)}
 
 def _print_dict(d):
