@@ -40,7 +40,6 @@ from elastictools import search
 from encyc import config
 from encyc import ddr
 from encyc import http
-from encyc.models import DOCSTORE
 from encyc.models import citations
 from encyc.models.legacy import Proxy
 from encyc import repo_models
@@ -150,19 +149,19 @@ class Author(repo_models.Author):
         )
 
     @staticmethod
-    def get(title):
+    def get(docstore, title):
         return super(Author, Author).get(
-            title, index=DOCSTORE.index_name('author'), using=DOCSTORE.es
+            title, index=docstore.index_name('author'), using=docstore.es
     )
     
-    def save(self):
+    def save(self, docstore):
         return super(Author, self).save(
-            index=DOCSTORE.index_name('author'), using=DOCSTORE.es
+            index=docstore.index_name('author'), using=docstore.es
         )
     
-    def delete(self):
+    def delete(self, docstore):
         return super(Author, self).delete(
-            index=DOCSTORE.index_name('author'), using=DOCSTORE.es
+            index=docstore.index_name('author'), using=docstore.es
         )
 
     def absolute_url(self):
@@ -180,20 +179,21 @@ class Author(repo_models.Author):
         ]
 
     @staticmethod
-    def authors(num_columns=None):
+    def authors(docstore, num_columns=None):
         """Returns list of published light Author objects.
         
         @returns: list
         """
-        searcher = search.Searcher(DOCSTORE)
+        searcher = search.Searcher(docstore)
         searcher.prepare(
             params={},
             params_whitelist=SEARCH_PARAM_WHITELIST,
-            search_models=[DOCSTORE.index_name('author')],
+            search_models=[docstore.index_name('author')],
             sort=[],
             fields=SEARCH_INCLUDE_FIELDS,
             fields_nested=[],
             fields_agg={},
+            wildcards=False,
         )
         return searcher.execute(MAX_SIZE, 0)
 
@@ -255,19 +255,19 @@ class Page(repo_models.Page):
         )
 
     @staticmethod
-    def get(title):
+    def get(docstore, title):
         return super(Page, Page).get(
-            id=title, index=DOCSTORE.index_name('article'), using=DOCSTORE.es
+            id=title, index=docstore.index_name('article'), using=docstore.es
         )
     
-    def save(self):
+    def save(self, docstore):
         return super(Page, self).save(
-            index=DOCSTORE.index_name('article'), using=DOCSTORE.es
+            index=docstore.index_name('article'), using=docstore.es
         )
     
-    def delete(self):
+    def delete(self, docstore):
         return super(Page, self).delete(
-            index=DOCSTORE.index_name('article'), using=DOCSTORE.es
+            index=docstore.index_name('article'), using=docstore.es
         )
     
     def absolute_url(self):
@@ -291,20 +291,21 @@ class Page(repo_models.Page):
         return self.title_sort[0]
     
     @staticmethod
-    def pages():
+    def pages(docstore):
         """Returns list of published light Page objects.
         
         @returns: list
         """
-        searcher = search.Searcher(DOCSTORE)
+        searcher = search.Searcher(docstore)
         searcher.prepare(
             params={},
             params_whitelist=SEARCH_PARAM_WHITELIST,
-            search_models=[DOCSTORE.index_name('article')],
+            search_models=[docstore.index_name('article')],
             sort=[],
             fields=SEARCH_INCLUDE_FIELDS,
             fields_nested=[],
             fields_agg={},
+            wildcards=False,
         )
         return searcher.execute(MAX_SIZE, 0)
     
@@ -486,19 +487,19 @@ class Source(repo_models.Source):
         )
 
     @staticmethod
-    def get(title):
+    def get(docstore, title):
         return super(Source, Source).get(
-            title, index=DOCSTORE.index_name('source'), using=DOCSTORE.es
+            title, index=docstore.index_name('source'), using=docstore.es
         )
     
-    def save(self):
+    def save(self, docstore):
         return super(Source, self).save(
-            index=DOCSTORE.index_name('source'), using=DOCSTORE.es
+            index=docstore.index_name('source'), using=docstore.es
         )
     
-    def delete(self):
+    def delete(self, docstore):
         return super(Source, self).delete(
-            index=DOCSTORE.index_name('source'), using=DOCSTORE.es
+            index=docstore.index_name('source'), using=docstore.es
         )
     
     def absolute_url(self):
@@ -545,20 +546,21 @@ class Source(repo_models.Source):
         return page
     
     @staticmethod
-    def sources():
+    def sources(docstore):
         """Returns list of published light Source objects.
         
         @returns: list
         """
-        searcher = search.Searcher(DOCSTORE)
+        searcher = search.Searcher(docstore)
         searcher.prepare(
             params={},
             params_whitelist=SEARCH_PARAM_WHITELIST,
-            search_models=[DOCSTORE.index_name('source')],
+            search_models=[docstore.index_name('source')],
             sort=[],
             fields=SEARCH_INCLUDE_FIELDS,
             fields_nested=[],
             fields_agg={},
+            wildcards=False,
         )
         return searcher.execute(MAX_SIZE, 0)
 
@@ -727,19 +729,19 @@ class Citation(object):
 class FacetTerm(repo_models.FacetTerm):
 
     @staticmethod
-    def get(title):
+    def get(docstore, title):
         return repo_models.FacetTerm.get(
-            title, index=DOCSTORE.index_name('facetterm'), using=DOCSTORE.es
+            title, index=docstore.index_name('facetterm'), using=docstore.es
         )
     
-    def save(self):
+    def save(self, docstore):
         return super(FacetTerm, self).save(
-            index=DOCSTORE.index_name('facetterm'), using=DOCSTORE.es
+            index=docstore.index_name('facetterm'), using=docstore.es
         )
     
-    def delete(self):
+    def delete(self, docstore):
         return super(FacetTerm, self).delete(
-            index=DOCSTORE.index_name('facetterm'), using=DOCSTORE.es
+            index=docstore.index_name('facetterm'), using=docstore.es
         )
     
     @staticmethod
@@ -823,19 +825,19 @@ class FacetTerm(repo_models.FacetTerm):
 class Facet(repo_models.Facet):
 
     @staticmethod
-    def get(title):
+    def get(docstore, title):
         return repo_models.Facet.get(
-            title, index=DOCSTORE.index_name('facet'), using=DOCSTORE.es
+            title, index=docstore.index_name('facet'), using=docstore.es
         )
     
-    def save(self):
+    def save(self, docstore):
         return super(Facet, self).save(
-            index=DOCSTORE.index_name('facet'), using=DOCSTORE.es
+            index=docstore.index_name('facet'), using=docstore.es
         )
     
-    def delete(self):
+    def delete(self, docstore):
         return super(Facet, self).delete(
-            index=DOCSTORE.index_name('facet'), using=DOCSTORE.es
+            index=docstore.index_name('facet'), using=docstore.es
         )
 
     @staticmethod
@@ -950,7 +952,7 @@ class Elasticsearch(object):
             author.save()
 
     @staticmethod
-    def index_topics(json_text=None, url=config.DDR_TOPICS_SRC_URL):
+    def index_topics(docstore, json_text=None, url=config.DDR_TOPICS_SRC_URL):
         """Upload topics.json; used for Encyc->DDR links on article pages.
         
         url = 'http://partner.densho.org/vocab/api/0.2/topics.json'
@@ -965,7 +967,7 @@ class Elasticsearch(object):
             if r.status_code == 200:
                 json_text = r.text
                 logging.debug('ok')
-        DOCSTORE.post_json('vocab', 'topics', json_text)
+        docstore.post_json('vocab', 'topics', json_text)
 
     @staticmethod
     def _new_update_deleted(mw_pages, es_objects):

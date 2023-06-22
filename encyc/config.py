@@ -35,6 +35,7 @@ logging.basicConfig(
 
 #elasticsearch
 DOCSTORE_HOST = config.get('elasticsearch','docstore_host')
+DOCSTORE_CLUSTERS = config.get('elasticsearch', 'docstore_clusters')
 DOCSTORE_SSL_CERTFILE = config.get('elasticsearch', 'docstore_ssl_certfile')
 DOCSTORE_USERNAME = 'elastic'
 DOCSTORE_PASSWORD = config.get('elasticsearch', 'docstore_password')
