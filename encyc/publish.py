@@ -215,7 +215,7 @@ def articles(ds, report=False, dryrun=False, force=False, title=None):
     logprint('debug', f'getting mw_authors,articles ({config.MEDIAWIKI_API})')
     mw_author_titles = Proxy.authors(mw, cached_ok=False)
     mw_articles = Proxy.articles_lastmod(mw)
-    logprint('debug', f'getting es_articles ({config.DOCSTORE_HOST})')
+    logprint('debug', f'getting es_articles ({ds.host})')
     es_articles = Page.pages(ds)
     logprint('debug', 'mediawiki articles: %s' % len(mw_articles))
     logprint('debug', 'elasticsearch articles: %s' % es_articles.total)
@@ -319,7 +319,7 @@ def sources(ds, report=False, dryrun=False, force=False, psms_id=None):
     else:
         logprint('error', ps_sources)
     
-    logprint('debug', f'getting sources from Elasticsearch ({config.DOCSTORE_HOST})')
+    logprint('debug', f'getting sources from Elasticsearch ({ds.host})')
     es_sources = Source.sources(ds)
     if es_sources and isinstance(es_sources, list):
         logprint('debug', 'es_sources: %s' % len(es_sources))
