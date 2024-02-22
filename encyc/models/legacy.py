@@ -294,6 +294,8 @@ class Source(object):
             source.display_path_abs = source.display_path_abs.replace(
                 'sources/sources', 'sources')
         source.external_url = fix_external_url(source.external_url)
+        # force to Python bool or ES will interpret 'False' as true
+        source.creative_commons = strtobool(source.creative_commons)
         return source
 
 EXTERNAL_URL_PATTERN = re.compile('http://ddr.densho.org/(\w+)/(\w+)/(\d+)/(\d+)/')
@@ -311,6 +313,18 @@ def fix_external_url(url):
         return re.sub(EXTERNAL_URL_PATTERN, EXTERNAL_URL_REPLACEMENT, url)
     return url
 
+def strtobool(val):
+    """Convert a string representation of truth to true (1) or false (0).
+    Raises ValueError if 'val' is unrecognized.
+    Note: distutils was removed in Python 3.12
+    """
+    val = val.lower()
+    if   val in ('y', 'yes', 't', 'true',  'on',  '1'):
+        return True
+    elif val in ('n', 'no',  'f', 'false', 'off', '0'):
+        return False
+    else:
+        raise ValueError("invalid truth value %r" % (val,))
 
 class Citation(object):
     """Represents a citation for a MediaWiki page.
