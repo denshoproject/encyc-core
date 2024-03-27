@@ -115,7 +115,8 @@ class Page(object):
     def get(mw: wiki.MediaWiki,
             url_title: str,
             rawtext: str='',
-            rg_titles: List[str]=[]
+            restrict_databoxes=True,
+            rg_titles: List[str]=[],
     ):
         """Get page data from API and return Page object.
         """
@@ -157,9 +158,13 @@ class Page(object):
                 config.SOURCES_API,
                 pagedata['parse']['images']
             )
+            if restrict_databoxes:
+                databox_keys = config.MEDIAWIKI_DATABOXES
+            else:
+                databox_keys = {}
             page.databoxes = wikipage.extract_databoxes(
                 pagedata['parse']['text']['*'],
-                config.MEDIAWIKI_DATABOXES
+                databox_keys
             )
             
             page.published_encyc = True

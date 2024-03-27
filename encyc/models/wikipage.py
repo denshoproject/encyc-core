@@ -367,7 +367,7 @@ def _rm_tags(html, tags=['html', 'body']):
         html = html.replace('<%s>' % tag, '').replace('</%s>' % tag, '')
     return html
 
-def extract_databoxes(body, databox_divs_namespaces):
+def extract_databoxes(body, databox_divs_namespaces={}):
     """Find the hidden databoxes, extract data. 
     
     Databox data is returned as an OrderedDict to preserve field sequence.
@@ -394,31 +394,44 @@ def extract_databoxes(body, databox_divs_namespaces):
     @returns: str,OrderedDict
     """
     soup = BeautifulSoup(body, 'html.parser')
+    if databox_divs_namespaces:
+        # get divs in the list
+        tags = [
+            soup.find(id=div_id)
+            for div_id in databox_divs_namespaces.keys()
+            if soup.find(id=div_id)
+        ]
+    else:
+        # find all hidden <divs> that have infobox data
+        def divs_with_databoxes(tag):
+            return tag.name == 'div' \
+                and tag.has_attr('id') and 'databox' in tag['id'] \
+                and tag.has_attr('style') and tag['style'] == 'display:none;'
+        tags = [tag for tag in soup.find_all(divs_with_databoxes)]
     databoxes = {}
-    for div_id in databox_divs_namespaces.keys():
+    for tag in tags:
+        div_id = tag['id']
         data = OrderedDict()
-        tag = soup.find(id=div_id)
-        if tag:
-            # BeautifulSoup returns tag contents as a list.
-            # The list is composed of strings (stretches of text) and Tag objects,
-            # which are any contents that have HTML tags e.g. "<i>title</i>".
-            # We just want a big string, so convert all Tags to strings
-            # and join everything together into a big string
-            itemparts = ''.join([
-                str(item)
-                for item in tag.p.contents
-            ])
-            # split into key/value pairs and populate the OrderedDict
-            for item in itemparts.split('\n'):
-                item = item.strip()
-                if item and (':' in item):
-                    # Note: many fields contain colons
-                    key,val = item.split(':', 1)
-                    if ';' in val:
-                        val = [i.strip() for i in val.split(';') if i.strip()]
-                    # keys are lowercased
-                    data[key.lower()] = val
-            databoxes[div_id] = data
+        # BeautifulSoup returns tag contents as a list.
+        # The list is composed of strings (stretches of text) and Tag objects,
+        # which are any contents that have HTML tags e.g. "<i>title</i>".
+        # We just want a big string, so convert all Tags to strings
+        # and join everything together into a big string
+        itemparts = ''.join([
+            str(item)
+            for item in tag.p.contents
+        ])
+        # split into key/value pairs and populate the OrderedDict
+        for item in itemparts.split('\n'):
+            item = item.strip()
+            if item and (':' in item):
+                # Note: many fields contain colons
+                key,val = item.split(':', 1)
+                if ';' in val:
+                    val = [i.strip() for i in val.split(';') if i.strip()]
+                # keys are lowercased
+                data[key.lower()] = val
+        databoxes[div_id] = data
     return databoxes
 
 def extract_description(body):
