@@ -16,6 +16,7 @@ from encyc.models.elastic import Author, Page, Source
 from encyc.models.elastic import Facet, FacetTerm
 from encyc import rsync
 from encyc import wiki
+from encyc.models import wikipage
 
 
 def stopwatch(fn):
@@ -556,3 +557,95 @@ def parse(path, title):
     mwpage = LegacyPage.get(mw, title)
     #write_text(mwpage.body, path_html)
     return mwpage.body
+
+
+def report_databoxes(ds):
+    logprint('debug', '------------------------------------------------------------------------')
+    logprint('debug', f'MediaWiki login ({config.MEDIAWIKI_SCHEME}://{config.MEDIAWIKI_HOST})')
+    mw = wiki.MediaWiki()
+    # authors need to be refreshed
+    logprint('debug', f'getting articles ({config.MEDIAWIKI_API})')
+    mw_articles = Proxy.articles_lastmod(mw)
+    logprint('debug', 'examining articles...')
+    databoxes = []
+    errors = []
+    anomalies = []
+    num = len(mw_articles)
+    num_anomalies = 0
+    start = datetime.now()
+    for n,article in enumerate(mw_articles):
+        title = article['title']
+        if not title == 'Manzanar':
+            continue
+        logprint('debug', '--------------------')
+        logprint('debug', f'{n+1}/{num}({num_anomalies}) {title}')
+        logprint('debug', 'getting from mediawiki')
+        mwpage = LegacyPage.get(mw, title)
+        logprint('debug', f"           title {title}")
+        logprint('debug', f"mwpage.url_title {mwpage.url_title}")
+        pagedata = json.loads(LegacyPage.pagedata(mw, mwpage.url_title))
+        databox_keys = {}
+        try:
+            databoxes = wikipage.extract_databoxes(
+                pagedata['parse']['text']['*'],
+                databox_keys
+            )
+        except Exception as err:
+            logprint('error', err)
+            errors.append(
+                (title, err)
+            )
+        logprint('debug', f'{databoxes=}')
+        for key,databox in databoxes.items():
+            logprint('debug', f"{key=}")
+            databoxes.append(key)
+            dbmap = map_databox(databox)
+            if databox_is_anomalous(dbmap):
+                logprint('debug', f'{dbmap=} ANOMALOUS!')
+                anomalies.append(dbmap)
+                num_anomalies += 1
+            else:
+                logprint('debug', f'{dbmap=}')
+    logprint('debug', '--------------------')
+    logprint('debug', 'DATABOXES')
+    for databox in sorted(set(databoxes)):
+        print(databox)
+    logprint('debug', '--------------------')
+    logprint('debug', 'ANOMALIES')
+    for dbmap in anomalies:
+        print(dbmap)
+    logprint('debug', '--------------------')
+    logprint('debug', 'ERRORS')
+    for title,error in errors:
+        print(title,error)
+    print(f"elapsed {datetime.now() - start}")
+
+def map_databox(databox):
+    """Returns number of rows per number of cells e.g. 7 rows with 2 cells
+    
+    @returns: dict Example: {'2': 7, '1': 1, '3': 1}
+    """
+    #logprint('debug', f"{databox=}")
+    items = {}
+    for n,item in enumerate(databox.items()):
+        #logprint('debug', f"    {len(item)} {item}")
+        len_item = str(len(item))
+        if not items.get(len_item):
+            items[len_item] = 0
+        items[len_item] += 1
+    #logprint('debug', f"{items=}")
+    return items
+
+def databox_is_anomalous(databox_map):
+    """Indicate if map_databox is weird
+    
+    For now, "weird" is anything that has other than 2 cells per row,
+    because wagtail.contrib.table_block.blocks.TableBlock
+    can only handle 2 cells per row
+    """
+    if len(databox_map.keys()) > 1:
+        return True
+    for key in databox_map.keys():
+        if key != '2':
+            return True
+    return False
