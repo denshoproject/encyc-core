@@ -302,6 +302,16 @@ class Source(object):
         # force to Python bool or ES will interpret 'False' as true
         source.creative_commons = strtobool(source.creative_commons)
         return source
+    
+    def to_dict(self):
+        data = {}
+        for key in SOURCE_FIELDS:
+            val = getattr(self, key, None)
+            if val and isinstance(val, datetime):
+                val = val.strftime('%Y-%m-%dT%H:%M:%S')
+            data[key] = val
+        return data
+
 
 EXTERNAL_URL_PATTERN = re.compile('http://ddr.densho.org/(\w+)/(\w+)/(\d+)/(\d+)/')
 EXTERNAL_URL_REPLACEMENT = r'http://ddr.densho.org/\1-\2-\3-\4/'
