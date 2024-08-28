@@ -83,14 +83,14 @@ class Page(object):
     title = None
     description = None
     body = None
-    authors = List[str]
-    sources = List[str]
-    categories = List[str]
-    author_articles = List[str]
+    authors = []
+    sources = []
+    categories = []
+    author_articles = []
     coordinates = ()
     prev_page = None
     next_page = None
-    databoxes = Dict[str,str]
+    databoxes = {}
     
     def __repr__(self):
         return '<%s.%s "%s">' % (
