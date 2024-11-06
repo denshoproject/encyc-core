@@ -307,6 +307,9 @@ class Source(object):
         data = {}
         for key in SOURCE_FIELDS:
             val = getattr(self, key, None)
+            if val and isinstance(val, bool):
+                if val: val = 'true'
+                else: val = 'false'
             if val and isinstance(val, datetime):
                 val = val.strftime('%Y-%m-%dT%H:%M:%S')
             data[key] = val
