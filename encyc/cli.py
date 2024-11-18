@@ -457,3 +457,7 @@ def databoxes(hosts):
     check_es_index(ds, 'article')
     check_mediawiki_status()
     publish.report_databoxes(ds)
+
+
+if __name__ == '__main__':
+    encyc()
