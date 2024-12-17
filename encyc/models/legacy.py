@@ -116,6 +116,7 @@ class Page(object):
             url_title: str,
             rawtext: str='',
             restrict_databoxes=True,
+            migration=False,
             rg_titles: List[str]=[],
     ):
         """Get page data from API and return Page object.
@@ -184,6 +185,7 @@ class Page(object):
                 primary_sources=page.sources,
                 public=page.public,
                 printed=False,
+                migration=migration,
                 rg_titles=rg_titles,
             )
             

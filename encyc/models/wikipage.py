@@ -15,7 +15,7 @@ from encyc.models import helpers
 TIMEOUT = float(config.MEDIAWIKI_API_TIMEOUT)
 
 
-def parse_mediawiki_text(title, html, primary_sources, public=False, printed=False, rg_titles=[]):
+def parse_mediawiki_text(title, html, primary_sources, public=False, printed=False, rg_titles=[], migration=False):
     """Parses the body of a MediaWiki page.
     
     @param title: str page title.
@@ -37,7 +37,8 @@ def parse_mediawiki_text(title, html, primary_sources, public=False, printed=Fal
     soup = _wrap_sections(soup)
     soup = _rewrite_newpage_links(soup)
     soup = _rewrite_prevnext_links(soup)
-    soup = remove_status_markers(soup)
+    if not migration:
+        soup = remove_status_markers(soup)
     if not printed:
         soup = _add_top_links(soup)
     soup = _remove_divs(
