@@ -86,7 +86,7 @@ uninstall: uninstall-app
 clean: clean-app
 
 
-install-prep: apt-upgrade install-setuptools
+install-prep: apt-upgrade
 
 apt-update:
 	@echo ""
@@ -120,17 +120,10 @@ install-virtualenv:
 	source $(VIRTUALENV)/bin/activate; \
 	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) uv
 
-install-setuptools: install-virtualenv
-	@echo ""
-	@echo "install-setuptools -----------------------------------------------------"
-	apt-get --assume-yes install python3-dev
-	source $(VIRTUALENV)/bin/activate; \
-	uv pip install -U --cache-dir=$(PIP_CACHE_DIR) setuptools
-
 
 get-app: get-encyc-core
 
-install-app: install-setuptools install-encyc-core
+install-app: install-encyc-core
 
 test-app: test-encyc-core
 coverage-app: coverage-encyc-core
@@ -155,7 +148,7 @@ setup-encyc-core: install-configs
 	chown -R $(USER).root $(LOGS_BASE)
 	chmod -R 755 $(LOGS_BASE)
 
-install-encyc-core:
+install-encyc-core: install-virtualenv
 	@echo ""
 	@echo "install encyc-core -----------------------------------------------------"
 # bs4 dependency
