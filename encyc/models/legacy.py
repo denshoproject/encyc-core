@@ -83,14 +83,14 @@ class Page(object):
     title = None
     description = None
     body = None
-    authors = List[str]
-    sources = List[str]
-    categories = List[str]
-    author_articles = List[str]
+    authors = []
+    sources = []
+    categories = []
+    author_articles = []
     coordinates = ()
     prev_page = None
     next_page = None
-    databoxes = Dict[str,str]
+    databoxes = {}
     
     def __repr__(self):
         return '<%s.%s "%s">' % (
@@ -115,7 +115,9 @@ class Page(object):
     def get(mw: wiki.MediaWiki,
             url_title: str,
             rawtext: str='',
-            rg_titles: List[str]=[]
+            restrict_databoxes=True,
+            migration=False,
+            rg_titles: List[str]=[],
     ):
         """Get page data from API and return Page object.
         """
@@ -157,9 +159,13 @@ class Page(object):
                 config.SOURCES_API,
                 pagedata['parse']['images']
             )
+            if restrict_databoxes:
+                databox_keys = config.MEDIAWIKI_DATABOXES
+            else:
+                databox_keys = {}
             page.databoxes = wikipage.extract_databoxes(
                 pagedata['parse']['text']['*'],
-                config.MEDIAWIKI_DATABOXES
+                databox_keys
             )
             
             page.published_encyc = True
@@ -179,6 +185,7 @@ class Page(object):
                 primary_sources=page.sources,
                 public=page.public,
                 printed=False,
+                migration=migration,
                 rg_titles=rg_titles,
             )
             
@@ -297,6 +304,19 @@ class Source(object):
         # force to Python bool or ES will interpret 'False' as true
         source.creative_commons = strtobool(source.creative_commons)
         return source
+    
+    def to_dict(self):
+        data = {}
+        for key in SOURCE_FIELDS:
+            val = getattr(self, key, None)
+            if val and isinstance(val, bool):
+                if val: val = 'true'
+                else: val = 'false'
+            if val and isinstance(val, datetime):
+                val = val.strftime('%Y-%m-%dT%H:%M:%S')
+            data[key] = val
+        return data
+
 
 EXTERNAL_URL_PATTERN = re.compile('http://ddr.densho.org/(\w+)/(\w+)/(\d+)/(\d+)/')
 EXTERNAL_URL_REPLACEMENT = r'http://ddr.densho.org/\1-\2-\3-\4/'

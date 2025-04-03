@@ -445,3 +445,19 @@ def check_es_index(ds, doctype):
     if not ds.index_exists(index_name):
         click.echo('Elasticsearch: No index "{}".'.format(index_name))
         sys.exit(1)
+
+
+@encyc.command()
+@click.option('--hosts', default=config.DOCSTORE_HOST, help='Elasticsearch hosts.')
+def databoxes(hosts):
+    """Report on databoxes.
+    """
+    ds = get_docstore(hosts)
+    check_es_status(ds)
+    check_es_index(ds, 'article')
+    check_mediawiki_status()
+    publish.report_databoxes(ds)
+
+
+if __name__ == '__main__':
+    encyc()

@@ -6,13 +6,6 @@ SHELL = /bin/bash
 APP_VERSION := $(shell cat VERSION)
 GIT_SOURCE_URL=https://github.com/densho/encyc-core
 
-# Release name e.g. jessie
-DEBIAN_CODENAME := $(shell lsb_release -sc)
-# Release numbers e.g. 8.10
-DEBIAN_RELEASE := $(shell lsb_release -sr)
-# Sortable major version tag e.g. deb8
-DEBIAN_RELEASE_TAG = deb$(shell lsb_release -sr | cut -c1)
-
 # current branch name minus dashes or underscores
 PACKAGE_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
 # current commit hash
@@ -30,24 +23,33 @@ PIP_CACHE_DIR=$(INSTALL_BASE)/pip-cache
 
 VIRTUALENV=$(INSTALLDIR)/venv/encyccore
 
+# Release name e.g. jessie
+DEBIAN_CODENAME := $(shell lsb_release -sc)
+# Release numbers e.g. 8.10
+DEBIAN_RELEASE := $(shell lsb_release -sr)
+# Sortable major version tag e.g. deb8
+DEBIAN_RELEASE_TAG = deb$(shell lsb_release -sr | cut -c1)
+
 TGZ_BRANCH := $(shell python3 bin/package-branch.py)
 TGZ_FILE=$(APP)_$(APP_VERSION)
 TGZ_DIR=$(INSTALLDIR)/$(TGZ_FILE)
 TGZ_CORE=$(TGZ_DIR)/encyc-core
 
-DEB_BRANCH := $(shell git rev-parse --abbrev-ref HEAD | tr -d _ | tr -d -)
+# Adding '-rcN' to VERSION will name the package "ddrlocal-release"
+# instead of "ddrlocal-BRANCH"
+DEB_BRANCH := $(shell python3 bin/package-branch.py)
 DEB_ARCH=amd64
-DEB_NAME_STRETCH=$(APP)-$(DEB_BRANCH)
-DEB_NAME_BUSTER=$(APP)-$(DEB_BRANCH)
 DEB_NAME_BULLSEYE=$(APP)-$(DEB_BRANCH)
+DEB_NAME_BOOKWORM=$(APP)-$(DEB_BRANCH)
+DEB_NAME_TRIXIE=$(APP)-$(DEB_BRANCH)
 # Application version, separator (~), Debian release tag e.g. deb8
 # Release tag used because sortable and follows Debian project usage.
-DEB_VERSION_STRETCH=$(APP_VERSION)~deb9
-DEB_VERSION_BUSTER=$(APP_VERSION)~deb10
 DEB_VERSION_BULLSEYE=$(APP_VERSION)~deb11
-DEB_FILE_STRETCH=$(DEB_NAME_STRETCH)_$(DEB_VERSION_STRETCH)_$(DEB_ARCH).deb
-DEB_FILE_BUSTER=$(DEB_NAME_BUSTER)_$(DEB_VERSION_BUSTER)_$(DEB_ARCH).deb
+DEB_VERSION_BOOKWORM=$(APP_VERSION)~deb12
+DEB_VERSION_TRIXIE=$(APP_VERSION)~deb13
 DEB_FILE_BULLSEYE=$(DEB_NAME_BULLSEYE)_$(DEB_VERSION_BULLSEYE)_$(DEB_ARCH).deb
+DEB_FILE_BOOKWORM=$(DEB_NAME_BOOKWORM)_$(DEB_VERSION_BOOKWORM)_$(DEB_ARCH).deb
+DEB_FILE_TRIXIE=$(DEB_NAME_TRIXIE)_$(DEB_VERSION_TRIXIE)_$(DEB_ARCH).deb
 DEB_VENDOR=Densho.org
 DEB_MAINTAINER=<geoffrey.jost@densho.org>
 DEB_DESCRIPTION=Encyclopedia publishing tools
@@ -84,7 +86,7 @@ uninstall: uninstall-app
 clean: clean-app
 
 
-install-prep: apt-upgrade install-setuptools
+install-prep: apt-upgrade
 
 apt-update:
 	@echo ""
@@ -111,22 +113,17 @@ install-misc-tools:
 	apt-get --assume-yes install ack-grep byobu bzip2 curl elinks gdebi-core htop logrotate mg multitail ntp p7zip-full wget
 
 install-virtualenv:
+	@echo ""
+	@echo "install-virtualenv -----------------------------------------------------"
 	apt-get --assume-yes install python3-pip python3-venv
 	python3 -m venv $(VIRTUALENV)
 	source $(VIRTUALENV)/bin/activate; \
-	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) pip
-
-install-setuptools: install-virtualenv
-	@echo ""
-	@echo "install-setuptools -----------------------------------------------------"
-	apt-get --assume-yes install python3-dev
-	source $(VIRTUALENV)/bin/activate; \
-	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) setuptools
+	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) uv
 
 
 get-app: get-encyc-core
 
-install-app: install-setuptools install-encyc-core
+install-app: install-encyc-core
 
 test-app: test-encyc-core
 coverage-app: coverage-encyc-core
@@ -145,26 +142,22 @@ setup-encyc-core: install-configs
 	@echo ""
 	@echo "setup encyc-core -----------------------------------------------------"
 	cd $(INSTALLDIR)
-	source $(VIRTUALENV)/bin/activate; \
-	python setup.py install
+	source $(VIRTUALENV)/bin/activate; uv pip install .
 # logs dir
 	-mkdir $(LOGS_BASE)
-	chown -R $(USER).root $(LOGS_BASE)
+	chown -R $(USER):root $(LOGS_BASE)
 	chmod -R 755 $(LOGS_BASE)
 
-install-encyc-core:
+install-encyc-core: install-virtualenv
 	@echo ""
 	@echo "install encyc-core -----------------------------------------------------"
 # bs4 dependency
 	apt-get --assume-yes install libxml2 libxml2-dev libxslt1-dev rsync zlib1g-dev
-	source $(VIRTUALENV)/bin/activate; \
-	pip3 install -U --find-links=$(PIP_CACHE_DIR) -r $(PIP_REQUIREMENTS)
 	cd $(INSTALLDIR)
-	source $(VIRTUALENV)/bin/activate; \
-	python setup.py install
+	source $(VIRTUALENV)/bin/activate; uv pip install .
 # logs dir
 	-mkdir $(LOGS_BASE)
-	chown -R $(USER).root $(LOGS_BASE)
+	chown -R $(USER):root $(LOGS_BASE)
 	chmod -R 755 $(LOGS_BASE)
 
 test-encyc-core:
@@ -217,10 +210,10 @@ install-configs:
 	@echo "install configs ---------------------------------------------------------"
 	-mkdir /etc/encyc
 	cp $(INSTALLDIR)/conf/core.cfg /etc/encyc/
-	chown root.encyc /etc/encyc/core.cfg
+	chown root:encyc /etc/encyc/core.cfg
 	chmod 644 /etc/encyc/core.cfg
 	touch /etc/encyc/core-local.cfg
-	chown root.encyc /etc/encyc/core-local.cfg
+	chown root:encyc /etc/encyc/core-local.cfg
 	chmod 640 /etc/encyc/core-local.cfg
 
 uninstall-configs:
@@ -245,90 +238,17 @@ tgz:
 install-fpm:
 	@echo "install-fpm ------------------------------------------------------------"
 	apt-get install --assume-yes ruby ruby-dev rubygems build-essential
-	gem install --no-ri --no-rdoc fpm
+	gem install --no-document fpm
 
-
-# http://fpm.readthedocs.io/en/latest/
 # https://stackoverflow.com/questions/32094205/set-a-custom-install-directory-when-making-a-deb-package-with-fpm
 # https://brejoc.com/tag/fpm/
 deb: deb-bullseye
-
-deb-stretch:
-	@echo ""
-	@echo "FPM packaging (stretch) ------------------------------------------------"
-	-rm -Rf $(DEB_FILE_STRETCH)
-	virtualenv --python=python3 --relocatable $(VIRTUALENV)  # Make venv relocatable
-	fpm   \
-	--verbose   \
-	--input-type dir   \
-	--output-type deb   \
-	--name $(DEB_NAME_STRETCH)   \
-	--version $(DEB_VERSION_STRETCH)   \
-	--package $(DEB_FILE_STRETCH)   \
-	--url "$(GIT_SOURCE_URL)"   \
-	--vendor "$(DEB_VENDOR)"   \
-	--maintainer "$(DEB_MAINTAINER)"   \
-	--description "$(DEB_DESCRIPTION)"   \
-	--chdir $(INSTALLDIR)   \
-	--depends "python3"   \
-	--depends "rsync"   \
-	.git=$(DEB_BASE)   \
-	.gitignore=$(DEB_BASE)   \
-	bin=$(DEB_BASE)   \
-	conf=$(DEB_BASE)   \
-	COPYRIGHT=$(DEB_BASE)   \
-	encyc=$(DEB_BASE)   \
-	INSTALL=$(DEB_BASE)   \
-	LICENSE=$(DEB_BASE)   \
-	Makefile=$(DEB_BASE)   \
-	README.rst=$(DEB_BASE)   \
-	requirements.txt=$(DEB_BASE)  \
-	setup.py=$(DEB_BASE)  \
-	setup.sh=$(DEB_BASE)  \
-	VERSION=$(DEB_BASE)  \
-	venv=$(DEB_BASE)   \
-	conf/core.cfg=$(CONF_BASE)/core.cfg
-
-deb-buster:
-	@echo ""
-	@echo "FPM packaging (buster) -------------------------------------------------"
-	-rm -Rf $(DEB_FILE_BUSTER)
-	virtualenv --python=python3 --relocatable $(VIRTUALENV)  # Make venv relocatable
-	fpm   \
-	--verbose   \
-	--input-type dir   \
-	--output-type deb   \
-	--name $(DEB_NAME_BUSTER)   \
-	--version $(DEB_VERSION_BUSTER)   \
-	--package $(DEB_FILE_BUSTER)   \
-	--url "$(GIT_SOURCE_URL)"   \
-	--vendor "$(DEB_VENDOR)"   \
-	--maintainer "$(DEB_MAINTAINER)"   \
-	--description "$(DEB_DESCRIPTION)"   \
-	--chdir $(INSTALLDIR)   \
-	--depends "python3"   \
-	--depends "rsync"   \
-	.git=$(DEB_BASE)   \
-	.gitignore=$(DEB_BASE)   \
-	bin=$(DEB_BASE)   \
-	conf=$(DEB_BASE)   \
-	COPYRIGHT=$(DEB_BASE)   \
-	encyc=$(DEB_BASE)   \
-	INSTALL=$(DEB_BASE)   \
-	LICENSE=$(DEB_BASE)   \
-	Makefile=$(DEB_BASE)   \
-	README.rst=$(DEB_BASE)   \
-	requirements.txt=$(DEB_BASE)  \
-	setup.py=$(DEB_BASE)  \
-	setup.sh=$(DEB_BASE)  \
-	VERSION=$(DEB_BASE)  \
-	venv=$(DEB_BASE)   \
-	conf/core.cfg=$(CONF_BASE)/core.cfg
 
 deb-bullseye:
 	@echo ""
 	@echo "FPM packaging (bullseye) -----------------------------------------------"
 	-rm -Rf $(DEB_FILE_BULLSEYE)
+# Make package
 	fpm   \
 	--verbose   \
 	--input-type dir   \
@@ -352,10 +272,76 @@ deb-bullseye:
 	INSTALL=$(DEB_BASE)   \
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
+	pyproject.toml=$(DEB_BASE)  \
 	README.rst=$(DEB_BASE)   \
-	requirements.txt=$(DEB_BASE)  \
-	setup.py=$(DEB_BASE)  \
-	setup.sh=$(DEB_BASE)  \
+	VERSION=$(DEB_BASE)  \
+	venv=$(DEB_BASE)   \
+	conf/core.cfg=$(CONF_BASE)/core.cfg
+
+deb-bookworm:
+	@echo ""
+	@echo "FPM packaging (bookworm) -----------------------------------------------"
+	-rm -Rf $(DEB_FILE_BOOKWORM)
+# Make package
+	fpm   \
+	--verbose   \
+	--input-type dir   \
+	--output-type deb   \
+	--name $(DEB_NAME_BOOKWORM)   \
+	--version $(DEB_VERSION_BOOKWORM)   \
+	--package $(DEB_FILE_BOOKWORM)   \
+	--url "$(GIT_SOURCE_URL)"   \
+	--vendor "$(DEB_VENDOR)"   \
+	--maintainer "$(DEB_MAINTAINER)"   \
+	--description "$(DEB_DESCRIPTION)"   \
+	--chdir $(INSTALLDIR)   \
+	--depends "python3"   \
+	--depends "rsync"   \
+	.git=$(DEB_BASE)   \
+	.gitignore=$(DEB_BASE)   \
+	bin=$(DEB_BASE)   \
+	conf=$(DEB_BASE)   \
+	COPYRIGHT=$(DEB_BASE)   \
+	encyc=$(DEB_BASE)   \
+	INSTALL=$(DEB_BASE)   \
+	LICENSE=$(DEB_BASE)   \
+	Makefile=$(DEB_BASE)   \
+	pyproject.toml=$(DEB_BASE)  \
+	README.rst=$(DEB_BASE)   \
+	VERSION=$(DEB_BASE)  \
+	venv=$(DEB_BASE)   \
+	conf/core.cfg=$(CONF_BASE)/core.cfg
+
+deb-trixie:
+	@echo ""
+	@echo "FPM packaging (trixie) -----------------------------------------------"
+	-rm -Rf $(DEB_FILE_TRIXIE)
+# Make package
+	fpm   \
+	--verbose   \
+	--input-type dir   \
+	--output-type deb   \
+	--name $(DEB_NAME_TRIXIE)   \
+	--version $(DEB_VERSION_TRIXIE)   \
+	--package $(DEB_FILE_TRIXIE)   \
+	--url "$(GIT_SOURCE_URL)"   \
+	--vendor "$(DEB_VENDOR)"   \
+	--maintainer "$(DEB_MAINTAINER)"   \
+	--description "$(DEB_DESCRIPTION)"   \
+	--chdir $(INSTALLDIR)   \
+	--depends "python3"   \
+	--depends "rsync"   \
+	.git=$(DEB_BASE)   \
+	.gitignore=$(DEB_BASE)   \
+	bin=$(DEB_BASE)   \
+	conf=$(DEB_BASE)   \
+	COPYRIGHT=$(DEB_BASE)   \
+	encyc=$(DEB_BASE)   \
+	INSTALL=$(DEB_BASE)   \
+	LICENSE=$(DEB_BASE)   \
+	Makefile=$(DEB_BASE)   \
+	pyproject.toml=$(DEB_BASE)  \
+	README.rst=$(DEB_BASE)   \
 	VERSION=$(DEB_BASE)  \
 	venv=$(DEB_BASE)   \
 	conf/core.cfg=$(CONF_BASE)/core.cfg

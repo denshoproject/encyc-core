@@ -289,7 +289,28 @@ class Page(repo_models.Page):
 
     def first_letter(self):
         return self.title_sort[0]
-    
+
+    def dict(self):
+        return {
+            'title': self.title,
+            'title_sort': self.title_sort,
+            'url_title': self.url_title,
+            'mw_api_url': self.mw_api_url,
+            'modified': self.modified,
+            'public': self.public,
+            'published': self.published,
+            'published_encyc': self.published_encyc,
+            'published_rg': self.published_rg,
+            'prev_page': self.prev_page,
+            'next_page': self.next_page,
+            'authors_data': self.authors_data.to_dict(),
+            'categories': list(self.categories),
+            'coordinates': list(self.coordinates),
+            'source_ids': list(self.source_ids),
+            'description': self.description,
+            'body': self.body,
+        }
+
     @staticmethod
     def pages(docstore):
         """Returns list of published light Page objects.

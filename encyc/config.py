@@ -68,8 +68,14 @@ AUTHORS_DEFAULT = 'Densho Encyclopedia contributors.'
 
 # primary sources / psms
 SOURCES_API = config.get('sources', 'api_url')
-SOURCES_API_USERNAME = None
-SOURCES_API_PASSWORD = None
+try:
+    SOURCES_API_USERNAME = config.get('sources', 'api_username')
+except:
+    SOURCES_API_USERNAME = None
+try:
+    SOURCES_API_PASSWORD = config.get('sources', 'api_password')
+except:
+    SOURCES_API_PASSWORD = None
 try:
     SOURCES_API_HTUSER = config.get('sources', 'api_htuser')
 except:
