@@ -145,7 +145,7 @@ setup-encyc-core: install-configs
 	source $(VIRTUALENV)/bin/activate; uv pip install .
 # logs dir
 	-mkdir $(LOGS_BASE)
-	chown -R $(USER).root $(LOGS_BASE)
+	chown -R $(USER):root $(LOGS_BASE)
 	chmod -R 755 $(LOGS_BASE)
 
 install-encyc-core: install-virtualenv
@@ -157,7 +157,7 @@ install-encyc-core: install-virtualenv
 	source $(VIRTUALENV)/bin/activate; uv pip install .
 # logs dir
 	-mkdir $(LOGS_BASE)
-	chown -R $(USER).root $(LOGS_BASE)
+	chown -R $(USER):root $(LOGS_BASE)
 	chmod -R 755 $(LOGS_BASE)
 
 test-encyc-core:
@@ -210,10 +210,10 @@ install-configs:
 	@echo "install configs ---------------------------------------------------------"
 	-mkdir /etc/encyc
 	cp $(INSTALLDIR)/conf/core.cfg /etc/encyc/
-	chown root.encyc /etc/encyc/core.cfg
+	chown root:encyc /etc/encyc/core.cfg
 	chmod 644 /etc/encyc/core.cfg
 	touch /etc/encyc/core-local.cfg
-	chown root.encyc /etc/encyc/core-local.cfg
+	chown root:encyc /etc/encyc/core-local.cfg
 	chmod 640 /etc/encyc/core-local.cfg
 
 uninstall-configs:
