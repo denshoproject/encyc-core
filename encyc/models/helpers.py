@@ -195,7 +195,7 @@ def find_author_info(text):
         if hasattr(citation,'contents') and citation.contents:
             names = []
             for n in citation.contents[0].split(';'):
-                if 'and' in n:
+                if ' and ' in n:  # not including spaces splits on "Alexandra"
                     for name in n.split('and'):
                         names.append(name.strip())
                 else:

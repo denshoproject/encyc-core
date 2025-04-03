@@ -86,7 +86,7 @@ uninstall: uninstall-app
 clean: clean-app
 
 
-install-prep: apt-upgrade install-setuptools
+install-prep: apt-upgrade
 
 apt-update:
 	@echo ""
@@ -113,22 +113,17 @@ install-misc-tools:
 	apt-get --assume-yes install ack-grep byobu bzip2 curl elinks gdebi-core htop logrotate mg multitail ntp p7zip-full wget
 
 install-virtualenv:
+	@echo ""
+	@echo "install-virtualenv -----------------------------------------------------"
 	apt-get --assume-yes install python3-pip python3-venv
 	python3 -m venv $(VIRTUALENV)
 	source $(VIRTUALENV)/bin/activate; \
-	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) pip
-
-install-setuptools: install-virtualenv
-	@echo ""
-	@echo "install-setuptools -----------------------------------------------------"
-	apt-get --assume-yes install python3-dev
-	source $(VIRTUALENV)/bin/activate; \
-	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) setuptools
+	pip3 install -U --cache-dir=$(PIP_CACHE_DIR) uv
 
 
 get-app: get-encyc-core
 
-install-app: install-setuptools install-encyc-core
+install-app: install-encyc-core
 
 test-app: test-encyc-core
 coverage-app: coverage-encyc-core
@@ -147,23 +142,19 @@ setup-encyc-core: install-configs
 	@echo ""
 	@echo "setup encyc-core -----------------------------------------------------"
 	cd $(INSTALLDIR)
-	source $(VIRTUALENV)/bin/activate; \
-	python setup.py install
+	source $(VIRTUALENV)/bin/activate; uv pip install .
 # logs dir
 	-mkdir $(LOGS_BASE)
 	chown -R $(USER).root $(LOGS_BASE)
 	chmod -R 755 $(LOGS_BASE)
 
-install-encyc-core:
+install-encyc-core: install-virtualenv
 	@echo ""
 	@echo "install encyc-core -----------------------------------------------------"
 # bs4 dependency
 	apt-get --assume-yes install libxml2 libxml2-dev libxslt1-dev rsync zlib1g-dev
-	source $(VIRTUALENV)/bin/activate; \
-	pip3 install -U --find-links=$(PIP_CACHE_DIR) -r $(PIP_REQUIREMENTS)
 	cd $(INSTALLDIR)
-	source $(VIRTUALENV)/bin/activate; \
-	python setup.py install
+	source $(VIRTUALENV)/bin/activate; uv pip install .
 # logs dir
 	-mkdir $(LOGS_BASE)
 	chown -R $(USER).root $(LOGS_BASE)
