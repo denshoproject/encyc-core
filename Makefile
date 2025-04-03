@@ -272,10 +272,8 @@ deb-bullseye:
 	INSTALL=$(DEB_BASE)   \
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
+	pyproject.toml=$(DEB_BASE)  \
 	README.rst=$(DEB_BASE)   \
-	requirements.txt=$(DEB_BASE)  \
-	setup.py=$(DEB_BASE)  \
-	setup.sh=$(DEB_BASE)  \
 	VERSION=$(DEB_BASE)  \
 	venv=$(DEB_BASE)   \
 	conf/core.cfg=$(CONF_BASE)/core.cfg
@@ -308,10 +306,8 @@ deb-bookworm:
 	INSTALL=$(DEB_BASE)   \
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
+	pyproject.toml=$(DEB_BASE)  \
 	README.rst=$(DEB_BASE)   \
-	requirements.txt=$(DEB_BASE)  \
-	setup.py=$(DEB_BASE)  \
-	setup.sh=$(DEB_BASE)  \
 	VERSION=$(DEB_BASE)  \
 	venv=$(DEB_BASE)   \
 	conf/core.cfg=$(CONF_BASE)/core.cfg
@@ -344,10 +340,8 @@ deb-trixie:
 	INSTALL=$(DEB_BASE)   \
 	LICENSE=$(DEB_BASE)   \
 	Makefile=$(DEB_BASE)   \
+	pyproject.toml=$(DEB_BASE)  \
 	README.rst=$(DEB_BASE)   \
-	requirements.txt=$(DEB_BASE)  \
-	setup.py=$(DEB_BASE)  \
-	setup.sh=$(DEB_BASE)  \
 	VERSION=$(DEB_BASE)  \
 	venv=$(DEB_BASE)   \
 	conf/core.cfg=$(CONF_BASE)/core.cfg
