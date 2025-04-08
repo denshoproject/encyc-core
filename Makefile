@@ -107,6 +107,11 @@ git-config:
 	git config --global alias.br branch
 	git config --global alias.ci commit
 
+git-safe-dir:
+	@echo ""
+	@echo "git-safe-dir -----------------------------------------------------------"
+	sudo -u encyc git config --global --add safe.directory $(INSTALLDIR)
+
 install-misc-tools:
 	@echo ""
 	@echo "Installing tools -------------------------------------------------------"
@@ -148,7 +153,7 @@ setup-encyc-core: install-configs
 	chown -R $(USER):root $(LOGS_BASE)
 	chmod -R 755 $(LOGS_BASE)
 
-install-encyc-core: install-virtualenv
+install-encyc-core: git-safe-dir install-virtualenv
 	@echo ""
 	@echo "install encyc-core -----------------------------------------------------"
 # bs4 dependency
