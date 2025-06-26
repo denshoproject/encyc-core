@@ -24,7 +24,9 @@ dynamic = ["version"]  # see tool.setuptools.dynamic
 requires-python = ">=3.11"
 dependencies = [
     "click",
-    "beautifulsoup4",
+    "beautifulsoup4==4.12.0",  # DO NOT UPGRADE
+                               # Versions after this break article parsing
+                               # see encyc-core/issues/43
     "deepdiff",
     "elasticsearch",
     "mwclient==0.10.1",
